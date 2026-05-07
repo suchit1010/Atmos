@@ -1,0 +1,69 @@
+Dodo Payments is partnering with Superteam India on a dedicated prize track for the Solana Frontier hackathon powered by Colosseum.
+
+“Stablecoins are room-temperature superconductors for financial services” - Patrick Collison
+
+Stablecoins are rapidly becoming critical infrastructure for global finance because they offer significant speed, coverage, and cost improvements over incumbent infrastructure.
+
+We’re inviting founders, developers, and builders interested in fintech to build applications that integrate with Dodo Payments and leverage stablecoins for real-world utility and adoption.
+
+About Dodo Payments
+Dodo Payments is the all-in-one engine to launch, scale, and monetize worldwide. Designed for the new generation of digital SaaS and AI products, they handle everything from payments to billing to distribution — all without extra engineering.
+
+Built for SaaS and AI Products:  they enable you to handle one-time payments, subscriptions, credits, seats, tokens, or any usage metric with their optimized billing infrastructure.
+
+Built-in coverage in 220+ countries, 80+ currencies, and 40+ payment methods.
+
+They have seamless APIs and SDKs for fast integration, along with a Sentra AI agent to build integrations by just describing what you need.
+
+Your Mission
+Build a Payments or Finance application that leverages stablecoins on Solana, integrating Dodo Payments to offer real-world utility to individuals and/or global businesses.
+
+We’re open to all ideas, but here are some themes for inspiration:
+
+Cross-Border Payments for Businesses — Help SaaS, AI-native, or creator platforms pay contractors and teams globally without wire fees or banking friction.
+
+Stablecoin Checkouts — Merchant-facing checkout flows (POS, QR, payment links) that accept stablecoins for real goods and services.
+
+Region-Specific Applications — Payment infrastructure built around local regulatory, currency, or user constraints. Example: Credible (Cypherpunk 2nd place) built a stablecoin-powered remittance platform for banks, fintechs, and other businesses looking to send money in/out of India.
+
+Consumer Remittance & Spending Wallets — Apps that help individuals send/receive money internationally or spend stablecoins day-to-day.
+
+Programmable B2B Finance — Supply chain payments, invoice factoring, or escrow that settles in seconds instead of days for SMEs underserved by banks.
+
+DeFi-native Applications — Think applications that bridge DeFi and TradFi using stablecoins. Treasury tools, yield on idle/transitory stables, smart accounts for businesses, etc.
+
+Agentic & Autonomous Payments — Payment infrastructure for AI agents to transact, get paid, or split revenue without human-in-the-loop approval. Brownie points for also integrating x402 here.
+
+The ideal submission will,
+
+Integrate Dodo Payments in a meaningful, non-trivial way.
+
+Solve a specific problem for a defined user: merchant, SaaS founder, migrant worker, logistics, operator, etc.
+
+Showcase how Solana + stablecoins beat the status quo for this use case (speed, cost, programmability)
+
+Demonstrate early traction — real users, a live pilot, or transaction volume.
+
+Prizes
+🥇 First Prize: $5000
+
+🥈 Second Prize: $3000
+
+🥉 Third Prize: $2000
+
+Additionally, all winners will receive a Member role in Superteam India.
+
+Reminder: Teams also need to sign up and submit their projects for the Global Hackathon here.
+
+Resources
+Frontier Hackathon
+
+Colosseum
+
+Colosseum’s Copilot Agent
+
+Dodo Payments
+
+Dodo’s Documentation
+
+Superteam’s Hackathon Hub

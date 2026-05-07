@@ -1,0 +1,26 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "Koej73jJCGdLbckEmUogn"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "atmos app icon"
+
+[[generated]]
+id = "vedCG0RvAlnRuVK7pcc9B"
+uri = "file://artifacts/mobile/assets/images/splash_bg.png"
+type = "image"
+title = "atmos splash background"
+
+[[generated]]
+id = "_ro9h0fETIHSojmXhyacS"
+uri = "file://artifacts/mobile/assets/images/biochar_hero.png"
+type = "image"
+title = "biochar project hero"
+
+[[generated]]
+id = "OWzG9Scc9V8JRwfzCTmS5"
+uri = "file://artifacts/mobile/assets/images/agroforestry_hero.png"
+type = "image"
+title = "agroforestry project hero"
