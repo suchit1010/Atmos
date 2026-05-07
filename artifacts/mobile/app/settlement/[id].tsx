@@ -47,7 +47,7 @@ export default function SettlementScreen() {
   }, []);
 
   const progressWidth = progressAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] });
-  const glowColor = borderAnim.interpolate({ inputRange: [0, 1], outputRange: ["#FFD700", "#0DFF6E"] });
+  const glowColor = borderAnim.interpolate({ inputRange: [0, 1], outputRange: ["#FFD700", "#2ECC71"] });
 
   const topPad = Platform.OS === "web" ? insets.top + 67 : insets.top;
   const totalAmount = amount ?? "8,610";
@@ -55,7 +55,7 @@ export default function SettlementScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad + 16 }]}>
-        <Pressable onPress={() => router.replace("/(tabs)/")} style={styles.backBtn}>
+        <Pressable onPress={() => router.replace("/(tabs)" as any)} style={styles.backBtn}>
           <Feather name="x" size={22} color={colors.foreground} />
         </Pressable>
         <Text style={[styles.title, { color: colors.foreground }]}>Settlement</Text>
@@ -145,7 +145,7 @@ export default function SettlementScreen() {
           </View>
           <Pressable
             style={[styles.doneBtn, { backgroundColor: colors.primary }]}
-            onPress={() => router.replace("/(tabs)/portfolio")}
+            onPress={() => router.replace("/(tabs)/portfolio" as any)}
           >
             <Text style={[styles.doneBtnText, { color: colors.primaryForeground }]}>Done</Text>
           </Pressable>

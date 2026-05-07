@@ -73,7 +73,7 @@ export default function AssetCreatedScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={[styles.header, { paddingTop: topPad + 16 }]}>
-        <Pressable onPress={() => router.replace("/(tabs)/")} style={styles.backBtn}>
+        <Pressable onPress={() => router.replace("/(tabs)" as any)} style={styles.backBtn}>
           <Feather name="x" size={22} color={colors.foreground} />
         </Pressable>
         <Text style={[styles.title, { color: colors.foreground }]}>Asset Creation</Text>
@@ -158,13 +158,13 @@ export default function AssetCreatedScreen() {
           <View style={styles.footerBtns}>
             <Pressable
               style={[styles.secondaryBtn, { borderColor: colors.primary, flex: 1 }]}
-              onPress={() => router.replace("/(tabs)/market")}
+              onPress={() => router.replace("/(tabs)/market" as any)}
             >
               <Text style={[styles.secondaryBtnText, { color: colors.primary }]}>List on Market</Text>
             </Pressable>
             <Pressable
               style={[styles.primaryBtn, { backgroundColor: colors.primary, flex: 1 }]}
-              onPress={() => router.replace("/(tabs)/")}
+              onPress={() => router.replace("/(tabs)/portfolio" as any)}
             >
               <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>View Portfolio</Text>
             </Pressable>

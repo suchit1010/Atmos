@@ -2,14 +2,15 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 const GRADE_COLORS: Record<string, { bg: string; text: string }> = {
-  S: { bg: "#FFD700", text: "#000" },
-  A: { bg: "#0DFF6E", text: "#07110B" },
-  B: { bg: "#00D4FF", text: "#07110B" },
-  C: { bg: "#FF9900", text: "#000" },
+  S: { bg: "#FFD700", text: "#0C1E0C" },
+  A: { bg: "#2ECC71", text: "#0C1E0C" },
+  B: { bg: "#3498DB", text: "#FFFFFF" },
+  C: { bg: "#E67E22", text: "#FFFFFF" },
+  D: { bg: "#E74C3C", text: "#FFFFFF" },
 };
 
 export function GradeTag({ grade }: { grade: string }) {
-  const colors = GRADE_COLORS[grade] ?? { bg: "#7AB891", text: "#07110B" };
+  const colors = GRADE_COLORS[grade] ?? { bg: "#2ECC71", text: "#0C1E0C" };
   return (
     <View style={[styles.tag, { backgroundColor: colors.bg }]}>
       <Text style={[styles.text, { color: colors.text }]}>{grade}</Text>

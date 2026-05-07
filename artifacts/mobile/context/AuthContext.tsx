@@ -1,14 +1,28 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-interface User {
+export interface KYCDocument {
+  type: "aadhaar" | "pan" | "farm_doc";
+  status: "not_started" | "pending" | "verified" | "rejected";
+  number?: string;
+  fileName?: string;
+  submittedAt?: string;
+  verifiedAt?: string;
+}
+
+export interface User {
   id: string;
   phone: string;
   name: string;
   email: string;
   walletAddress: string;
-  kycStatus: "verified" | "pending" | "unverified";
+  kycStatus: "unverified" | "pending" | "verified";
   role: "producer" | "buyer";
+  kyc: {
+    aadhaar: KYCDocument;
+    pan: KYCDocument;
+    farmDoc: KYCDocument;
+  };
 }
 
 interface AuthContextType {
@@ -18,9 +32,16 @@ interface AuthContextType {
   login: (phone: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
+  updateKYC: (type: KYCDocument["type"], updates: Partial<KYCDocument>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+const defaultKYC: User["kyc"] = {
+  aadhaar: { type: "aadhaar", status: "not_started" },
+  pan: { type: "pan", status: "not_started" },
+  farmDoc: { type: "farm_doc", status: "not_started" },
+};
 
 const MOCK_USER: User = {
   id: "usr_001",
@@ -28,8 +49,9 @@ const MOCK_USER: User = {
   name: "Maria Garcia",
   email: "maria@example.com",
   walletAddress: "7xKp...9mNq",
-  kycStatus: "verified",
+  kycStatus: "unverified",
   role: "producer",
+  kyc: defaultKYC,
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -44,7 +66,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const stored = await AsyncStorage.getItem("atmos_user");
       if (stored) {
-        setUser(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        // Ensure kyc field exists for older stored users
+        if (!parsed.kyc) parsed.kyc = defaultKYC;
+        setUser(parsed);
       }
     } catch {
       // ignore
@@ -54,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function login(phone: string) {
-    const userData: User = { ...MOCK_USER, phone };
+    const userData: User = { ...MOCK_USER, phone, kyc: defaultKYC };
     await AsyncStorage.setItem("atmos_user", JSON.stringify(userData));
     setUser(userData);
   }
@@ -67,20 +92,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   function updateUser(updates: Partial<User>) {
     if (!user) return;
     const updated = { ...user, ...updates };
+    // Recompute kycStatus based on sub-documents
+    const kycValues = Object.values(updated.kyc ?? {});
+    const allVerified = kycValues.every((d) => d.status === "verified");
+    const anyPending = kycValues.some((d) => d.status === "pending" || d.status === "verified");
+    updated.kycStatus = allVerified ? "verified" : anyPending ? "pending" : "unverified";
     setUser(updated);
     AsyncStorage.setItem("atmos_user", JSON.stringify(updated));
   }
 
+  function updateKYC(type: KYCDocument["type"], updates: Partial<KYCDocument>) {
+    if (!user) return;
+    const kycKey = type === "aadhaar" ? "aadhaar" : type === "pan" ? "pan" : "farmDoc";
+    const newKyc = {
+      ...user.kyc,
+      [kycKey]: { ...(user.kyc[kycKey] ?? {}), ...updates, type },
+    };
+    updateUser({ kyc: newKyc });
+  }
+
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAuthenticated: !!user,
-        login,
-        logout,
-        updateUser,
-      }}
+      value={{ user, isLoading, isAuthenticated: !!user, login, logout, updateUser, updateKYC }}
     >
       {children}
     </AuthContext.Provider>

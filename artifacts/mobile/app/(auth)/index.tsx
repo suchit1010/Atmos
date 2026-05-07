@@ -4,8 +4,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React, { useState } from "react";
 import {
   Image,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +17,7 @@ import {
 } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { AtmosButton } from "@/components/AtmosButton";
+import { LinearGradient } from "expo-linear-gradient";
 
 const COUNTRY_CODES = [
   { code: "+91", flag: "🇮🇳", name: "India" },
@@ -38,59 +41,68 @@ export default function AuthScreen() {
       setLoading(false);
       router.push({
         pathname: "/(auth)/otp",
-        params: { phone: selectedCountry.code + phone },
+        params: { phone: selectedCountry.code + " " + phone },
       });
     }, 800);
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Splash hero with forest background */}
+      <ImageBackground
+        source={require("@/assets/images/splash_bg.png")}
+        style={styles.splashBg}
+        resizeMode="cover"
       >
-        <View style={styles.logoSection}>
-          <View style={[styles.logoContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <LinearGradient
+          colors={["transparent", "rgba(12,30,12,0.7)", colors.background]}
+          style={styles.splashGradient}
+        />
+        <View style={[styles.logoSection, { paddingTop: insets.top + 40 }]}>
+          <View style={[styles.logoRing, { borderColor: colors.primary }]}>
             <Image
               source={require("@/assets/images/icon.png")}
               style={styles.logo}
               resizeMode="contain"
             />
           </View>
-          <Text style={[styles.appName, { color: colors.foreground }]}>ATMOS</Text>
-          <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
-            Private. Verifiable. Instant. Global.
-          </Text>
-          <View style={styles.pillRow}>
-            {["AI Verified", "ZK Privacy", "Solana"].map((t) => (
-              <View key={t} style={[styles.pill, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                <Text style={[styles.pillText, { color: colors.primary }]}>{t}</Text>
-              </View>
-            ))}
-          </View>
+          <Text style={styles.appName}>ATMOS</Text>
+          <Text style={styles.appSub}>Protocol</Text>
+          <Text style={styles.tagline}>Private. Verifiable. Instant. Global.</Text>
+          <Text style={styles.tagline2}>Real-world climate action → Carbon assets in 24 hours</Text>
         </View>
+      </ImageBackground>
 
-        <View style={styles.form}>
-          <Text style={[styles.welcomeTitle, { color: colors.foreground }]}>Welcome to ATMOS</Text>
-          <Text style={[styles.welcomeSub, { color: colors.mutedForeground }]}>Sign in to continue</Text>
+      {/* Auth form */}
+      <KeyboardAvoidingView
+        style={styles.formWrapper}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={[styles.formContent, { paddingBottom: insets.bottom + 24 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={[styles.welcomeTitle, { color: colors.foreground }]}>
+            Welcome to ATMOS
+          </Text>
+          <Text style={[styles.welcomeSub, { color: colors.mutedForeground }]}>
+            Sign in to continue
+          </Text>
 
+          {/* Phone input */}
           <View style={[styles.phoneRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <TouchableOpacity
               style={styles.countryBtn}
               onPress={() => setShowCountryPicker(!showCountryPicker)}
             >
               <Text style={styles.flag}>{selectedCountry.flag}</Text>
-              <Text style={[styles.code, { color: colors.foreground }]}>{selectedCountry.code}</Text>
-              <Feather name="chevron-down" size={14} color={colors.mutedForeground} />
+              <Text style={[styles.codeText, { color: colors.foreground }]}>
+                {selectedCountry.code}
+              </Text>
+              <Feather name="chevron-down" size={13} color={colors.mutedForeground} />
             </TouchableOpacity>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={[styles.phoneDivider, { backgroundColor: colors.border }]} />
             <TextInput
               style={[styles.phoneInput, { color: colors.foreground }]}
               value={phone}
@@ -103,19 +115,16 @@ export default function AuthScreen() {
           </View>
 
           {showCountryPicker && (
-            <View style={[styles.countryDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.dropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {COUNTRY_CODES.map((c) => (
                 <TouchableOpacity
                   key={c.code}
-                  style={styles.countryItem}
-                  onPress={() => {
-                    setSelectedCountry(c);
-                    setShowCountryPicker(false);
-                  }}
+                  style={[styles.dropdownItem, { borderBottomColor: colors.border }]}
+                  onPress={() => { setSelectedCountry(c); setShowCountryPicker(false); }}
                 >
                   <Text style={styles.flag}>{c.flag}</Text>
-                  <Text style={[styles.countryName, { color: colors.foreground }]}>{c.name}</Text>
-                  <Text style={[styles.code, { color: colors.mutedForeground }]}>{c.code}</Text>
+                  <Text style={[styles.dropdownName, { color: colors.foreground }]}>{c.name}</Text>
+                  <Text style={[styles.codeText, { color: colors.mutedForeground }]}>{c.code}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -126,7 +135,6 @@ export default function AuthScreen() {
             onPress={handleContinue}
             loading={loading}
             disabled={phone.length < 7}
-            style={{ marginTop: 8 }}
           />
 
           <View style={styles.orRow}>
@@ -137,15 +145,15 @@ export default function AuthScreen() {
 
           <View style={styles.socialRow}>
             {[
-              { icon: "mail", label: "Google" },
-              { icon: "smartphone", label: "Apple" },
+              { icon: "mail" as const, label: "Continue with Google" },
+              { icon: "smartphone" as const, label: "Continue with Apple" },
             ].map((s) => (
               <TouchableOpacity
                 key={s.label}
                 style={[styles.socialBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push("/(auth)/otp" as any)}
               >
-                <Feather name={s.icon as any} size={18} color={colors.foreground} />
+                <Feather name={s.icon} size={16} color={colors.foreground} />
                 <Text style={[styles.socialLabel, { color: colors.foreground }]}>{s.label}</Text>
               </TouchableOpacity>
             ))}
@@ -154,68 +162,81 @@ export default function AuthScreen() {
           <Text style={[styles.disclaimer, { color: colors.mutedForeground }]}>
             No passwords. No KYC friction.{"\n"}Privacy by design.
           </Text>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    gap: 32,
+  splashBg: {
+    height: 320,
+    width: "100%",
+  },
+  splashGradient: {
+    ...StyleSheet.absoluteFillObject,
   },
   logoSection: {
     alignItems: "center",
-    gap: 12,
+    gap: 6,
+    paddingHorizontal: 24,
   },
-  logoContainer: {
+  logoRing: {
     width: 80,
     height: 80,
     borderRadius: 24,
-    borderWidth: 1,
+    borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(12,30,12,0.8)",
+    marginBottom: 8,
   },
   logo: {
-    width: 60,
-    height: 60,
+    width: 56,
+    height: 56,
   },
   appName: {
     fontFamily: "Inter_700Bold",
-    fontSize: 28,
-    letterSpacing: 4,
+    fontSize: 32,
+    letterSpacing: 6,
+    color: "#FFFFFF",
   },
-  tagline: {
+  appSub: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
+    color: "#8BAA8B",
+    letterSpacing: 2,
+    marginTop: -4,
+  },
+  tagline: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    color: "#FFFFFF",
+    marginTop: 8,
+  },
+  tagline2: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: "#8BAA8B",
     textAlign: "center",
   },
-  pillRow: {
-    flexDirection: "row",
-    gap: 8,
+  formWrapper: {
+    flex: 1,
+    marginTop: -32,
   },
-  pill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  pillText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 11,
-  },
-  form: {
+  formContent: {
+    paddingHorizontal: 20,
     gap: 12,
   },
   welcomeTitle: {
     fontFamily: "Inter_700Bold",
     fontSize: 22,
+    marginBottom: 2,
   },
   welcomeSub: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
+    marginBottom: 4,
   },
   phoneRow: {
     flexDirection: "row",
@@ -228,40 +249,38 @@ const styles = StyleSheet.create({
   countryBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 5,
     paddingHorizontal: 12,
   },
-  flag: {
-    fontSize: 20,
-  },
-  code: {
+  flag: { fontSize: 20 },
+  codeText: {
     fontFamily: "Inter_500Medium",
     fontSize: 14,
   },
-  divider: {
+  phoneDivider: {
     width: 1,
     height: "60%",
-    marginHorizontal: 4,
   },
   phoneInput: {
     flex: 1,
     fontFamily: "Inter_400Regular",
     fontSize: 16,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
   },
-  countryDropdown: {
+  dropdown: {
     borderRadius: 12,
     borderWidth: 1,
     overflow: "hidden",
   },
-  countryItem: {
+  dropdownItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
+    borderBottomWidth: 1,
   },
-  countryName: {
+  dropdownName: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
     flex: 1,
@@ -270,29 +289,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginVertical: 4,
   },
-  line: {
-    flex: 1,
-    height: 1,
-  },
+  line: { flex: 1, height: 1 },
   orText: {
     fontFamily: "Inter_400Regular",
     fontSize: 12,
   },
   socialRow: {
-    flexDirection: "row",
     gap: 10,
   },
   socialBtn: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+    gap: 10,
     borderRadius: 12,
     borderWidth: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   socialLabel: {
     fontFamily: "Inter_500Medium",
@@ -303,6 +316,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: "center",
     lineHeight: 18,
-    marginTop: 8,
+    marginTop: 4,
   },
 });

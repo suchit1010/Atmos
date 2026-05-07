@@ -18,7 +18,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useAtmos } from "@/context/AtmosContext";
 
 const SPARKLINE_DATA = [1.2, 1.5, 1.3, 1.8, 2.1, 1.9, 2.3, 2.46];
-const PRICE_DATA = [185, 192, 188, 201, 215, 209, 220, 223];
 
 export default function DashboardScreen() {
   const colors = useColors();
@@ -26,30 +25,18 @@ export default function DashboardScreen() {
   const { user } = useAuth();
   const { projects, totalCO2, totalValue } = useAtmos();
 
-  const activeProjects = projects.filter((p) => ["verifying", "verified", "minted"].includes(p.status)).length;
-  const pendingPayments = 3;
-  const creditsRetired = 120;
-
-  const recentActivity = [
-    { id: "1", type: "minted", label: "Asset Created", sub: "Biochar Batch #824-018", value: "2.46 tCO₂e", date: "May 20" },
-    { id: "2", type: "payment", label: "Payment Received", sub: "Carbon Credit Sale", value: "+₹12,880", date: "May 18" },
-    { id: "3", type: "verified", label: "Project Verified", sub: "Agroforestry Plot A7", value: "1.88 tCO₂e", date: "May 16" },
-  ];
-
-  const activityIcons: Record<string, string> = {
-    minted: "check-circle",
-    payment: "dollar-sign",
-    verified: "shield",
-  };
-
-  const activityColors: Record<string, string> = {
-    minted: colors.primary,
-    payment: "#00D4FF",
-    verified: "#FFD700",
-  };
+  const activeProjects = projects.filter((p) =>
+    ["verifying", "verified", "minted"].includes(p.status)
+  ).length;
 
   const topPad = Platform.OS === "web" ? insets.top + 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? insets.bottom + 34 : insets.bottom + 70;
+  const bottomPad = Platform.OS === "web" ? insets.bottom + 34 : insets.bottom + 72;
+
+  const recentActivity = [
+    { id: "1", icon: "check-circle" as const, label: "Asset Created", sub: "Biochar Batch #824-018", value: "2.46 tCO₂e", color: "#2ECC71", date: "May 20" },
+    { id: "2", icon: "dollar-sign" as const, label: "Payment Received", sub: "Biochar Production", value: "+₹12,880", color: "#2ECC71", date: "May 18" },
+    { id: "3", icon: "shield" as const, label: "Project Verified", sub: "Biochar Production", value: "", color: "#F39C12", date: "May 18" },
+  ];
 
   return (
     <ScrollView
@@ -57,52 +44,53 @@ export default function DashboardScreen() {
       contentContainerStyle={[styles.content, { paddingTop: topPad + 16, paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
     >
+      {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={[styles.greeting, { color: colors.mutedForeground }]}>Hi, {user?.name?.split(" ")[0] ?? "User"}</Text>
-          <Text style={[styles.goal, { color: colors.foreground }]}>Goal: 10 CO₂</Text>
+          <Text style={[styles.greeting, { color: colors.foreground }]}>
+            Hi, {user?.name?.split(" ")[0] ?? "User"}
+          </Text>
         </View>
-        <Pressable
-          style={[styles.notifBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => {}}
-        >
-          <Feather name="bell" size={20} color={colors.foreground} />
-          <View style={[styles.notifDot, { backgroundColor: colors.primary }]} />
-        </Pressable>
+        <View style={[styles.goalPill, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+          <Text style={[styles.goalText, { color: colors.mutedForeground }]}>Goal: </Text>
+          <Text style={[styles.goalValue, { color: colors.primary }]}>10 CO₂</Text>
+        </View>
       </View>
 
+      {/* Hero card */}
       <AtmosCard style={styles.heroCard}>
         <Text style={[styles.heroLabel, { color: colors.mutedForeground }]}>Your Carbon Assets</Text>
         <Text style={[styles.heroValue, { color: colors.foreground }]}>
           {totalCO2.toFixed(2)}{" "}
           <Text style={[styles.heroUnit, { color: colors.mutedForeground }]}>tCO₂e</Text>
         </Text>
-        <View style={styles.heroSubRow}>
-          <Text style={[styles.heroSubValue, { color: colors.secondary }]}>
-            ₹{totalValue.toLocaleString("en-IN")} / ${(totalValue / 84).toFixed(0)} USDC
-          </Text>
-        </View>
-        <View style={styles.heroDelta}>
-          <Feather name="trending-up" size={14} color={colors.primary} />
-          <Text style={[styles.deltaText, { color: colors.primary }]}>+₹1,610 (+2.4%) 24h</Text>
-        </View>
-        <SparklineChart data={SPARKLINE_DATA} width={280} height={60} />
+        <Text style={[styles.heroSub, { color: colors.primary }]}>
+          +₹{totalValue.toLocaleString("en-IN")} / +${(totalValue / 84).toFixed(0)} USDC
+        </Text>
+        <Text style={[styles.heroDelta, { color: colors.mutedForeground }]}>
+          24h change:{" "}
+          <Text style={{ color: colors.primary }}>+₹610 (+2.4%)</Text>
+        </Text>
+        <SparklineChart data={SPARKLINE_DATA} width={300} height={64} />
       </AtmosCard>
 
+      {/* Stat cards */}
       <View style={styles.statsRow}>
-        {[
-          { label: "Active Projects", value: String(activeProjects), icon: "folder", color: colors.primary },
-          { label: "Pending Payments", value: String(pendingPayments), icon: "clock", color: colors.secondary },
-          { label: "Credits Retired", value: String(creditsRetired), icon: "award", color: "#FFD700" },
-        ].map((s) => (
-          <AtmosCard key={s.label} style={styles.statCard} padding={12}>
-            <Feather name={s.icon as any} size={18} color={s.color} />
-            <Text style={[styles.statValue, { color: colors.foreground }]}>{s.value}</Text>
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{s.label}</Text>
-          </AtmosCard>
-        ))}
+        <AtmosCard style={styles.statCard} padding={14}>
+          <Text style={[styles.statValue, { color: colors.foreground }]}>{activeProjects}</Text>
+          <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Active{"\n"}Projects</Text>
+        </AtmosCard>
+        <AtmosCard style={styles.statCard} padding={14}>
+          <Text style={[styles.statValue, { color: colors.foreground }]}>₹12,880</Text>
+          <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Pending{"\n"}Payments</Text>
+        </AtmosCard>
+        <AtmosCard style={styles.statCard} padding={14}>
+          <Text style={[styles.statValue, { color: colors.foreground }]}>120</Text>
+          <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Credits{"\n"}Retired</Text>
+        </AtmosCard>
       </View>
 
+      {/* Recent Activity */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Recent Activity</Text>
@@ -110,28 +98,38 @@ export default function DashboardScreen() {
             <Text style={[styles.seeAll, { color: colors.primary }]}>View All</Text>
           </Pressable>
         </View>
+
         {recentActivity.map((a) => (
-          <AtmosCard key={a.id} style={styles.activityCard} padding={12}>
-            <View style={[styles.activityIcon, { backgroundColor: colors.muted }]}>
-              <Feather name={activityIcons[a.type] as any} size={16} color={activityColors[a.type]} />
+          <Pressable key={a.id} style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}>
+            <View style={[styles.activityRow, { borderBottomColor: colors.border }]}>
+              <View style={[styles.activityDot, { backgroundColor: a.color + "22" }]}>
+                <Feather name={a.icon} size={15} color={a.color} />
+              </View>
+              <View style={styles.activityInfo}>
+                <Text style={[styles.activityLabel, { color: colors.foreground }]}>{a.label}</Text>
+                <Text style={[styles.activitySub, { color: colors.mutedForeground }]}>{a.sub}</Text>
+              </View>
+              <View style={styles.activityRight}>
+                {a.value ? (
+                  <Text style={[styles.activityValue, { color: colors.primary }]}>{a.value}</Text>
+                ) : null}
+                <Text style={[styles.activityDate, { color: colors.mutedForeground }]}>{a.date}</Text>
+              </View>
+              <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
             </View>
-            <View style={styles.activityInfo}>
-              <Text style={[styles.activityLabel, { color: colors.foreground }]}>{a.label}</Text>
-              <Text style={[styles.activitySub, { color: colors.mutedForeground }]}>{a.sub}</Text>
-            </View>
-            <View style={styles.activityRight}>
-              <Text style={[styles.activityValue, { color: colors.primary }]}>{a.value}</Text>
-              <Text style={[styles.activityDate, { color: colors.mutedForeground }]}>{a.date}</Text>
-            </View>
-          </AtmosCard>
+          </Pressable>
         ))}
       </View>
 
+      {/* Create CTA */}
       <Pressable
-        style={[styles.createBtn, { backgroundColor: colors.primary }]}
+        style={({ pressed }) => [
+          styles.createBtn,
+          { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
+        ]}
         onPress={() => router.push("/project/create")}
       >
-        <Feather name="plus" size={20} color={colors.primaryForeground} />
+        <Feather name="plus" size={18} color={colors.primaryForeground} />
         <Text style={[styles.createBtnText, { color: colors.primaryForeground }]}>
           Create New Carbon Asset
         </Text>
@@ -141,70 +139,52 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    paddingHorizontal: 20,
-    gap: 16,
-  },
+  content: { paddingHorizontal: 20, gap: 16 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
   },
   greeting: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 14,
-  },
-  goal: {
     fontFamily: "Inter_700Bold",
-    fontSize: 20,
+    fontSize: 24,
   },
-  notifBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    borderWidth: 1,
+  goalPill: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
   },
-  notifDot: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+  goalText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
   },
-  heroCard: {
-    gap: 4,
+  goalValue: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
   },
+  heroCard: { gap: 4 },
   heroLabel: {
     fontFamily: "Inter_400Regular",
     fontSize: 13,
   },
   heroValue: {
     fontFamily: "Inter_700Bold",
-    fontSize: 36,
+    fontSize: 40,
+    lineHeight: 48,
   },
   heroUnit: {
-    fontSize: 18,
     fontFamily: "Inter_400Regular",
+    fontSize: 20,
   },
-  heroSubRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  heroSubValue: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 14,
+  heroSub: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 15,
   },
   heroDelta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  deltaText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_400Regular",
     fontSize: 13,
   },
   statsRow: {
@@ -214,24 +194,22 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     gap: 4,
-    alignItems: "center",
   },
   statValue: {
     fontFamily: "Inter_700Bold",
-    fontSize: 20,
+    fontSize: 16,
   },
   statLabel: {
     fontFamily: "Inter_400Regular",
-    fontSize: 10,
-    textAlign: "center",
+    fontSize: 11,
+    lineHeight: 15,
   },
-  section: {
-    gap: 10,
-  },
+  section: { gap: 0 },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 8,
   },
   sectionTitle: {
     fontFamily: "Inter_600SemiBold",
@@ -241,21 +219,21 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
     fontSize: 13,
   },
-  activityCard: {
+  activityRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
-  activityIcon: {
-    width: 36,
-    height: 36,
+  activityDot: {
+    width: 34,
+    height: 34,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
-  activityInfo: {
-    flex: 1,
-  },
+  activityInfo: { flex: 1 },
   activityLabel: {
     fontFamily: "Inter_500Medium",
     fontSize: 13,
@@ -264,9 +242,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 11,
   },
-  activityRight: {
-    alignItems: "flex-end",
-  },
+  activityRight: { alignItems: "flex-end" },
   activityValue: {
     fontFamily: "Inter_600SemiBold",
     fontSize: 13,
@@ -282,7 +258,6 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 16,
     borderRadius: 14,
-    marginTop: 4,
   },
   createBtnText: {
     fontFamily: "Inter_600SemiBold",

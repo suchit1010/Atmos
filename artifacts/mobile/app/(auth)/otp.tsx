@@ -79,7 +79,7 @@ export default function OTPScreen() {
     await new Promise((r) => setTimeout(r, 1200));
     if (code === "000000" || code.length === 6) {
       await login(phone ?? "");
-      router.replace("/(tabs)/");
+      router.replace("/(tabs)/" as any);
     } else {
       shake();
       setError("Invalid OTP. Try 000000 for demo.");

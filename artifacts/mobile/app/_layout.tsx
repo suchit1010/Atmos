@@ -27,7 +27,7 @@ function RootLayoutNav() {
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
-        router.replace("/(auth)/");
+        router.replace("/(auth)/" as any);
       }
     }
   }, [isAuthenticated, isLoading]);
@@ -43,6 +43,7 @@ function RootLayoutNav() {
       <Stack.Screen name="asset/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="payment/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="settlement/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="kyc" options={{ headerShown: false }} />
     </Stack>
   );
 }
