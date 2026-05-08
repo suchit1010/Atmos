@@ -25,16 +25,7 @@
       "favicon": "./assets/images/favicon.png",
       "backgroundColor": "#07110B"
     },
-    "plugins": [
-      [
-        "expo-router",
-        {
-          "origin": "https://replit.com/"
-        }
-      ],
-      "expo-font",
-      "expo-web-browser"
-    ],
+    "plugins": ["expo-router", "expo-font", "expo-web-browser"],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
