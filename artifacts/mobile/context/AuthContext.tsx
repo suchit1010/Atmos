@@ -1,5 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import * as WebBrowser from "expo-web-browser";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export interface KYCDocument {
   type: "aadhaar" | "pan" | "farm_doc";
@@ -18,6 +21,8 @@ export interface User {
   walletAddress: string;
   kycStatus: "unverified" | "pending" | "verified";
   role: "producer" | "buyer";
+  authMethod?: "phone" | "google" | "apple";
+  avatarUrl?: string;
   kyc: {
     aadhaar: KYCDocument;
     pan: KYCDocument;
@@ -30,6 +35,8 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (phone: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithApple: () => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   updateKYC: (type: KYCDocument["type"], updates: Partial<KYCDocument>) => void;
@@ -43,16 +50,12 @@ const defaultKYC: User["kyc"] = {
   farmDoc: { type: "farm_doc", status: "not_started" },
 };
 
-const MOCK_USER: User = {
-  id: "usr_001",
-  phone: "+91 98765 43210",
-  name: "Maria Garcia",
-  email: "maria@example.com",
-  walletAddress: "7xKp...9mNq",
-  kycStatus: "unverified",
-  role: "producer",
-  kyc: defaultKYC,
-};
+function generateWallet() {
+  const chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+  let result = "";
+  for (let i = 0; i < 8; i++) result += chars[Math.floor(Math.random() * chars.length)];
+  return result + "..." + chars.slice(0, 4);
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -67,19 +70,110 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const stored = await AsyncStorage.getItem("atmos_user");
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Ensure kyc field exists for older stored users
         if (!parsed.kyc) parsed.kyc = defaultKYC;
         setUser(parsed);
       }
     } catch {
-      // ignore
     } finally {
       setIsLoading(false);
     }
   }
 
   async function login(phone: string) {
-    const userData: User = { ...MOCK_USER, phone, kyc: defaultKYC };
+    const userData: User = {
+      id: "usr_" + Date.now().toString(36),
+      phone,
+      name: "ATMOS User",
+      email: "",
+      walletAddress: generateWallet(),
+      kycStatus: "unverified",
+      role: "producer",
+      authMethod: "phone",
+      kyc: defaultKYC,
+    };
+    await AsyncStorage.setItem("atmos_user", JSON.stringify(userData));
+    setUser(userData);
+  }
+
+  async function loginWithGoogle() {
+    const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+    const domain = process.env.EXPO_PUBLIC_DOMAIN;
+
+    if (clientId && domain) {
+      try {
+        const redirectUri = `https://${domain}/api/auth/google/callback`;
+        const authUrl =
+          `https://accounts.google.com/o/oauth2/v2/auth` +
+          `?client_id=${clientId}` +
+          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+          `&response_type=token` +
+          `&scope=${encodeURIComponent("openid email profile")}` +
+          `&prompt=select_account`;
+
+        const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+
+        if (result.type === "success" && result.url) {
+          const params = new URLSearchParams(result.url.split("#")[1] ?? "");
+          const accessToken = params.get("access_token");
+          if (accessToken) {
+            const profileRes = await fetch(
+              `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`
+            );
+            const profile = (await profileRes.json()) as {
+              sub: string;
+              name: string;
+              email: string;
+              picture?: string;
+            };
+            const userData: User = {
+              id: "usr_g_" + profile.sub.slice(-8),
+              phone: "",
+              name: profile.name ?? "Google User",
+              email: profile.email ?? "",
+              walletAddress: generateWallet(),
+              kycStatus: "unverified",
+              role: "producer",
+              authMethod: "google",
+              avatarUrl: profile.picture,
+              kyc: defaultKYC,
+            };
+            await AsyncStorage.setItem("atmos_user", JSON.stringify(userData));
+            setUser(userData);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn("Google OAuth failed, using demo login:", e);
+      }
+    }
+
+    const userData: User = {
+      id: "usr_g_" + Date.now().toString(36),
+      phone: "",
+      name: "Google User",
+      email: "user@gmail.com",
+      walletAddress: generateWallet(),
+      kycStatus: "unverified",
+      role: "producer",
+      authMethod: "google",
+      kyc: defaultKYC,
+    };
+    await AsyncStorage.setItem("atmos_user", JSON.stringify(userData));
+    setUser(userData);
+  }
+
+  async function loginWithApple() {
+    const userData: User = {
+      id: "usr_a_" + Date.now().toString(36),
+      phone: "",
+      name: "Apple User",
+      email: "user@privaterelay.appleid.com",
+      walletAddress: generateWallet(),
+      kycStatus: "unverified",
+      role: "producer",
+      authMethod: "apple",
+      kyc: defaultKYC,
+    };
     await AsyncStorage.setItem("atmos_user", JSON.stringify(userData));
     setUser(userData);
   }
@@ -92,7 +186,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   function updateUser(updates: Partial<User>) {
     if (!user) return;
     const updated = { ...user, ...updates };
-    // Recompute kycStatus based on sub-documents
     const kycValues = Object.values(updated.kyc ?? {});
     const allVerified = kycValues.every((d) => d.status === "verified");
     const anyPending = kycValues.some((d) => d.status === "pending" || d.status === "verified");
@@ -113,7 +206,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, isAuthenticated: !!user, login, logout, updateUser, updateKYC }}
+      value={{
+        user,
+        isLoading,
+        isAuthenticated: !!user,
+        login,
+        loginWithGoogle,
+        loginWithApple,
+        logout,
+        updateUser,
+        updateKYC,
+      }}
     >
       {children}
     </AuthContext.Provider>

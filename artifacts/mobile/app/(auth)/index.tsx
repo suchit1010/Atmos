@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React, { useState } from "react";
 import {
@@ -18,6 +19,9 @@ import {
 import { useColors } from "@/hooks/useColors";
 import { AtmosButton } from "@/components/AtmosButton";
 import { LinearGradient } from "expo-linear-gradient";
+import { useAuth } from "@/context/AuthContext";
+
+WebBrowser.maybeCompleteAuthSession();
 
 const COUNTRY_CODES = [
   { code: "+91", flag: "🇮🇳", name: "India" },
@@ -29,10 +33,13 @@ const COUNTRY_CODES = [
 export default function AuthScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { loginWithGoogle, loginWithApple } = useAuth();
   const [phone, setPhone] = useState("");
   const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
 
   function handleContinue() {
     if (phone.length < 7) return;
@@ -46,9 +53,30 @@ export default function AuthScreen() {
     }, 800);
   }
 
+  async function handleGoogleLogin() {
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+    } catch (e) {
+      console.warn("Google login error:", e);
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
+  async function handleAppleLogin() {
+    setAppleLoading(true);
+    try {
+      await loginWithApple();
+    } catch (e) {
+      console.warn("Apple login error:", e);
+    } finally {
+      setAppleLoading(false);
+    }
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Splash hero with forest background */}
       <ImageBackground
         source={require("@/assets/images/splash_bg.png")}
         style={styles.splashBg}
@@ -73,7 +101,6 @@ export default function AuthScreen() {
         </View>
       </ImageBackground>
 
-      {/* Auth form */}
       <KeyboardAvoidingView
         style={styles.formWrapper}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -90,7 +117,6 @@ export default function AuthScreen() {
             Sign in to continue
           </Text>
 
-          {/* Phone input */}
           <View style={[styles.phoneRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <TouchableOpacity
               style={styles.countryBtn}
@@ -144,19 +170,22 @@ export default function AuthScreen() {
           </View>
 
           <View style={styles.socialRow}>
-            {[
-              { icon: "mail" as const, label: "Continue with Google" },
-              { icon: "smartphone" as const, label: "Continue with Apple" },
-            ].map((s) => (
-              <TouchableOpacity
-                key={s.label}
-                style={[styles.socialBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => router.push("/(auth)/otp" as any)}
-              >
-                <Feather name={s.icon} size={16} color={colors.foreground} />
-                <Text style={[styles.socialLabel, { color: colors.foreground }]}>{s.label}</Text>
-              </TouchableOpacity>
-            ))}
+            <SocialButton
+              icon="mail"
+              label={googleLoading ? "Signing in..." : "Continue with Google"}
+              onPress={handleGoogleLogin}
+              loading={googleLoading}
+              colors={colors}
+              accentColor={colors.secondary}
+            />
+            <SocialButton
+              icon="smartphone"
+              label={appleLoading ? "Signing in..." : "Continue with Apple"}
+              onPress={handleAppleLogin}
+              loading={appleLoading}
+              colors={colors}
+              accentColor={colors.mutedForeground}
+            />
           </View>
 
           <Text style={[styles.disclaimer, { color: colors.mutedForeground }]}>
@@ -165,6 +194,40 @@ export default function AuthScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
+  );
+}
+
+function SocialButton({
+  icon,
+  label,
+  onPress,
+  loading,
+  colors,
+  accentColor,
+}: {
+  icon: "mail" | "smartphone";
+  label: string;
+  onPress: () => void;
+  loading: boolean;
+  colors: ReturnType<typeof useColors>;
+  accentColor: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={loading}
+      style={({ pressed }) => [
+        styles.socialBtn,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          opacity: pressed || loading ? 0.7 : 1,
+        },
+      ]}
+    >
+      <Feather name={loading ? "loader" : icon} size={16} color={accentColor} />
+      <Text style={[styles.socialLabel, { color: colors.foreground }]}>{label}</Text>
+    </Pressable>
   );
 }
 

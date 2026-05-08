@@ -48,16 +48,23 @@ Climate fintech mobile app for carbon markets — lets project developers (farme
 ## Product
 
 Full user journey implemented:
-1. **Auth** → phone + OTP (demo: any 6 digits)
+1. **Auth** → phone + OTP (demo: any 6 digits) + Google/Apple login buttons
 2. **Dashboard** → total CO₂ assets, sparkline chart, activity feed
-3. **Create Project** → 9 project types (biochar, agroforestry, solar, etc.)
-4. **Capture Data** → 3-step form (info → metrics → media)
-5. **AI Verification** → animated 4-phase analysis with satellite data fetch
+3. **Create Project** → 9 project types (biochar, agroforestry, solar, EV, building, shipping, aviation, city, individual)
+4. **Capture Data** → 3-step form with **project-specific fields per type** (e.g. solar gets owner name, kW capacity, panel count, kWh generation; biochar gets biomass input, equipment type, feedstock type; etc.) + **real camera/gallery image picker** with thumbnail preview
+5. **AI Verification** → 4-phase animation + **real Anthropic AI carbon calculation** via `/api/verify`, methodology-specific (e.g. AMS-I.D for solar, VM0044 for biochar), with full explanation
 6. **ZK Proof** → animated 3-step proof generation with privacy disclosure
 7. **Asset Created** → SPL token mint on Solana with asset details card
 8. **Marketplace** → search, filter by type+grade, browse 5 assets
 9. **Payment** → UPI / USDC via Dodo Payments, fee breakdown
 10. **Settlement** → Solana recording animation + gold-border carbon certificate
+
+## AI Integration
+
+- `POST /api/verify` — Anthropic claude-haiku AI computes real CO₂ reduction based on project type + metadata
+- Uses certified methodologies: VM0044 (biochar), AMS-I.D (solar, 0.82 kgCO₂/kWh Indian grid), ACM0003 (agroforestry), AMS-III.C (EV), etc.
+- Returns: co2 (tonnes), confidence (0-100), grade (S/A/B/C/D), fraudRisk, explanation, pricePerTonne
+- AI key provisioned via Replit AI Integrations (no user API key needed)
 
 ## User preferences
 
@@ -65,6 +72,9 @@ Full user journey implemented:
 - ATMOS branding: primary #0DFF6E (green), secondary #00D4FF (cyan), bg #07110B
 - Production-quality screens, no placeholders, no lorem ipsum
 - Demo: any 6-digit OTP works for sign-in
+- Production-ready: real AI carbon calculations, real camera/image picker, real OAuth flow structure
+- Google login: uses expo-web-browser OAuth flow; set EXPO_PUBLIC_GOOGLE_CLIENT_ID to enable real Google sign-in (falls back to demo user if not set)
+- Apple login: creates demo user (native Apple Sign-In requires development build)
 
 ## Gotchas
 

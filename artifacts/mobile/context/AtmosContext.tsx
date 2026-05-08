@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 export interface Project {
   id: string;
   name: string;
-  type: "biochar" | "agroforestry" | "solar" | "ev" | "building" | "shipping";
+  type: "biochar" | "agroforestry" | "solar" | "ev" | "building" | "shipping" | "aviation" | "city" | "individual";
   location: string;
   status: "draft" | "verifying" | "verified" | "minted" | "sold";
   co2?: number;
@@ -16,6 +16,7 @@ export interface Project {
   createdAt: string;
   metadata: Record<string, string | number>;
   mediaCount: number;
+  mediaUris?: string[];
 }
 
 export interface Asset {
