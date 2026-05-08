@@ -1,0 +1,151 @@
+import axios, { AxiosInstance, AxiosError } from 'axios';
+import * as SecureStore from 'expo-secure-store';
+
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+
+// ─── Axios instance ───────────────────────────────────
+const api: AxiosInstance = axios.create({
+  baseURL: BASE_URL,
+  timeout: 30000,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// ─── Token helpers ────────────────────────────────────
+export const TokenStore = {
+  async getAccess(): Promise<string | null> {
+    return SecureStore.getItemAsync('karta_access_token');
+  },
+  async getRefresh(): Promise<string | null> {
+    return SecureStore.getItemAsync('karta_refresh_token');
+  },
+  async set(access: string, refresh: string): Promise<void> {
+    await SecureStore.setItemAsync('karta_access_token', access);
+    await SecureStore.setItemAsync('karta_refresh_token', refresh);
+  },
+  async clear(): Promise<void> {
+    await SecureStore.deleteItemAsync('karta_access_token');
+    await SecureStore.deleteItemAsync('karta_refresh_token');
+  },
+};
+
+// ─── Request interceptor: attach token ───────────────
+api.interceptors.request.use(async (config) => {
+  const token = await TokenStore.getAccess();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// ─── Response interceptor: refresh on 401 ────────────
+let refreshing = false;
+api.interceptors.response.use(
+  (res) => res,
+  async (err: AxiosError) => {
+    if (err.response?.status === 401 && !refreshing) {
+      refreshing = true;
+      try {
+        const refresh = await TokenStore.getRefresh();
+        if (refresh) {
+          const { data } = await axios.post(`${BASE_URL}/api/v1/auth/token/refresh`, { refreshToken: refresh });
+          const oldRefresh = await TokenStore.getRefresh();
+          await TokenStore.set(data.accessToken, oldRefresh || '');
+          if (err.config) {
+            err.config.headers.Authorization = `Bearer ${data.accessToken}`;
+            return api.request(err.config);
+          }
+        }
+      } catch {
+        await TokenStore.clear();
+      } finally {
+        refreshing = false;
+      }
+    }
+    return Promise.reject(err);
+  }
+);
+
+// ─── API methods ──────────────────────────────────────
+export const AuthAPI = {
+  sendOTP: (phoneNumber: string, countryCode: string) =>
+    api.post('/api/v1/auth/otp/send', { phoneNumber, countryCode }),
+
+  verifyOTP: (phoneNumber: string, countryCode: string, otp: string, deviceFingerprint: string) =>
+    api.post('/api/v1/auth/otp/verify', { phoneNumber, countryCode, otp, deviceFingerprint }),
+
+  refreshToken: (refreshToken: string) =>
+    api.post('/api/v1/auth/token/refresh', { refreshToken }),
+
+  getMe: () => api.get('/api/v1/auth/me'),
+};
+
+export const ProjectsAPI = {
+  create: (body: any) => api.post('/api/v1/projects', body),
+
+  list: (params?: { page?: number; limit?: number; status?: string }) =>
+    api.get('/api/v1/projects', { params }),
+
+  get: (id: string) => api.get(`/api/v1/projects/${id}`),
+
+  analyze: (id: string) => api.post(`/api/v1/projects/${id}/analyze`),
+
+  mint: (id: string, listForSale: boolean, listPriceInr?: number) =>
+    api.post(`/api/v1/projects/${id}/mint`, { listForSale, listPriceInr }),
+
+  getProof: (id: string) => api.get(`/api/v1/projects/${id}/proof`),
+};
+
+export const MarketAPI = {
+  listings: (params?: any) => api.get('/api/v1/marketplace', { params }),
+  ticker:   ()             => api.get('/api/v1/marketplace/ticker'),
+  createListing: (body: any) => api.post('/api/v1/marketplace/listings', body),
+};
+
+export const PaymentAPI = {
+  createCheckout: (listingId: string, quantity: number) =>
+    api.post('/api/v1/payments/checkout', { listingId, quantity }),
+
+  getStatus: (sessionId: string) =>
+    api.get(`/api/v1/payments/${sessionId}`),
+
+  simulateSuccess: (sessionId: string) =>
+    api.post(`/api/v1/payments/${sessionId}/simulate-success`),
+};
+
+export const PortfolioAPI = {
+  get: () => api.get('/api/v1/portfolio'),
+  retireCredits: (body: any) => api.post('/api/v1/credits/retire', body),
+  certificates:  ()          => api.get('/api/v1/certificates'),
+};
+
+export const DashboardAPI = {
+  get: () => api.get('/api/v1/dashboard'),
+};
+
+export const ZkAPI = {
+  verify: (hash: string) => api.get(`/api/v1/proofs/${hash}/verify`),
+};
+
+export const HealthAPI = {
+  check: () => api.get('/health'),
+};
+
+// ─── WebSocket helper ─────────────────────────────────
+export function connectMRVWebSocket(
+  projectId: string,
+  token:     string,
+  onEvent:   (step: string, data: any) => void
+): WebSocket {
+  const wsUrl = BASE_URL.replace('http', 'ws') + `?projectId=${projectId}&token=${token}`;
+  const ws    = new WebSocket(wsUrl);
+
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      onEvent(msg.event?.split(':')?.[1] || msg.event, msg.data);
+    } catch { /* ignore parse errors */ }
+  };
+
+  ws.onerror = (e) => console.warn('WS error', e);
+  return ws;
+}
+
+export default api;
