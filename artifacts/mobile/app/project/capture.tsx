@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActionSheetIOS,
   Alert,
@@ -200,8 +200,29 @@ export default function CaptureDataScreen() {
     return true;
   }
 
+  const webFileInputRef = useRef<HTMLInputElement | null>(null);
+
   async function handleAddImage() {
     if (images.length >= 4) return;
+
+    if (Platform.OS === "web") {
+      if (!webFileInputRef.current) {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.onchange = (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0];
+          if (file) {
+            const uri = URL.createObjectURL(file);
+            setImages((prev) => [...prev, uri]);
+          }
+        };
+        webFileInputRef.current = input;
+      }
+      webFileInputRef.current.value = "";
+      webFileInputRef.current.click();
+      return;
+    }
 
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(

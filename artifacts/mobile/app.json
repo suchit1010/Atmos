@@ -22,7 +22,7 @@
       "package": "com.atmos.mobile"
     },
     "web": {
-      "favicon": "./assets/images/icon.png",
+      "favicon": "./assets/images/favicon.png",
       "backgroundColor": "#07110B"
     },
     "plugins": [
