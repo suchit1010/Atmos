@@ -46,3 +46,10 @@ Thumbs.db
 
 .cache/
 .local/
+
+# Sensitive assets and environment files
+attached_assets/
+.env
+.env.*
+secrets
+*.key
