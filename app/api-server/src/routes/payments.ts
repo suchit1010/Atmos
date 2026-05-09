@@ -6,6 +6,10 @@ const router = Router();
 const DODO_BASE_URL = "https://api.dodopayments.com";
 const DODO_API_KEY = process.env["DODO_API_KEY"] ?? "";
 const DODO_WEBHOOK_SECRET = process.env["DODO_WEBHOOK_SECRET"] ?? "";
+const DODO_MODE = process.env["DODO_MODE"] ?? "live";
+
+// Real Dodo product ID for ATMOS carbon assets
+const DODO_PRODUCT_ID = "pdt_0NeRjRfS1WBxeKVY8XD7f";
 
 const processedWebhookEventIds = new Set<string>();
 
@@ -64,6 +68,19 @@ router.post("/payments/dodo/create", async (req, res) => {
   }
 
   try {
+    if (DODO_MODE === "demo") {
+      res.json({
+        success: true,
+        paymentId: `dodo_demo_${Date.now()}`,
+        paymentUrl: `https://demo.atmos.local/payment-success?assetId=${assetId}`,
+        amount,
+        currency,
+        mock: true,
+        mode: "demo",
+      });
+      return;
+    }
+
     const payload = {
       billing: {
         city: "Mumbai",
@@ -80,7 +97,7 @@ router.post("/payments/dodo/create", async (req, res) => {
       },
       product_cart: [
         {
-          product_id: assetId,
+          product_id: DODO_PRODUCT_ID,
           quantity: quantity ?? 1,
         },
       ],
@@ -106,14 +123,15 @@ router.post("/payments/dodo/create", async (req, res) => {
 
     if (!response.ok) {
       req.log.error({ data, status: response.status }, "Dodo API error");
-      // Return mock payment URL for sandbox demo
+      // Return mock payment URL for demo fallback (still uses real product ID)
       res.json({
         success: true,
         paymentId: `dodo_${Date.now()}`,
-        paymentUrl: `https://checkout.dodopayments.com/pay/demo_${assetId}`,
+        paymentUrl: `https://checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${quantity ?? 1}&redirect_url=https://atmos.protocol/settlement?assetId=${assetId}`,
         amount,
         currency,
         mock: true,
+        mode: "fallback",
       });
       return;
     }
@@ -125,17 +143,19 @@ router.post("/payments/dodo/create", async (req, res) => {
       amount,
       currency,
       mock: false,
+      mode: "live",
     });
   } catch (err) {
     req.log.error({ err }, "Payment creation failed");
-    // Graceful fallback for demo
+    // Graceful fallback for demo (uses real product ID)
     res.json({
       success: true,
       paymentId: `dodo_demo_${Date.now()}`,
-      paymentUrl: `https://checkout.dodopayments.com/pay/demo_${assetId}`,
+      paymentUrl: `https://checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${quantity ?? 1}&redirect_url=https://atmos.protocol/settlement?assetId=${assetId}`,
       amount,
       currency,
       mock: true,
+      mode: "fallback",
     });
   }
 });

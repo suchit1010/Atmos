@@ -15,9 +15,13 @@ import { useColors } from "@/hooks/useColors";
 import { useAtmos } from "@/context/AtmosContext";
 import { AtmosCard } from "@/components/AtmosCard";
 
-const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
-  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
-  : "";
+function getApiBase(): string {
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (!domain) return "http://127.0.0.1:8080";
+  return domain.startsWith("http://") || domain.startsWith("https://") ? domain : `https://${domain}`;
+}
+
+const API_BASE = getApiBase();
 
 const PHASES = [
   { label: "Fetching satellite data", sub: "Sentinel-2 Imagery · NIR / Red — Live use", duration: 2500 },

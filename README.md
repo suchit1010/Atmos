@@ -115,6 +115,7 @@ These are the main runtime values expected by the apps and services:
 - `AI_INTEGRATIONS_ANTHROPIC_BASE_URL` - Base URL for the Anthropic integration.
 - `AI_INTEGRATIONS_ANTHROPIC_API_KEY` - API key for the Anthropic integration.
 - `DODO_API_KEY` - API key for Dodo payment session creation.
+- `DODO_MODE` - Set to `demo` to bypass live Dodo checkout during pitches and use the local success path.
 - Service-specific keys for auth, storage, and blockchain integrations.
 
 ## Status

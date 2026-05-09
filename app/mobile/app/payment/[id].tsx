@@ -19,9 +19,13 @@ import { useAuth } from "@/context/AuthContext";
 import { AtmosCard } from "@/components/AtmosCard";
 import { GradeTag } from "@/components/GradeTag";
 
-const API_BASE = typeof process !== "undefined" && process.env["EXPO_PUBLIC_DOMAIN"]
-  ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}`
-  : "";
+function getApiBase(): string {
+  const domain = typeof process !== "undefined" ? process.env["EXPO_PUBLIC_DOMAIN"] : undefined;
+  if (!domain) return "http://127.0.0.1:8080";
+  return domain.startsWith("http://") || domain.startsWith("https://") ? domain : `https://${domain}`;
+}
+
+const API_BASE = getApiBase();
 
 export default function PaymentScreen() {
   const colors = useColors();
@@ -76,8 +80,10 @@ export default function PaymentScreen() {
       const data: any = await response.json();
 
       if (data.success && data.paymentUrl) {
-        // Open Dodo checkout in browser
-        if (Platform.OS !== "web") {
+        const isDemoPayment = data.mock === true || data.mode === "demo" || data.mode === "fallback";
+
+        // Open Dodo checkout only for live mode
+        if (!isDemoPayment && Platform.OS !== "web") {
           const result = await WebBrowser.openBrowserAsync(data.paymentUrl);
         }
 

@@ -1,5 +1,5 @@
 import pLimit from "p-limit";
-import pRetry from "p-retry";
+import pRetry from "p-retry" with { "resolution-mode": "import" };
 
 /**
  * Batch Processing Utilities
