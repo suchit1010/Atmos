@@ -34,6 +34,15 @@ interface VerifyResult {
   fraudRisk: string;
   explanation: string;
   pricePerTonne: number;
+  verificationEngine?: string;
+  satelliteDataSource?: string;
+  satellite?: {
+    source: string;
+    imageryAvailable: boolean;
+    provider: string;
+    boundaryPoints: number;
+    landAreaHectares: number | null;
+  };
 }
 
 export default function VerifyScreen() {
@@ -65,6 +74,8 @@ export default function VerifyScreen() {
         fraudRisk: project.fraudRisk ?? "LOW",
         explanation: (project.metadata?.explanation as string) ?? "Previously verified project.",
         pricePerTonne: (project.metadata?.pricePerTonne as number) ?? 1485,
+        verificationEngine: "cached-project-state",
+        satelliteDataSource: String(project.metadata?.satelliteDataSource ?? "unknown"),
       });
       return;
     }
@@ -291,6 +302,12 @@ export default function VerifyScreen() {
                 <View>
                   <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Methodology</Text>
                   <Text style={[styles.methodologyText, { color: colors.foreground }]}>{result.methodology}</Text>
+                  <Text style={[styles.methodologyText, { color: colors.mutedForeground, marginTop: 4 }]}>
+                    Engine: {result.verificationEngine ?? "single-agent"}
+                  </Text>
+                  <Text style={[styles.methodologyText, { color: colors.mutedForeground }]}>
+                    Satellite: {result.satelliteDataSource ?? "mock"}
+                  </Text>
                 </View>
                 <View style={{ alignItems: "flex-end" }}>
                   <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Est. Price</Text>

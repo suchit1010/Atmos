@@ -1,11 +1,13 @@
 import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import React, { useRef, useState } from "react";
 import {
   ActionSheetIOS,
   Alert,
   Image,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -155,6 +157,40 @@ const PROJECT_SCHEMAS: Record<string, ProjectSchema> = {
 
 type MetadataValues = Record<string, string>;
 
+interface BoundaryPoint {
+  lat: number;
+  lng: number;
+}
+
+function parseBoundaryPoints(input: string): BoundaryPoint[] {
+  if (!input.trim()) return [];
+  return input
+    .split(";")
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .map((pair) => {
+      const [latRaw, lngRaw] = pair.split(",").map((v) => v.trim());
+      const lat = Number(latRaw);
+      const lng = Number(lngRaw);
+      return { lat, lng };
+    })
+    .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
+    .filter((p) => p.lat >= -90 && p.lat <= 90 && p.lng >= -180 && p.lng <= 180)
+    .map((p) => ({ lat: Number(p.lat.toFixed(6)), lng: Number(p.lng.toFixed(6)) }));
+}
+
+function centroid(points: BoundaryPoint[]): BoundaryPoint | null {
+  if (!points.length) return null;
+  const sum = points.reduce(
+    (acc, p) => ({ lat: acc.lat + p.lat, lng: acc.lng + p.lng }),
+    { lat: 0, lng: 0 },
+  );
+  return {
+    lat: Number((sum.lat / points.length).toFixed(6)),
+    lng: Number((sum.lng / points.length).toFixed(6)),
+  };
+}
+
 export default function CaptureDataScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -167,6 +203,9 @@ export default function CaptureDataScreen() {
   const [projectName, setProjectName] = useState("");
   const [location, setLocation] = useState("");
   const [metadata, setMetadata] = useState<MetadataValues>({});
+  const [gps, setGps] = useState<{ latitude: number; longitude: number; accuracy: number | null } | null>(null);
+  const [boundaryInput, setBoundaryInput] = useState("");
+  const [capturingGps, setCapturingGps] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -277,6 +316,60 @@ export default function CaptureDataScreen() {
     return projectName.trim().length > 0;
   }
 
+  async function captureLandCoordinates() {
+    try {
+      setCapturingGps(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Location Permission", "Location access is required to capture land coordinates.");
+        return;
+      }
+
+      const pos = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const lat = Number(pos.coords.latitude.toFixed(6));
+      const lng = Number(pos.coords.longitude.toFixed(6));
+      const acc = pos.coords.accuracy ? Number(pos.coords.accuracy.toFixed(1)) : null;
+
+      setGps({ latitude: lat, longitude: lng, accuracy: acc });
+      if (!location.trim()) {
+        setLocation(`${lat}, ${lng}`);
+      }
+    } catch {
+      Alert.alert("Location Error", "Unable to capture coordinates right now.");
+    } finally {
+      setCapturingGps(false);
+    }
+  }
+
+  async function openLandMap() {
+    const points = parseBoundaryPoints(boundaryInput);
+    const center = centroid(points);
+    const mapQuery = center
+      ? `${center.lat},${center.lng}`
+      : gps
+        ? `${gps.latitude},${gps.longitude}`
+        : "";
+    if (!mapQuery) return;
+    const mapUrl = Platform.OS === "ios"
+      ? `http://maps.apple.com/?ll=${mapQuery}`
+      : `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+
+    try {
+      await Linking.openURL(mapUrl);
+    } catch {
+      Alert.alert("Map Preview", `Coordinates: ${mapQuery}`);
+    }
+  }
+
+  function useGpsAsBoundaryPoint() {
+    if (!gps) return;
+    const point = `${gps.latitude},${gps.longitude}`;
+    setBoundaryInput((prev) => (prev.trim().length ? `${prev.trim()}; ${point}` : point));
+  }
+
   function canProceedStep2() {
     const requiredKeys = schema.fields
       .filter((f) => f.type === "number" || f.type === "text")
@@ -293,6 +386,16 @@ export default function CaptureDataScreen() {
     for (const [k, v] of Object.entries(metadata)) {
       const n = Number(v);
       numericMeta[k] = isNaN(n) || v === "" ? v : n;
+    }
+    const boundaryPoints = parseBoundaryPoints(boundaryInput);
+    if (gps) {
+      numericMeta.landLatitude = gps.latitude;
+      numericMeta.landLongitude = gps.longitude;
+      numericMeta.landAccuracyMeters = gps.accuracy ?? "unknown";
+    }
+    if (boundaryPoints.length) {
+      numericMeta.landBoundaryPolygon = JSON.stringify(boundaryPoints);
+      numericMeta.landBoundaryPointCount = boundaryPoints.length;
     }
     const project = addProject({
       name: projectName,
@@ -387,6 +490,82 @@ export default function CaptureDataScreen() {
                 />
               </View>
             </FormField>
+
+            <View style={styles.landActionsRow}>
+              <Pressable
+                onPress={captureLandCoordinates}
+                style={[styles.landActionBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                <Feather name={capturingGps ? "loader" : "crosshair"} size={14} color={colors.secondary} />
+                <Text style={[styles.landActionText, { color: colors.foreground }]}>
+                  {capturingGps ? "Capturing..." : "Capture Land Coordinates"}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={openLandMap}
+                disabled={!gps}
+                style={[
+                  styles.landActionBtn,
+                  {
+                    backgroundColor: gps ? colors.primary + "22" : colors.muted,
+                    borderColor: gps ? colors.primary : colors.border,
+                    opacity: gps ? 1 : 0.6,
+                  },
+                ]}
+              >
+                <Feather name="map" size={14} color={gps ? colors.primary : colors.mutedForeground} />
+                <Text style={[styles.landActionText, { color: gps ? colors.primary : colors.mutedForeground }]}>Preview Map</Text>
+              </Pressable>
+            </View>
+
+            {gps ? (
+              <View style={[styles.gpsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.gpsTitle, { color: colors.secondary }]}>Land Coordinates Captured</Text>
+                <Text style={[styles.gpsText, { color: colors.foreground }]}>Lat {gps.latitude} | Lng {gps.longitude}</Text>
+                <Text style={[styles.gpsText, { color: colors.mutedForeground }]}>
+                  Accuracy: {gps.accuracy ?? "unknown"} m
+                </Text>
+              </View>
+            ) : null}
+
+            <FormField
+              label="Land Boundary Polygon (lat,lng; lat,lng; ...)"
+              hint="Use at least 3 points for a closed area. Example: 28.6139,77.2090; 28.6142,77.2101; 28.6133,77.2105"
+              colors={colors}
+            >
+              <TextInput
+                style={[styles.input, { color: colors.foreground, minHeight: 68 }]}
+                value={boundaryInput}
+                onChangeText={setBoundaryInput}
+                multiline
+                placeholder="28.6139,77.2090; 28.6142,77.2101; 28.6133,77.2105"
+                placeholderTextColor={colors.mutedForeground}
+              />
+            </FormField>
+
+            <View style={styles.landActionsRow}>
+              <Pressable
+                onPress={useGpsAsBoundaryPoint}
+                disabled={!gps}
+                style={[
+                  styles.landActionBtn,
+                  {
+                    backgroundColor: gps ? colors.secondary + "22" : colors.muted,
+                    borderColor: gps ? colors.secondary : colors.border,
+                    opacity: gps ? 1 : 0.6,
+                  },
+                ]}
+              >
+                <Feather name="plus-circle" size={14} color={gps ? colors.secondary : colors.mutedForeground} />
+                <Text style={[styles.landActionText, { color: gps ? colors.secondary : colors.mutedForeground }]}>Add GPS Point</Text>
+              </Pressable>
+              <View style={[styles.boundaryBadge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                <Text style={[styles.boundaryBadgeText, { color: colors.mutedForeground }]}>
+                  {parseBoundaryPoints(boundaryInput).length} boundary points
+                </Text>
+              </View>
+            </View>
 
             <View style={[styles.methodologyBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.methodologyRow}>
@@ -714,6 +893,54 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+  },
+  landActionsRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  landActionBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+  },
+  landActionText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+  },
+  boundaryBadge: {
+    flex: 1,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  boundaryBadgeText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+  },
+  gpsCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 4,
+  },
+  gpsTitle: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  gpsText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
   },
   chipsRow: {
     flexDirection: "row",

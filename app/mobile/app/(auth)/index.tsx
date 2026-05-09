@@ -83,10 +83,15 @@ export default function AuthScreen() {
         resizeMode="cover"
       >
         <LinearGradient
-          colors={["transparent", "rgba(12,30,12,0.7)", colors.background]}
+          colors={["rgba(0,0,0,0.18)", "rgba(12,30,12,0.7)", colors.background]}
           style={styles.splashGradient}
         />
-        <View style={[styles.logoSection, { paddingTop: insets.top + 40 }]}>
+        <View style={[styles.logoSection, { paddingTop: insets.top + 32 }]}>
+          <View style={[styles.heroBadge, { borderColor: colors.primary + "55", backgroundColor: "rgba(0,0,0,0.28)" }]}>
+            <Feather name="shield" size={12} color={colors.primary} />
+            <Text style={styles.heroBadgeText}>Climate finance rails</Text>
+          </View>
+
           <View style={[styles.logoRing, { borderColor: colors.primary }]}>
             <Image
               source={require("@/assets/images/icon.png")}
@@ -98,6 +103,21 @@ export default function AuthScreen() {
           <Text style={styles.appSub}>Protocol</Text>
           <Text style={styles.tagline}>Private. Verifiable. Instant. Global.</Text>
           <Text style={styles.tagline2}>Real-world climate action → Carbon assets in 24 hours</Text>
+
+          <View style={styles.heroStatsRow}>
+            <View style={[styles.heroStatPill, { borderColor: colors.primary + "44" }]}>
+              <Text style={[styles.heroStatValue, { color: colors.primary }]}>AI + Sat</Text>
+              <Text style={styles.heroStatLabel}>Verification</Text>
+            </View>
+            <View style={[styles.heroStatPill, { borderColor: colors.secondary + "44" }]}>
+              <Text style={[styles.heroStatValue, { color: colors.secondary }]}>ZK</Text>
+              <Text style={styles.heroStatLabel}>Privacy</Text>
+            </View>
+            <View style={[styles.heroStatPill, { borderColor: colors.mutedForeground + "44" }]}>
+              <Text style={[styles.heroStatValue, { color: colors.foreground }]}>24h</Text>
+              <Text style={styles.heroStatLabel}>Settlement</Text>
+            </View>
+          </View>
         </View>
       </ImageBackground>
 
@@ -110,6 +130,19 @@ export default function AuthScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          <View style={[styles.workflowCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.workflowHeader}>
+              <Feather name="layers" size={14} color={colors.primary} />
+              <Text style={[styles.workflowTitle, { color: colors.foreground }]}>Your flow</Text>
+            </View>
+            <View style={styles.workflowRow}>
+              <WorkflowStep index="1" label="Sign in" desc="Phone, Google, or Apple" colors={colors} />
+              <WorkflowStep index="2" label="Capture" desc="Project + land data" colors={colors} />
+              <WorkflowStep index="3" label="Verify" desc="AI, satellite, ZK" colors={colors} />
+              <WorkflowStep index="4" label="Settle" desc="Payment + asset" colors={colors} />
+            </View>
+          </View>
+
           <Text style={[styles.welcomeTitle, { color: colors.foreground }]}>
             Welcome to ATMOS
           </Text>
@@ -231,9 +264,31 @@ function SocialButton({
   );
 }
 
+function WorkflowStep({
+  index,
+  label,
+  desc,
+  colors,
+}: {
+  index: string;
+  label: string;
+  desc: string;
+  colors: ReturnType<typeof useColors>;
+}) {
+  return (
+    <View style={[styles.workflowStep, { borderColor: colors.border }]}>
+      <View style={[styles.workflowIndex, { backgroundColor: colors.muted }]}>
+        <Text style={[styles.workflowIndexText, { color: colors.foreground }]}>{index}</Text>
+      </View>
+      <Text style={[styles.workflowLabel, { color: colors.foreground }]}>{label}</Text>
+      <Text style={[styles.workflowDesc, { color: colors.mutedForeground }]}>{desc}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   splashBg: {
-    height: 320,
+    height: 360,
     width: "100%",
   },
   splashGradient: {
@@ -241,8 +296,54 @@ const styles = StyleSheet.create({
   },
   logoSection: {
     alignItems: "center",
-    gap: 6,
+    gap: 8,
     paddingHorizontal: 24,
+  },
+  heroBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  heroBadgeText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 11,
+    letterSpacing: 0.4,
+    color: "#F4FBEF",
+  },
+  heroStatsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  heroStatPill: {
+    minWidth: 92,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    backgroundColor: "rgba(0,0,0,0.2)",
+  },
+  heroStatValue: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 14,
+    letterSpacing: 0.2,
+  },
+  heroStatLabel: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    color: "#8BAA8B",
+    marginTop: 2,
   },
   logoRing: {
     width: 80,
@@ -285,11 +386,61 @@ const styles = StyleSheet.create({
   },
   formWrapper: {
     flex: 1,
-    marginTop: -32,
+    marginTop: -40,
   },
   formContent: {
     paddingHorizontal: 20,
     gap: 12,
+  },
+  workflowCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 14,
+    gap: 12,
+    marginBottom: 4,
+  },
+  workflowHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  workflowTitle: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  workflowRow: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  workflowStep: {
+    width: "48%",
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 10,
+    gap: 6,
+  },
+  workflowIndex: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  workflowIndexText: {
+    fontFamily: "Inter_700Bold",
+    fontSize: 12,
+  },
+  workflowLabel: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+  },
+  workflowDesc: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    lineHeight: 16,
   },
   welcomeTitle: {
     fontFamily: "Inter_700Bold",

@@ -21,6 +21,33 @@ const ZK_STEPS = [
   { label: "Verifying proof...", sub: "On-chain verification via Solana", duration: 1500 },
 ];
 
+function stableSerialize(value: unknown): string {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(stableSerialize).join(",")}]`;
+  }
+  const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b));
+  return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stableSerialize(v)}`).join(",")}}`;
+}
+
+function fnv1aHash(input: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = (hash * 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
+function buildSimulatedProofHash(project: unknown): string {
+  const serialized = stableSerialize(project);
+  const digestA = fnv1aHash(serialized);
+  const digestB = fnv1aHash(`atmos-zk-v1:${serialized.length}:${serialized}`);
+  return `zk_${digestA}${digestB}`;
+}
+
 export default function ZKProofScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -65,7 +92,16 @@ export default function ZKProofScreen() {
       setCompletedSteps([...completed]);
     }
 
-    const hash = "zk_" + Math.random().toString(36).substring(2, 10) + "...";
+    const proofPayload = {
+      id: project?.id,
+      type: project?.type,
+      location: project?.location,
+      co2: project?.co2,
+      confidence: project?.confidence,
+      metadata: project?.metadata,
+      mediaCount: project?.mediaCount,
+    };
+    const hash = buildSimulatedProofHash(proofPayload);
     setProofHash(hash);
     updateProject(id!, {
       proofHash: hash,
