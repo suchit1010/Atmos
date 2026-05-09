@@ -23,7 +23,7 @@ export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { projects, totalCO2, totalValue } = useAtmos();
+  const { projects, payments, totalCO2, totalValue } = useAtmos();
 
   const activeProjects = projects.filter((p) =>
     ["verifying", "verified", "minted"].includes(p.status)
@@ -32,11 +32,47 @@ export default function DashboardScreen() {
   const topPad = Platform.OS === "web" ? insets.top + 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? insets.bottom + 34 : insets.bottom + 72;
 
-  const recentActivity = [
-    { id: "1", icon: "check-circle" as const, label: "Asset Created", sub: "Biochar Batch #824-018", value: "2.46 tCO₂e", color: "#2ECC71", date: "May 20" },
-    { id: "2", icon: "dollar-sign" as const, label: "Payment Received", sub: "Biochar Production", value: "+₹12,880", color: "#2ECC71", date: "May 18" },
-    { id: "3", icon: "shield" as const, label: "Project Verified", sub: "Biochar Production", value: "", color: "#F39C12", date: "May 18" },
-  ];
+  const pendingPayments = payments
+    .filter((p) => p.status === "pending")
+    .reduce((sum, p) => sum + p.amount, 0);
+
+  const creditsRetired = payments
+    .filter((p) => p.status === "completed")
+    .reduce((sum, p) => sum + p.quantity, 0);
+
+  const projectEvents = projects
+    .slice()
+    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+    .slice(0, 3)
+    .map((p) => {
+      const isMinted = p.status === "minted";
+      const isVerified = p.status === "verified";
+      return {
+        id: `proj-${p.id}`,
+        icon: (isMinted ? "check-circle" : isVerified ? "shield" : "clock") as const,
+        label: isMinted ? "Asset Minted" : isVerified ? "Project Verified" : "Project Submitted",
+        sub: p.name,
+        value: p.co2 ? `${p.co2.toFixed(2)} tCO₂e` : "",
+        color: isMinted ? "#2ECC71" : isVerified ? "#F39C12" : "#95A5A6",
+        date: new Date(p.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" }),
+      };
+    });
+
+  const paymentEvents = payments
+    .slice()
+    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+    .slice(0, 2)
+    .map((p) => ({
+      id: `pay-${p.id}`,
+      icon: "dollar-sign" as const,
+      label: p.status === "completed" ? "Payment Received" : "Payment Pending",
+      sub: p.assetName,
+      value: `${p.status === "completed" ? "+" : ""}₹${p.amount.toLocaleString("en-IN")}`,
+      color: p.status === "completed" ? "#2ECC71" : "#F39C12",
+      date: new Date(p.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" }),
+    }));
+
+  const recentActivity = [...paymentEvents, ...projectEvents].slice(0, 4);
 
   return (
     <ScrollView
@@ -81,11 +117,11 @@ export default function DashboardScreen() {
           <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Active{"\n"}Projects</Text>
         </AtmosCard>
         <AtmosCard style={styles.statCard} padding={14}>
-          <Text style={[styles.statValue, { color: colors.foreground }]}>₹12,880</Text>
+          <Text style={[styles.statValue, { color: colors.foreground }]}>₹{pendingPayments.toLocaleString("en-IN")}</Text>
           <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Pending{"\n"}Payments</Text>
         </AtmosCard>
         <AtmosCard style={styles.statCard} padding={14}>
-          <Text style={[styles.statValue, { color: colors.foreground }]}>120</Text>
+          <Text style={[styles.statValue, { color: colors.foreground }]}>{creditsRetired}</Text>
           <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Credits{"\n"}Retired</Text>
         </AtmosCard>
       </View>
@@ -99,7 +135,11 @@ export default function DashboardScreen() {
           </Pressable>
         </View>
 
-        {recentActivity.map((a) => (
+        {recentActivity.length === 0 ? (
+          <View style={[styles.activityRow, { borderBottomColor: colors.border }]}> 
+            <Text style={[styles.activitySub, { color: colors.mutedForeground }]}>No activity yet. Start by creating a project.</Text>
+          </View>
+        ) : recentActivity.map((a) => (
           <Pressable key={a.id} style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}>
             <View style={[styles.activityRow, { borderBottomColor: colors.border }]}>
               <View style={[styles.activityDot, { backgroundColor: a.color + "22" }]}>

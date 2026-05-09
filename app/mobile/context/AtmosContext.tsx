@@ -61,6 +61,64 @@ interface AtmosContextType {
 
 const AtmosContext = createContext<AtmosContextType | null>(null);
 
+const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+function toBase58Like(input: string, length = 44): string {
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  let out = "";
+  let state = hash >>> 0;
+  for (let i = 0; i < length; i++) {
+    state = Math.imul(state ^ (i * 2654435761), 2246822519) >>> 0;
+    out += BASE58_ALPHABET[state % BASE58_ALPHABET.length];
+  }
+  return out;
+}
+
+function normalizeProjectMintAddress(project: Project): string {
+  if (project.mintAddress && project.mintAddress.trim().length >= 32) {
+    return project.mintAddress;
+  }
+  return toBase58Like(`${project.id}:${project.createdAt}:${project.name}`);
+}
+
+function projectToAsset(project: Project): Asset {
+  const amount = Number((project.co2 ?? 0).toFixed(2));
+  const grade = project.grade ?? "B";
+  const priceFromGrade: Record<string, number> = {
+    S: 2100,
+    A: 1485,
+    B: 820,
+    C: 550,
+    D: 300,
+  };
+  const metadataPrice = Number(project.metadata.pricePerTonne);
+  const price = Number.isFinite(metadataPrice) && metadataPrice > 0
+    ? metadataPrice
+    : (priceFromGrade[grade] ?? 820);
+
+  return {
+    id: `asset_${project.id}`,
+    projectId: project.id,
+    name: project.name,
+    type: project.type,
+    amount,
+    grade,
+    price,
+    methodology: String(project.metadata.methodology ?? "VER Estimate"),
+    vintage: new Date().getFullYear(),
+    location: project.location,
+    mintAddress: normalizeProjectMintAddress(project),
+    proofHash: project.proofHash ?? "zk_pending",
+    available: Math.max(1, Math.ceil(amount * 10)),
+    seller: "Self",
+  };
+}
+
 const MOCK_PROJECTS: Project[] = [
   {
     id: "proj_001",
@@ -195,7 +253,6 @@ const MOCK_ASSETS: Asset[] = [
 
 export function AtmosProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
-  const [assets, setAssets] = useState<Asset[]>(MOCK_ASSETS);
   const [payments, setPayments] = useState<Payment[]>([]);
 
   useEffect(() => {
@@ -230,9 +287,14 @@ export function AtmosProvider({ children }: { children: React.ReactNode }) {
   }
 
   function updateProject(id: string, updates: Partial<Project>) {
-    setProjects((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
-    );
+    setProjects((prev) => {
+      const updated = prev.map((p) => (p.id === id ? { ...p, ...updates } : p));
+      const userProjects = updated.filter((proj) =>
+        !MOCK_PROJECTS.find((m) => m.id === proj.id)
+      );
+      AsyncStorage.setItem("atmos_projects", JSON.stringify(userProjects));
+      return updated;
+    });
   }
 
   function addPayment(p: Omit<Payment, "id" | "createdAt">): Payment {
@@ -252,6 +314,13 @@ export function AtmosProvider({ children }: { children: React.ReactNode }) {
     .reduce((sum, p) => sum + (p.co2 || 0), 0);
 
   const totalValue = totalCO2 * 1247;
+
+  const mintedProjectAssets = projects
+    .filter((p) => p.status === "minted")
+    .map(projectToAsset);
+
+  const externalMarketplaceAssets = MOCK_ASSETS.filter((a) => a.seller !== "Self");
+  const assets = [...mintedProjectAssets, ...externalMarketplaceAssets];
 
   return (
     <AtmosContext.Provider

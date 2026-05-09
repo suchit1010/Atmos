@@ -351,11 +351,16 @@ export default function CaptureDataScreen() {
       ? `${center.lat},${center.lng}`
       : gps
         ? `${gps.latitude},${gps.longitude}`
-        : "";
-    if (!mapQuery) return;
+        : location.trim();
+    if (!mapQuery) {
+      Alert.alert("Map Preview", "Add location text, boundary points, or capture GPS first.");
+      return;
+    }
     const mapUrl = Platform.OS === "ios"
-      ? `http://maps.apple.com/?ll=${mapQuery}`
-      : `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+      ? center || gps
+        ? `http://maps.apple.com/?ll=${encodeURIComponent(mapQuery)}`
+        : `http://maps.apple.com/?q=${encodeURIComponent(mapQuery)}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
 
     try {
       await Linking.openURL(mapUrl);

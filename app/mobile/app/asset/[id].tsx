@@ -4,6 +4,7 @@ import * as Haptics from "expo-haptics";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -24,11 +25,30 @@ export default function AssetCreatedScreen() {
   const { projects, assets, updateProject } = useAtmos();
   const project = projects.find((p) => p.id === id);
 
+  function generateBase58Like(seed: string): string {
+    const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+    let hash = 2166136261;
+    for (let i = 0; i < seed.length; i++) {
+      hash ^= seed.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    let out = "";
+    let state = hash >>> 0;
+    for (let i = 0; i < 44; i++) {
+      state = Math.imul(state ^ (i * 2654435761), 2246822519) >>> 0;
+      out += alphabet[state % alphabet.length];
+    }
+    return out;
+  }
+
   const checkScale = useRef(new Animated.Value(0)).current;
   const cardFade = useRef(new Animated.Value(0)).current;
   const [minted, setMinted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const mintAddress = "AtmosSol" + Math.random().toString(36).substring(2, 8).toUpperCase();
+  const mintAddressRef = useRef(
+    project?.mintAddress ?? generateBase58Like(String(id ?? "project"))
+  );
+  const mintAddress = mintAddressRef.current;
 
   const alreadyMinted = project?.status === "minted";
 
@@ -49,6 +69,15 @@ export default function AssetCreatedScreen() {
     setMinted(true);
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     animateIn();
+  }
+
+  async function handleOpenMintExplorer() {
+    const url = `https://explorer.solana.com/address/${encodeURIComponent(mintAddress)}?cluster=devnet`;
+    try {
+      await Linking.openURL(url);
+    } catch {
+      // no-op fallback for unsupported environments
+    }
   }
 
   function animateIn() {
@@ -148,6 +177,10 @@ export default function AssetCreatedScreen() {
                 <Text style={[styles.mintLabel, { color: colors.mutedForeground }]}>Mint Address</Text>
               </View>
               <Text style={[styles.mintAddress, { color: colors.secondary }]}>{mintAddress}</Text>
+              <Pressable onPress={handleOpenMintExplorer} style={[styles.explorerBtn, { borderColor: colors.secondary }]}> 
+                <Feather name="external-link" size={14} color={colors.secondary} />
+                <Text style={[styles.explorerBtnText, { color: colors.secondary }]}>View Mint on Solana Explorer</Text>
+              </Pressable>
             </AtmosCard>
           </Animated.View>
         )}
@@ -269,6 +302,20 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     letterSpacing: 0.3,
+  },
+  explorerBtn: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 8,
+  },
+  explorerBtnText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
   },
   footer: {
     position: "absolute",

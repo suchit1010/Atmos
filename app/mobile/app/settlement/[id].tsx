@@ -24,10 +24,11 @@ export default function SettlementScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { id, amount } = useLocalSearchParams<{ id: string; amount: string; qty: string }>();
-  const { assets, payments } = useAtmos();
+  const { assets, payments, projects } = useAtmos();
   const { user } = useAuth();
   const asset = assets.find((a) => a.id === id);
   const payment = payments.find((p) => p.assetId === id);
+  const project = projects.find((p) => p.id === asset?.projectId);
 
   const [phase, setPhase] = useState<"recording" | "complete">("recording");
   const [showCertModal, setShowCertModal] = useState(false);
@@ -60,13 +61,24 @@ export default function SettlementScreen() {
   const topPad = Platform.OS === "web" ? insets.top + 67 : insets.top;
   const totalAmount = amount ?? "8610";
 
-  const explorerUrl = `https://explorer.solana.com/tx/${encodeURIComponent(txId)}?cluster=devnet`;
+  const txLooksLikeSignature = /^[1-9A-HJ-NP-Za-km-z]{70,120}$/.test(txId);
+  const mintAddress = asset?.mintAddress ?? project?.mintAddress;
+  const explorerUrl = txLooksLikeSignature
+    ? `https://explorer.solana.com/tx/${encodeURIComponent(txId)}?cluster=devnet`
+    : mintAddress
+      ? `https://explorer.solana.com/address/${encodeURIComponent(mintAddress)}?cluster=devnet`
+      : `https://explorer.solana.com/?cluster=devnet`;
 
   async function handleViewExplorer() {
     try {
       await Linking.openURL(explorerUrl);
     } catch {
-      Alert.alert("Explorer", `Transaction ID:\n${txId}\n\nOpen explorer.solana.com to verify.`);
+      Alert.alert(
+        "Explorer",
+        txLooksLikeSignature
+          ? `Transaction ID:\n${txId}\n\nOpen explorer.solana.com to verify.`
+          : `Mint Address:\n${mintAddress ?? "N/A"}\n\nOpen explorer.solana.com to verify.`
+      );
     }
   }
 
