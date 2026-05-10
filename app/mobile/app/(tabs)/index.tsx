@@ -139,26 +139,41 @@ export default function DashboardScreen() {
           <View style={[styles.activityRow, { borderBottomColor: colors.border }]}> 
             <Text style={[styles.activitySub, { color: colors.mutedForeground }]}>No activity yet. Start by creating a project.</Text>
           </View>
-        ) : recentActivity.map((a) => (
-          <Pressable key={a.id} style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}>
-            <View style={[styles.activityRow, { borderBottomColor: colors.border }]}>
-              <View style={[styles.activityDot, { backgroundColor: a.color + "22" }]}>
-                <Feather name={a.icon} size={15} color={a.color} />
+        ) : recentActivity.map((a) => {
+          const isPayment = a.id.startsWith("pay-");
+          const paymentId = isPayment ? a.id.replace("pay-", "") : null;
+          return (
+            <Pressable
+              key={a.id}
+              style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
+              onPress={() => {
+                if (isPayment && paymentId) {
+                  router.push({
+                    pathname: "/payment/status",
+                    params: { paymentId },
+                  });
+                }
+              }}
+            >
+              <View style={[styles.activityRow, { borderBottomColor: colors.border }]}>
+                <View style={[styles.activityDot, { backgroundColor: a.color + "22" }]}>
+                  <Feather name={a.icon} size={15} color={a.color} />
+                </View>
+                <View style={styles.activityInfo}>
+                  <Text style={[styles.activityLabel, { color: colors.foreground }]}>{a.label}</Text>
+                  <Text style={[styles.activitySub, { color: colors.mutedForeground }]}>{a.sub}</Text>
+                </View>
+                <View style={styles.activityRight}>
+                  {a.value ? (
+                    <Text style={[styles.activityValue, { color: colors.primary }]}>{a.value}</Text>
+                  ) : null}
+                  <Text style={[styles.activityDate, { color: colors.mutedForeground }]}>{a.date}</Text>
+                </View>
+                <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
               </View>
-              <View style={styles.activityInfo}>
-                <Text style={[styles.activityLabel, { color: colors.foreground }]}>{a.label}</Text>
-                <Text style={[styles.activitySub, { color: colors.mutedForeground }]}>{a.sub}</Text>
-              </View>
-              <View style={styles.activityRight}>
-                {a.value ? (
-                  <Text style={[styles.activityValue, { color: colors.primary }]}>{a.value}</Text>
-                ) : null}
-                <Text style={[styles.activityDate, { color: colors.mutedForeground }]}>{a.date}</Text>
-              </View>
-              <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-            </View>
-          </Pressable>
-        ))}
+            </Pressable>
+          );
+        })}
       </View>
 
       {/* Create CTA */}

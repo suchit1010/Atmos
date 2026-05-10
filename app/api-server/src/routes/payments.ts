@@ -1,5 +1,6 @@
 import { Router } from "express";
 import crypto from "crypto";
+import { settlementStore } from "../lib/settlement-store";
 
 const router = Router();
 
@@ -12,6 +13,7 @@ const DODO_MODE = process.env["DODO_MODE"] ?? "live";
 const DODO_PRODUCT_ID = "pdt_0NeRjRfS1WBxeKVY8XD7f";
 
 const processedWebhookEventIds = new Set<string>();
+const WEBHOOK_TOLERANCE_SECONDS = 5 * 60;
 
 function safeStringify(value: unknown): string {
   try {
@@ -21,15 +23,30 @@ function safeStringify(value: unknown): string {
   }
 }
 
-function timingSafeEqualHex(a: string, b: string): boolean {
-  if (!a || !b || a.length !== b.length) return false;
-  const aBuf = Buffer.from(a, "hex");
-  const bBuf = Buffer.from(b, "hex");
-  if (aBuf.length !== bBuf.length) return false;
-  return crypto.timingSafeEqual(aBuf, bBuf);
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
-function verifyWebhookSignature(rawBody: string, signature: string | undefined): boolean {
+function decodeWebhookSecret(secret: string): Buffer {
+  const trimmed = secret.trim();
+  const encoded = trimmed.startsWith("whsec_") ? trimmed.slice(6) : trimmed;
+  try {
+    return Buffer.from(encoded, "base64");
+  } catch {
+    return Buffer.from(trimmed, "utf8");
+  }
+}
+
+function getRawBody(req: unknown): string {
+  const rawBody = (req as { rawBody?: Buffer | string | Uint8Array }).rawBody;
+  if (typeof rawBody === "string") return rawBody;
+  if (rawBody instanceof Buffer) return rawBody.toString("utf8");
+  if (rawBody instanceof Uint8Array) return Buffer.from(rawBody).toString("utf8");
+  return "";
+}
+
+function verifyLegacySignature(rawBody: string, signature: string | undefined): boolean {
   if (!DODO_WEBHOOK_SECRET) return false;
   if (!signature) return false;
 
@@ -39,7 +56,54 @@ function verifyWebhookSignature(rawBody: string, signature: string | undefined):
     .digest("hex");
 
   const normalizedSignature = signature.toLowerCase().replace(/^sha256=/, "");
-  return timingSafeEqualHex(expected, normalizedSignature);
+  return timingSafeEqual(expected, normalizedSignature);
+}
+
+function verifySvixSignature(
+  rawBody: string,
+  headers: { id: string; timestamp: string; signature: string },
+): boolean {
+  if (!DODO_WEBHOOK_SECRET) return false;
+  if (!headers.id || !headers.timestamp || !headers.signature) return false;
+
+  const timestamp = Number(headers.timestamp);
+  if (!Number.isFinite(timestamp)) return false;
+  const now = Math.floor(Date.now() / 1000);
+  if (Math.abs(now - timestamp) > WEBHOOK_TOLERANCE_SECONDS) return false;
+
+  const signedContent = `${headers.id}.${headers.timestamp}.${rawBody}`;
+  const secretBytes = decodeWebhookSecret(DODO_WEBHOOK_SECRET);
+  const expectedSignature = crypto
+    .createHmac("sha256", secretBytes)
+    .update(signedContent)
+    .digest("base64");
+
+  const candidates = headers.signature
+    .split(" ")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => entry.replace(/^v\d+,/, ""));
+
+  return candidates.some((candidate) => timingSafeEqual(expectedSignature, candidate));
+}
+
+function verifyWebhookSignature(req: unknown, rawBody: string): boolean {
+  const headers = (req as {
+    header?: (name: string) => string | undefined;
+    get?: (name: string) => string | undefined;
+  });
+  const getHeader = (name: string): string | undefined => headers.header?.(name) ?? headers.get?.(name);
+
+  const svixId = getHeader("svix-id") ?? getHeader("webhook-id") ?? "";
+  const svixTimestamp = getHeader("svix-timestamp") ?? getHeader("webhook-timestamp") ?? "";
+  const svixSignature = getHeader("svix-signature") ?? getHeader("webhook-signature") ?? "";
+
+  if (svixId && svixTimestamp && svixSignature) {
+    return verifySvixSignature(rawBody, { id: svixId, timestamp: svixTimestamp, signature: svixSignature });
+  }
+
+  const legacySignature = getHeader("x-dodo-signature") ?? getHeader("x-dodo-webhook-signature") ?? getHeader("x-webhook-signature") ?? undefined;
+  return verifyLegacySignature(rawBody, legacySignature);
 }
 
 function extractEventId(event: Record<string, unknown>): string {
@@ -49,6 +113,9 @@ function extractEventId(event: Record<string, unknown>): string {
   const eventId = event.event_id;
   if (typeof eventId === "string" && eventId.trim()) return eventId;
 
+  const messageId = event.message_id;
+  if (typeof messageId === "string" && messageId.trim()) return messageId;
+
   const data = event.data;
   if (data && typeof data === "object") {
     const nestedId = (data as Record<string, unknown>).id;
@@ -56,6 +123,25 @@ function extractEventId(event: Record<string, unknown>): string {
   }
 
   return "";
+}
+
+function extractEventType(event: Record<string, unknown>): string {
+  const directType = event.type;
+  if (typeof directType === "string" && directType.trim()) return directType;
+
+  const eventType = event.event_type;
+  if (typeof eventType === "string" && eventType.trim()) return eventType;
+
+  const payloadType = event.payload_type;
+  if (typeof payloadType === "string" && payloadType.trim()) return payloadType;
+
+  return "unknown";
+}
+
+function isCreditGrantEvent(eventType: string, payload: Record<string, unknown>): boolean {
+  const lowered = eventType.toLowerCase();
+  return ["credit.added", "credit_added", "credit.created", "credit_ledger_entry"].includes(lowered)
+    || String(payload.payload_type ?? "").toLowerCase() === "creditledgerentry";
 }
 
 // Create a Dodo payment session
@@ -162,21 +248,29 @@ router.post("/payments/dodo/create", async (req, res) => {
 
 // Webhook handler for Dodo payment events
 router.post("/payments/dodo/webhook", (req, res) => {
-  const rawBody = safeStringify(req.body);
-  const signature = req.header("x-dodo-signature") ?? req.header("x-dodo-webhook-signature") ?? undefined;
+  const rawBody = getRawBody(req) || safeStringify(req.body);
 
-  if (!verifyWebhookSignature(rawBody, signature)) {
-    req.log.warn({ hasSecret: !!DODO_WEBHOOK_SECRET, hasSignature: !!signature }, "Rejected Dodo webhook");
+  if (!verifyWebhookSignature(req, rawBody)) {
+    req.log.warn({ hasSecret: !!DODO_WEBHOOK_SECRET }, "Rejected Dodo webhook");
     res.status(401).json({ error: "invalid webhook signature" });
     return;
   }
 
-  const event = req.body as Record<string, unknown>;
+  let event: Record<string, unknown>;
+  try {
+    event = JSON.parse(rawBody) as Record<string, unknown>;
+  } catch {
+    req.log.warn({ rawBodyLength: rawBody.length }, "Rejected malformed Dodo webhook payload");
+    res.status(400).json({ error: "invalid webhook payload" });
+    return;
+  }
+
   const eventId = extractEventId(event);
+  const eventType = extractEventType(event);
 
   if (eventId && processedWebhookEventIds.has(eventId)) {
-    req.log.info({ eventId }, "Duplicate Dodo webhook ignored");
-    res.json({ received: true, duplicate: true });
+    req.log.info({ eventId, eventType }, "Duplicate Dodo webhook ignored");
+    res.json({ received: true, duplicate: true, action: "ignored" });
     return;
   }
 
@@ -184,10 +278,61 @@ router.post("/payments/dodo/webhook", (req, res) => {
     processedWebhookEventIds.add(eventId);
   }
 
-  req.log.info({ eventId, eventType: event.type ?? event.event_type ?? "unknown" }, "Dodo webhook received");
+  const payload = (event.data && typeof event.data === "object") ? (event.data as Record<string, unknown>) : {};
+  const creditGrant = isCreditGrantEvent(eventType, payload);
+  const settlementReference = typeof payload.reference_id === "string" ? payload.reference_id : undefined;
+  const grantId = typeof payload.grant_id === "string" ? payload.grant_id : undefined;
+  const assetId = typeof payload.asset_id === "string" ? payload.asset_id : "unknown";
 
-  // In production: persist payment status updates and trigger settlement jobs here.
-  res.json({ received: true, duplicate: false });
+  // Persist settlement record if this is a credit event
+  if (creditGrant && eventId) {
+    const settlementId = settlementReference ?? grantId ?? eventId;
+    settlementStore.upsert({
+      id: settlementId,
+      assetId,
+      status: "credit_received",
+      grantId,
+      creditAmount: typeof payload.amount === "number" ? payload.amount : undefined,
+      webhookEventId: eventId,
+      metadata: {
+        dodoEventType: eventType,
+        payload: payload,
+      },
+    });
+    req.log.info({ settlementId, grantId, assetId }, "Settlement recorded for credit event");
+  }
+
+  req.log.info(
+    { eventId, eventType, creditGrant, settlementReference, grantId },
+    "Dodo webhook received",
+  );
+
+  // In production: persist payment status updates and trigger Solana settlement jobs here.
+  res.json({
+    received: true,
+    duplicate: false,
+    action: creditGrant ? "credit_added" : "webhook_received",
+    eventType,
+    settlementReference: settlementReference ?? grantId ?? null,
+  });
+});
+
+// Get all settlements or filter by status
+router.get("/payments/settlements", (req, res) => {
+  const status = req.query.status as string | undefined;
+  const settlements = status ? settlementStore.getByStatus(status as any) : settlementStore.getAll();
+  res.json({ settlements, count: settlements.length });
+});
+
+// Get a specific settlement by ID
+router.get("/payments/settlements/:id", (req, res) => {
+  const settlement = settlementStore.get(req.params.id);
+  if (!settlement) {
+    res.status(404).json({ error: "settlement not found" });
+    return;
+  }
+  res.json(settlement);
 });
 
 export default router;
+

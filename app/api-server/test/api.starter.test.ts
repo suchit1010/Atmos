@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import request from "supertest";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { settlementStore } from "../src/lib/settlement-store";
 
 const ENV_KEYS = ["DODO_MODE", "DODO_WEBHOOK_SECRET", "DODO_API_KEY"] as const;
 
@@ -25,6 +26,14 @@ function restoreEnv(snapshot: EnvSnapshot): void {
   }
 }
 
+function signSvixPayload(secret: string, messageId: string, timestamp: string, body: string): string {
+  const secretValue = secret.startsWith("whsec_") ? secret.slice(6) : secret;
+  const secretBytes = Buffer.from(secretValue, "base64");
+  const signedContent = `${messageId}.${timestamp}.${body}`;
+  const signature = crypto.createHmac("sha256", secretBytes).update(signedContent).digest("base64");
+  return `v1,${signature}`;
+}
+
 async function loadApp(overrides: Partial<Record<(typeof ENV_KEYS)[number], string>> = {}) {
   const prev = snapshotEnv();
   for (const [key, value] of Object.entries(overrides)) {
@@ -37,7 +46,7 @@ async function loadApp(overrides: Partial<Record<(typeof ENV_KEYS)[number], stri
 }
 
 afterEach(() => {
-  vi.resetModules();
+  settlementStore.clear();
 });
 
 describe("api-server starter endpoints", () => {
@@ -142,5 +151,55 @@ describe("api-server starter endpoints", () => {
     expect(second.status).toBe(200);
     expect(second.body.received).toBe(true);
     expect(second.body.duplicate).toBe(true);
+  });
+
+  it("POST /api/payments/dodo/webhook verifies Svix headers and accepts credit events", async () => {
+    const secret = "whsec_c2VjcmV0";
+    const payload = {
+      id: "msg_123",
+      type: "credit.added",
+      payload_type: "CreditLedgerEntry",
+      data: {
+        id: "credit_1",
+        reference_id: "settlement_42",
+        grant_id: "grant_9",
+        asset_id: "asset_proj_1",
+      },
+    };
+    const body = JSON.stringify(payload);
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = signSvixPayload(secret, payload.id, timestamp, body);
+
+    const { app, prev } = await loadApp({ DODO_WEBHOOK_SECRET: secret });
+    const res = await request(app)
+      .post("/api/payments/dodo/webhook")
+      .set("svix-id", payload.id)
+      .set("svix-timestamp", timestamp)
+      .set("svix-signature", signature)
+      .send(payload);
+    restoreEnv(prev);
+
+    expect(res.status).toBe(200);
+    expect(res.body.received).toBe(true);
+    expect(res.body.action).toBe("credit_added");
+    expect(res.body.settlementReference).toBe("settlement_42");
+  });
+
+  it("GET /api/payments/settlements returns empty list initially", async () => {
+    const { app, prev } = await loadApp();
+    const res = await request(app).get("/api/payments/settlements");
+    restoreEnv(prev);
+
+    expect(res.status).toBe(200);
+    expect(res.body.count).toBeGreaterThanOrEqual(0);
+  });
+
+  it("GET /api/payments/settlements/:id returns 404 for missing settlement", async () => {
+    const { app, prev } = await loadApp();
+    const res = await request(app).get("/api/payments/settlements/nonexistent");
+    restoreEnv(prev);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe("settlement not found");
   });
 });

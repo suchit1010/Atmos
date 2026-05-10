@@ -43,9 +43,14 @@ export interface Payment {
   amount: number;
   quantity: number;
   currency: "INR" | "USDC";
-  status: "pending" | "completed" | "failed";
+  status: "pending" | "processing" | "completed" | "failed";
+  dodoPaymentId?: string;
+  settlementId?: string;
+  settlementStatus?: "pending" | "credit_received" | "minted" | "settled" | "failed";
+  grantId?: string;
   txId?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 interface AtmosContextType {
@@ -55,6 +60,8 @@ interface AtmosContextType {
   addProject: (p: Omit<Project, "id" | "createdAt">) => Project;
   updateProject: (id: string, updates: Partial<Project>) => void;
   addPayment: (p: Omit<Payment, "id" | "createdAt">) => Payment;
+  updatePayment: (id: string, updates: Partial<Payment>) => void;
+  getPaymentByDodoId: (dodoPaymentId: string) => Payment | undefined;
   totalCO2: number;
   totalValue: number;
 }
@@ -309,6 +316,20 @@ export function AtmosProvider({ children }: { children: React.ReactNode }) {
     return newPayment;
   }
 
+  function updatePayment(id: string, updates: Partial<Payment>) {
+    setPayments((prev) => {
+      const updated = prev.map((p) =>
+        p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p
+      );
+      AsyncStorage.setItem("atmos_payments", JSON.stringify(updated));
+      return updated;
+    });
+  }
+
+  function getPaymentByDodoId(dodoPaymentId: string): Payment | undefined {
+    return payments.find((p) => p.dodoPaymentId === dodoPaymentId);
+  }
+
   const totalCO2 = projects
     .filter((p) => p.status === "minted")
     .reduce((sum, p) => sum + (p.co2 || 0), 0);
@@ -324,7 +345,18 @@ export function AtmosProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AtmosContext.Provider
-      value={{ projects, assets, payments, addProject, updateProject, addPayment, totalCO2, totalValue }}
+      value={{
+        projects,
+        assets,
+        payments,
+        addProject,
+        updateProject,
+        addPayment,
+        updatePayment,
+        getPaymentByDodoId,
+        totalCO2,
+        totalValue,
+      }}
     >
       {children}
     </AtmosContext.Provider>
