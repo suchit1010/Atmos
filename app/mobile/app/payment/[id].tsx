@@ -20,9 +20,13 @@ import { AtmosCard } from "@/components/AtmosCard";
 import { GradeTag } from "@/components/GradeTag";
 
 function getApiBase(): string {
+  // Prefer explicit env var `EXPO_PUBLIC_API_URL`, fall back to EXPO_PUBLIC_DOMAIN,
+  // then to localhost:9001 which is the API server used in local dev/test runs.
+  const apiUrl = typeof process !== "undefined" ? process.env["EXPO_PUBLIC_API_URL"] : undefined;
+  if (apiUrl) return apiUrl;
   const domain = typeof process !== "undefined" ? process.env["EXPO_PUBLIC_DOMAIN"] : undefined;
-  if (!domain) return "http://127.0.0.1:8080";
-  return domain.startsWith("http://") || domain.startsWith("https://") ? domain : `https://${domain}`;
+  if (domain) return domain.startsWith("http://") || domain.startsWith("https://") ? domain : `https://${domain}`;
+  return "http://localhost:9001";
 }
 
 const API_BASE = getApiBase();
@@ -80,29 +84,35 @@ export default function PaymentScreen() {
       const data: any = await response.json();
 
       if (data.success && data.paymentUrl) {
-        const isDemoPayment = data.mock === true || data.mode === "demo" || data.mode === "fallback";
-
-        // Open Dodo checkout only for live mode
-        if (!isDemoPayment && Platform.OS !== "web") {
-          const result = await WebBrowser.openBrowserAsync(data.paymentUrl);
+        // Open the payment URL for both demo and live modes so user can complete checkout.
+        try {
+          if (Platform.OS === "web") {
+            // open in new tab on web
+            // eslint-disable-next-line no-undef
+            window.open(data.paymentUrl, "_blank");
+          } else {
+            await WebBrowser.openBrowserAsync(data.paymentUrl);
+          }
+        } catch (openErr) {
+          // non-blocking: continue to record payment locally even if browser couldn't open
+          console.warn("Failed to open payment URL:", openErr);
         }
 
-        // Record the payment locally
+        // Record the payment as pending because user still needs to complete checkout
         addPayment({
           assetId: asset.id,
           assetName: asset.name,
           amount: total,
           quantity: qty,
           currency: method === "upi" ? "INR" : "USDC",
-          status: "completed",
+          status: "pending",
           txId: data.paymentId ?? "dodo_" + Date.now(),
+          dodoPaymentId: data.paymentId ?? undefined,
         });
 
         setLoading(false);
-        router.push({
-          pathname: "/settlement/[id]",
-          params: { id: asset.id, amount: String(total), qty: String(qty) },
-        });
+        // Navigate to settlement/status (user can return to app and see pending status)
+        router.push(`/payment/status?paymentId=${encodeURIComponent(data.paymentId ?? "")}`);
       } else {
         throw new Error(data.error ?? "Payment failed");
       }

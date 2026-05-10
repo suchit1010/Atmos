@@ -47,9 +47,10 @@ export default function DashboardScreen() {
     .map((p) => {
       const isMinted = p.status === "minted";
       const isVerified = p.status === "verified";
+      const icon: "check-circle" | "shield" | "clock" = isMinted ? "check-circle" : isVerified ? "shield" : "clock";
       return {
         id: `proj-${p.id}`,
-        icon: (isMinted ? "check-circle" : isVerified ? "shield" : "clock") as const,
+        icon,
         label: isMinted ? "Asset Minted" : isVerified ? "Project Verified" : "Project Submitted",
         sub: p.name,
         value: p.co2 ? `${p.co2.toFixed(2)} tCO₂e` : "",
@@ -148,10 +149,7 @@ export default function DashboardScreen() {
               style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
               onPress={() => {
                 if (isPayment && paymentId) {
-                  router.push({
-                    pathname: "/payment/status",
-                    params: { paymentId },
-                  });
+                  router.push(`/payment/status?paymentId=${paymentId}`);
                 }
               }}
             >
