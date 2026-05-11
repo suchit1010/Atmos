@@ -1,19 +1,8 @@
 {
   "buildCommand": "pnpm run build:vercel",
   "installCommand": "pnpm install --frozen-lockfile",
-  "outputDirectory": "app/api-server/dist",
   "env": {
     "DODO_MODE": "production",
     "NODE_ENV": "production"
-  },
-  "routes": [
-    {
-      "src": "^/api/(.*)",
-      "dest": "app/api-server/dist/index.mjs"
-    },
-    {
-      "src": "/(.*)",
-      "status": 404
-    }
-  ]
+  }
 }
