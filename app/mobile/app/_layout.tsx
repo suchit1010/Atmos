@@ -8,6 +8,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import * as WebBrowser from "expo-web-browser";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -20,6 +21,11 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AtmosProvider } from "@/context/AtmosContext";
 
 SplashScreen.preventAutoHideAsync();
+
+// Warm up WebBrowser for faster loading when opening external URLs (e.g., Dodo checkout)
+WebBrowser.warmUpAsync().catch(() => {
+  // Silently fail if warmup not available (e.g., on web platform)
+});
 
 const queryClient = new QueryClient();
 

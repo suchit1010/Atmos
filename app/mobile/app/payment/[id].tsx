@@ -67,6 +67,7 @@ export default function PaymentScreen() {
 
     try {
       // Call our API server to create a Dodo payment session
+      console.log(`[Payment] Calling ${API_BASE}/api/payments/dodo/create with qty=${qty}, total=${total}`);
       const response = await fetch(`${API_BASE}/api/payments/dodo/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -81,57 +82,63 @@ export default function PaymentScreen() {
         }),
       });
 
-      const data: any = await response.json();
-
-      if (data.success && data.paymentUrl) {
-        // Open the payment URL for both demo and live modes so user can complete checkout.
-        try {
-          if (Platform.OS === "web") {
-            // open in new tab on web
-            // eslint-disable-next-line no-undef
-            window.open(data.paymentUrl, "_blank");
-          } else {
-            await WebBrowser.openBrowserAsync(data.paymentUrl);
-          }
-        } catch (openErr) {
-          // non-blocking: continue to record payment locally even if browser couldn't open
-          console.warn("Failed to open payment URL:", openErr);
-        }
-
-        // Record the payment as pending because user still needs to complete checkout
-        addPayment({
-          assetId: asset.id,
-          assetName: asset.name,
-          amount: total,
-          quantity: qty,
-          currency: method === "upi" ? "INR" : "USDC",
-          status: "pending",
-          txId: data.paymentId ?? "dodo_" + Date.now(),
-          dodoPaymentId: data.paymentId ?? undefined,
-        });
-
-        setLoading(false);
-        // Navigate to settlement/status (user can return to app and see pending status)
-        router.push(`/payment/status?paymentId=${encodeURIComponent(data.paymentId ?? "")}`);
-      } else {
-        throw new Error(data.error ?? "Payment failed");
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[Payment] API error: ${response.status}`, errorText);
+        throw new Error(`API error ${response.status}: ${errorText}`);
       }
-    } catch (err: any) {
-      // Fallback: demo payment
+
+      const data: any = await response.json();
+      console.log("[Payment] API Response:", data);
+
+      if (!data.success) {
+        throw new Error(data.error ?? "Payment API returned success=false");
+      }
+
+      if (!data.paymentUrl) {
+        throw new Error("Payment API did not return paymentUrl");
+      }
+
+      console.log("[Payment] Redirecting to:", data.paymentUrl);
+      // Open the payment URL for both demo and live modes so user can complete checkout.
+      try {
+        if (Platform.OS === "web") {
+          // open in new tab on web
+          // eslint-disable-next-line no-undef
+          console.log("[Payment] Opening in new window (web)");
+          const opened = window.open(data.paymentUrl, "_blank");
+          if (!opened) {
+            console.warn("[Payment] window.open returned null - popup may have been blocked");
+          }
+        } else {
+          console.log("[Payment] Opening with WebBrowser (native)");
+          const result = await WebBrowser.openBrowserAsync(data.paymentUrl);
+          console.log("[Payment] WebBrowser result:", result);
+        }
+      } catch (openErr) {
+        // non-blocking: continue to record payment locally even if browser couldn't open
+        console.warn("[Payment] Failed to open payment URL:", openErr);
+      }
+
+      // Record the payment as pending because user still needs to complete checkout
       addPayment({
         assetId: asset.id,
         assetName: asset.name,
         amount: total,
         quantity: qty,
         currency: method === "upi" ? "INR" : "USDC",
-        status: "completed",
-        txId: "dodo_demo_" + Date.now().toString(36).toUpperCase(),
+        status: "pending",
+        txId: data.paymentId ?? "dodo_" + Date.now(),
+        dodoPaymentId: data.paymentId ?? undefined,
       });
+
       setLoading(false);
-      router.push({
-        pathname: "/settlement/[id]",
-        params: { id: asset.id, amount: String(total), qty: String(qty) },
-      });
+      // Navigate to settlement/status (user can return to app and see pending status)
+      router.push(`/payment/status?paymentId=${encodeURIComponent(data.paymentId ?? "")}`);
+    } catch (err: any) {
+      console.error("[Payment] Error:", err?.message ?? err);
+      setError(err?.message ?? "Payment failed");
+      setLoading(false);
     }
   }
 
