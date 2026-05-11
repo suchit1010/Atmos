@@ -4,5 +4,12 @@
   "env": {
     "DODO_MODE": "production",
     "NODE_ENV": "production"
+  },
+  "functions": {
+    "api/**": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30,
+      "memory": 1024
+    }
   }
 }
