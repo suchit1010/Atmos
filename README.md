@@ -96,6 +96,13 @@ pnpm --filter @workspace/mobile dev
 # Scan QR code with Expo Go app
 ```
 
+If Expo fails with `TypeError: fetch failed` during startup (network-restricted environments), use:
+
+```bash
+pnpm --filter @workspace/mobile dev:offline
+# Expo offline mode → http://localhost:8082
+```
+
 ### 5. Verify Health
 
 ```bash

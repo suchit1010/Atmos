@@ -162,6 +162,22 @@ interface BoundaryPoint {
   lng: number;
 }
 
+interface CapturedImage {
+  uri: string;
+  base64?: string;
+  mimeType?: string;
+}
+
+function getApiBase(): string {
+  const apiUrl = typeof process !== "undefined" ? process.env["EXPO_PUBLIC_API_URL"] : undefined;
+  if (apiUrl) return apiUrl;
+  const domain = typeof process !== "undefined" ? process.env["EXPO_PUBLIC_DOMAIN"] : undefined;
+  if (domain) return domain.startsWith("http://") || domain.startsWith("https://") ? domain : `https://${domain}`;
+  return "http://localhost:9001";
+}
+
+const API_BASE = getApiBase();
+
 function parseBoundaryPoints(input: string): BoundaryPoint[] {
   if (!input.trim()) return [];
   return input
@@ -206,7 +222,7 @@ export default function CaptureDataScreen() {
   const [gps, setGps] = useState<{ latitude: number; longitude: number; accuracy: number | null } | null>(null);
   const [boundaryInput, setBoundaryInput] = useState("");
   const [capturingGps, setCapturingGps] = useState(false);
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<CapturedImage[]>([]);
   const [loading, setLoading] = useState(false);
 
   const topPad = Platform.OS === "web" ? insets.top + 67 : insets.top;
@@ -241,6 +257,41 @@ export default function CaptureDataScreen() {
 
   const webFileInputRef = useRef<HTMLInputElement | null>(null);
 
+  async function readWebFile(file: File): Promise<CapturedImage> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Unable to read selected image."));
+      reader.onload = () => {
+        const result = typeof reader.result === "string" ? reader.result : "";
+        if (!result) {
+          reject(new Error("Unable to read selected image."));
+          return;
+        }
+
+        const match = result.match(/^data:([^;]+);base64,(.+)$/);
+        resolve({
+          uri: result,
+          base64: match?.[2],
+          mimeType: match?.[1] ?? file.type ?? "image/jpeg",
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function toEvidencePayload(image: CapturedImage) {
+    if (image.base64) {
+      return { data: image.base64, mimeType: image.mimeType ?? "image/jpeg" };
+    }
+
+    const match = image.uri.match(/^data:([^;]+);base64,(.+)$/);
+    if (match) {
+      return { data: match[2], mimeType: match[1] };
+    }
+
+    return { data: image.uri, mimeType: image.mimeType ?? "image/jpeg" };
+  }
+
   async function handleAddImage() {
     if (images.length >= 4) return;
 
@@ -249,11 +300,11 @@ export default function CaptureDataScreen() {
         const input = document.createElement("input");
         input.type = "file";
         input.accept = "image/*";
-        input.onchange = (e) => {
+        input.onchange = async (e) => {
           const file = (e.target as HTMLInputElement).files?.[0];
           if (file) {
-            const uri = URL.createObjectURL(file);
-            setImages((prev) => [...prev, uri]);
+            const image = await readWebFile(file);
+            setImages((prev) => [...prev, image]);
           }
         };
         webFileInputRef.current = input;
@@ -288,9 +339,18 @@ export default function CaptureDataScreen() {
       quality: 0.8,
       allowsEditing: true,
       aspect: [4, 3],
+      base64: true,
     });
     if (!result.canceled && result.assets[0]) {
-      setImages((prev) => [...prev, result.assets[0].uri]);
+      const asset = result.assets[0];
+      setImages((prev) => [
+        ...prev,
+        {
+          uri: asset.uri,
+          base64: asset.base64 ?? undefined,
+          mimeType: asset.mimeType ?? "image/jpeg",
+        },
+      ]);
     }
   }
 
@@ -302,9 +362,18 @@ export default function CaptureDataScreen() {
       quality: 0.8,
       allowsEditing: true,
       aspect: [4, 3],
+      base64: true,
     });
     if (!result.canceled && result.assets[0]) {
-      setImages((prev) => [...prev, result.assets[0].uri]);
+      const asset = result.assets[0];
+      setImages((prev) => [
+        ...prev,
+        {
+          uri: asset.uri,
+          base64: asset.base64 ?? undefined,
+          mimeType: asset.mimeType ?? "image/jpeg",
+        },
+      ]);
     }
   }
 
@@ -402,14 +471,39 @@ export default function CaptureDataScreen() {
       numericMeta.landBoundaryPolygon = JSON.stringify(boundaryPoints);
       numericMeta.landBoundaryPointCount = boundaryPoints.length;
     }
+
+    const evidenceResponse = await fetch(`${API_BASE}/api/verify/evidence`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: type ?? "biochar",
+        metadata: numericMeta,
+        location: location || "India",
+        images: images.map(toEvidencePayload),
+      }),
+    });
+
+    const evidence = await evidenceResponse.json();
+    if (!evidenceResponse.ok || evidence.verdict !== "pass") {
+      setLoading(false);
+      const reason = Array.isArray(evidence.reasons) && evidence.reasons.length ? evidence.reasons[0] : "The uploaded images look fake, duplicated, or unrelated to this project.";
+      Alert.alert("Image validation failed", reason);
+      return;
+    }
+
     const project = addProject({
       name: projectName,
       type: type as any,
       location,
       status: "verifying",
-      metadata: numericMeta,
+      metadata: {
+        ...numericMeta,
+        imageEvidenceVerdict: evidence.verdict,
+        imageEvidenceConfidence: Number(evidence.confidence) || 0,
+        imageEvidenceSignals: Array.isArray(evidence.signals) ? evidence.signals.join(",") : "",
+      },
       mediaCount: images.length,
-      mediaUris: images,
+      mediaUris: images.map((image) => image.uri),
     });
     setLoading(false);
     router.push({ pathname: "/verify/[id]", params: { id: project.id } });
@@ -625,7 +719,7 @@ export default function CaptureDataScreen() {
                   >
                     {filled ? (
                       <>
-                        <Image source={{ uri }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                        <Image source={{ uri: uri.uri }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
                         <View style={styles.removeOverlay}>
                           <Feather name="x" size={16} color="#fff" />
                         </View>

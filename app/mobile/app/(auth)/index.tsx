@@ -40,6 +40,7 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
 
   function handleContinue() {
     if (phone.length < 7) return;
@@ -55,9 +56,11 @@ export default function AuthScreen() {
 
   async function handleGoogleLogin() {
     setGoogleLoading(true);
+    setAuthError("");
     try {
       await loginWithGoogle();
     } catch (e) {
+      setAuthError(e instanceof Error ? e.message : "Google sign-in failed");
       console.warn("Google login error:", e);
     } finally {
       setGoogleLoading(false);
@@ -220,6 +223,8 @@ export default function AuthScreen() {
               accentColor={colors.mutedForeground}
             />
           </View>
+
+          {authError ? <Text style={[styles.authError, { color: colors.destructive }]}>{authError}</Text> : null}
 
           <Text style={[styles.disclaimer, { color: colors.mutedForeground }]}>
             No passwords. No KYC friction.{"\n"}Privacy by design.
@@ -530,6 +535,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: "center",
     lineHeight: 18,
+    marginTop: 4,
+  },
+  authError: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 12,
+    textAlign: "center",
     marginTop: 4,
   },
 });

@@ -197,9 +197,15 @@ export default function AssetCreatedScreen() {
             </Pressable>
             <Pressable
               style={[styles.primaryBtn, { backgroundColor: colors.primary, flex: 1 }]}
+              onPress={() => router.push({ pathname: "/payment/[id]", params: { id: id! } })}
+            >
+              <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>Buy with Dodo</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.secondaryBtn, { borderColor: colors.secondary, flex: 1 }]}
               onPress={() => router.replace("/(tabs)/portfolio" as any)}
             >
-              <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>View Portfolio</Text>
+              <Text style={[styles.secondaryBtnText, { color: colors.secondary }]}>View Portfolio</Text>
             </Pressable>
           </View>
         </View>

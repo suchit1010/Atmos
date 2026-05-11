@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { makeRedirectUri } from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -96,68 +97,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function loginWithGoogle() {
-    const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
-    const domain = process.env.EXPO_PUBLIC_DOMAIN;
+    const clientId =
+      process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID ??
+      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ??
+      process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
 
-    if (clientId && domain) {
-      try {
-        const redirectUri = `https://${domain}/api/auth/google/callback`;
-        const authUrl =
-          `https://accounts.google.com/o/oauth2/v2/auth` +
-          `?client_id=${clientId}` +
-          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-          `&response_type=token` +
-          `&scope=${encodeURIComponent("openid email profile")}` +
-          `&prompt=select_account`;
-
-        const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
-
-        if (result.type === "success" && result.url) {
-          const params = new URLSearchParams(result.url.split("#")[1] ?? "");
-          const accessToken = params.get("access_token");
-          if (accessToken) {
-            const profileRes = await fetch(
-              `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`
-            );
-            const profile = (await profileRes.json()) as {
-              sub: string;
-              name: string;
-              email: string;
-              picture?: string;
-            };
-            const userData: User = {
-              id: "usr_g_" + profile.sub.slice(-8),
-              phone: "",
-              name: profile.name ?? "Google User",
-              email: profile.email ?? "",
-              walletAddress: generateWallet(),
-              kycStatus: "unverified",
-              role: "producer",
-              authMethod: "google",
-              avatarUrl: profile.picture,
-              kyc: defaultKYC,
-            };
-            await AsyncStorage.setItem("atmos_user", JSON.stringify(userData));
-            setUser(userData);
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn("Google OAuth failed, using demo login:", e);
-      }
+    if (!clientId) {
+      throw new Error("Google OAuth client IDs are missing");
     }
 
+    const redirectUri = makeRedirectUri({ scheme: "atmos", path: "auth/google" });
+    const authUrl =
+      `https://accounts.google.com/o/oauth2/v2/auth` +
+      `?client_id=${encodeURIComponent(clientId)}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=token` +
+      `&scope=${encodeURIComponent("openid email profile")}` +
+      `&prompt=select_account`;
+
+    const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+    if (result.type !== "success" || !result.url) {
+      throw new Error("Google sign-in was cancelled or failed");
+    }
+
+    const fragment = result.url.includes("#") ? result.url.split("#")[1] : "";
+    const params = new URLSearchParams(fragment);
+    const accessToken = params.get("access_token");
+    if (!accessToken) {
+      throw new Error("Google sign-in completed but no access token was returned");
+    }
+
+    const profileRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!profileRes.ok) {
+      throw new Error("Failed to fetch Google profile");
+    }
+
+    const profile = (await profileRes.json()) as {
+      sub?: string;
+      name?: string;
+      email?: string;
+      picture?: string;
+    };
+
     const userData: User = {
-      id: "usr_g_" + Date.now().toString(36),
+      id: "usr_g_" + String(profile.sub ?? Date.now().toString(36)).slice(-8),
       phone: "",
-      name: "Google User",
-      email: "user@gmail.com",
+      name: profile.name ?? "Google User",
+      email: profile.email ?? "",
       walletAddress: generateWallet(),
       kycStatus: "unverified",
       role: "producer",
       authMethod: "google",
+      avatarUrl: profile.picture,
       kyc: defaultKYC,
     };
+
     await AsyncStorage.setItem("atmos_user", JSON.stringify(userData));
     setUser(userData);
   }

@@ -12,6 +12,8 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Linking } from "react-native";
+import * as LinkingExpo from "expo-linking";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
@@ -61,6 +63,41 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    const handleUrlEvent = (event: { url?: string } | string | null) => {
+      const url = typeof event === "string" ? event : event?.url;
+      if (!url) return;
+      try {
+        const parsed = LinkingExpo.parse(url);
+        const path = parsed.path ?? "";
+        const params: any = parsed.queryParams ?? {};
+        if (path.startsWith("payment") || path === "payment/status" || path === "payment-result") {
+          const paymentId = params.paymentId || params.id || params.payment || "";
+          if (paymentId) {
+            router.push(`/payment/status?paymentId=${encodeURIComponent(paymentId)}`);
+          } else {
+            router.push(`/payment/status`);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to parse deep link:", err);
+      }
+    };
+
+    // Handle initial URL on cold start
+    (async () => {
+      try {
+        const initial = await Linking.getInitialURL();
+        if (initial) handleUrlEvent(initial);
+      } catch (err) {
+        console.warn("Error getting initial URL", err);
+      }
+    })();
+
+    const sub = Linking.addEventListener("url", (evt) => handleUrlEvent(evt));
+    return () => sub.remove();
+  }, []);
 
   if (!fontsLoaded && !fontError) return null;
 

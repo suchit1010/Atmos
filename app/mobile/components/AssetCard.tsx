@@ -8,10 +8,11 @@ import { GradeTag } from "./GradeTag";
 interface AssetCardProps {
   asset: Asset;
   onPress?: () => void;
+  onBuyPress?: () => void;
   showBuy?: boolean;
 }
 
-export function AssetCard({ asset, onPress, showBuy = true }: AssetCardProps) {
+export function AssetCard({ asset, onPress, onBuyPress, showBuy = true }: AssetCardProps) {
   const colors = useColors();
 
   return (
@@ -68,7 +69,7 @@ export function AssetCard({ asset, onPress, showBuy = true }: AssetCardProps) {
         </View>
         {showBuy && (
           <Pressable
-            onPress={onPress}
+            onPress={onBuyPress ?? onPress}
             style={({ pressed }) => [
               styles.buyBtn,
               { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 },

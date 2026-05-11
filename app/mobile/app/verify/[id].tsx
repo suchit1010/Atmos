@@ -40,6 +40,9 @@ interface VerifyResult {
   pricePerTonne: number;
   verificationEngine?: string;
   satelliteDataSource?: string;
+  validationStatus?: "pass" | "review" | "reject";
+  requiresManualReview?: boolean;
+  validationIssues?: string[];
   satellite?: {
     source: string;
     imageryAvailable: boolean;
@@ -112,36 +115,8 @@ export default function VerifyScreen() {
   }
 
   async function fetchAIResult(): Promise<VerifyResult> {
-    if (aiCallMade.current) {
-      const co2 = parseFloat((1.2 + Math.random() * 2.8).toFixed(2));
-      const confidence = Math.floor(72 + Math.random() * 20);
-      return {
-        co2,
-        confidence,
-        grade: confidence >= 90 ? "S" : confidence >= 82 ? "A" : confidence >= 70 ? "B" : "C",
-        methodology: "VER Estimate",
-        fraudRisk: "LOW",
-        explanation: "Estimated from reported data using standard carbon accounting models.",
-        pricePerTonne: confidence >= 90 ? 2100 : confidence >= 82 ? 1485 : 820,
-      };
-    }
     aiCallMade.current = true;
-    try {
-      return await callAIVerify();
-    } catch (e) {
-      console.warn("AI verify failed, using estimate:", e);
-      const co2 = parseFloat((1.2 + Math.random() * 2.8).toFixed(2));
-      const confidence = Math.floor(72 + Math.random() * 20);
-      return {
-        co2,
-        confidence,
-        grade: confidence >= 90 ? "S" : confidence >= 82 ? "A" : confidence >= 70 ? "B" : "C",
-        methodology: "VER Estimate",
-        fraudRisk: "LOW",
-        explanation: "Estimated from reported data using standard carbon accounting models.",
-        pricePerTonne: confidence >= 90 ? 2100 : confidence >= 82 ? 1485 : 820,
-      };
-    }
+    return await callAIVerify();
   }
 
   async function runVerification() {
@@ -165,6 +140,24 @@ export default function VerifyScreen() {
       return;
     }
 
+    if (aiResult.validationStatus && aiResult.validationStatus !== "pass") {
+      const issues = aiResult.validationIssues?.length ? aiResult.validationIssues.join(" · ") : "Your data or images need manual review before settlement.";
+      setError(issues);
+      setDone(false);
+      updateProject(id!, {
+        status: "verifying",
+        fraudRisk: aiResult.fraudRisk,
+        confidence: aiResult.confidence,
+        grade: aiResult.grade,
+        metadata: {
+          ...(project?.metadata ?? {}),
+          verificationStatus: aiResult.validationStatus,
+          validationIssues: aiResult.validationIssues?.join("; ") ?? issues,
+        },
+      });
+      return;
+    }
+
     updateProject(id!, {
       status: "verified",
       co2: aiResult.co2,
@@ -176,6 +169,7 @@ export default function VerifyScreen() {
         methodology: aiResult.methodology,
         explanation: aiResult.explanation,
         pricePerTonne: aiResult.pricePerTonne,
+        verificationStatus: aiResult.validationStatus ?? "pass",
       },
     });
 

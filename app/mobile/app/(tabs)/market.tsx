@@ -116,9 +116,8 @@ export default function MarketScreen() {
             key={asset.id}
             asset={asset}
             showBuy
-            onPress={() =>
-              router.push({ pathname: "/payment/[id]", params: { id: asset.id } })
-            }
+            onPress={() => router.push({ pathname: "/asset/[id]", params: { id: asset.id } })}
+            onBuyPress={() => router.push({ pathname: "/payment/[id]", params: { id: asset.id } })}
           />
         ))}
         {filtered.length === 0 && (
