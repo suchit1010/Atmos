@@ -1,9 +1,9 @@
-﻿{
-    "buildCommand":  "pnpm run build:vercel",
-    "env":  {
-                "EXPO_PUBLIC_DOMAIN":  "@VERCEL_BRANCH_URL",
-                "DODO_MODE":  "production",
-                "NODE_ENV":  "production"
-            },
-    "installCommand":  "pnpm install --frozen-lockfile"
+{
+  "buildCommand": "pnpm run build:vercel",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "env": {
+    "EXPO_PUBLIC_DOMAIN": "@VERCEL_BRANCH_URL",
+    "DODO_MODE": "production",
+    "NODE_ENV": "production"
+  }
 }
