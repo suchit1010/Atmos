@@ -18,6 +18,7 @@ import { useAtmos } from "@/context/AtmosContext";
 import { useAuth } from "@/context/AuthContext";
 import { AtmosCard } from "@/components/AtmosCard";
 import { GradeTag } from "@/components/GradeTag";
+import { PrivacyToggle } from "@/components/PrivacyToggle";
 
 function getApiBase(): string {
   // Prefer explicit env var `EXPO_PUBLIC_API_URL`, fall back to EXPO_PUBLIC_DOMAIN,
@@ -41,6 +42,7 @@ export default function PaymentScreen() {
 
   const [quantity, setQuantity] = useState("48");
   const [method, setMethod] = useState<"upi" | "usdc">("upi");
+  const [privacyEnabled, setPrivacyEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -68,18 +70,29 @@ export default function PaymentScreen() {
     try {
       // Call our API server to create a Dodo payment session
       console.log(`[Payment] Calling ${API_BASE}/api/payments/dodo/create with qty=${qty}, total=${total}`);
-      const response = await fetch(`${API_BASE}/api/payments/dodo/create`, {
+      // Choose endpoint based on privacy mode
+      const endpoint = privacyEnabled ? `/api/payments/carbon-purchase` : `/api/payments/dodo/create`;
+      const response = await fetch(`${API_BASE}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: total * 100, // paise
-          currency: method === "upi" ? "INR" : "USD",
-          assetId: asset.id,
-          assetName: asset.name,
-          quantity: qty,
-          buyerName: user?.name ?? "ATMOS User",
-          buyerEmail: user?.email ?? "user@atmos.protocol",
-        }),
+        body: JSON.stringify(
+          privacyEnabled
+            ? {
+                projectId: asset.id,
+                quantity: qty,
+                paymentMethod: "umbra-private",
+                currency: method === "upi" ? "INR" : "USD",
+              }
+            : {
+                amount: total * 100, // paise
+                currency: method === "upi" ? "INR" : "USD",
+                assetId: asset.id,
+                assetName: asset.name,
+                quantity: qty,
+                buyerName: user?.name ?? "ATMOS User",
+                buyerEmail: user?.email ?? "user@atmos.protocol",
+              }
+        ),
       });
 
       if (!response.ok) {
@@ -281,6 +294,9 @@ export default function PaymentScreen() {
           </Pressable>
         </View>
 
+        {/* Privacy toggle (Umbra) */}
+        <PrivacyToggle enabled={privacyEnabled} onToggle={setPrivacyEnabled} />
+
         {error ? (
           <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
         ) : null}
@@ -304,7 +320,7 @@ export default function PaymentScreen() {
                 <Feather name="zap" size={16} color={colors.primaryForeground} />
               </View>
               <Text style={[styles.payBtnText, { color: colors.primaryForeground }]}>
-                Pay with Dodo  ₹{total.toLocaleString("en-IN")}
+                {privacyEnabled ? "Pay with Umbra" : "Pay with Dodo"} ₹{total.toLocaleString("en-IN")}
               </Text>
             </>
           )}
