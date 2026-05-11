@@ -353,7 +353,7 @@ umbra_audit_log
 cp .env.example .env.local
 # Edit .env.local with your Solana keypair
 
-pnpm add @umbra/sdk
+pnpm add @umbra-privacy/sdk
 
 # Run migrations
 pnpm migrate:latest
@@ -426,7 +426,7 @@ app/api-server/
 │  │  └─ auth.ts ............................ (existing - reuse)
 │  └─ main.ts .............................. (TODO: add imports)
 ├─ .env.example ............................ ✅ Config template
-└─ package.json ............................ (TODO: add @umbra/sdk)
+└─ package.json ............................ (TODO: add @umbra-privacy/sdk)
 
 app/mobile/
 ├─ components/

@@ -29,8 +29,8 @@ import { query } from '../db/pool';
 // ─── Umbra SDK (with graceful fallback) ────────────────────────
 let Umbra: any = null;
 try {
-  // Production: npm install @umbra/sdk
-  Umbra = require('@umbra/sdk');
+  // Production: npm install @umbra-privacy/sdk
+  Umbra = require('@umbra-privacy/sdk');
 } catch {
   logger.warn('Umbra SDK not installed — using simulation mode');
 }

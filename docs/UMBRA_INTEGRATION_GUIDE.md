@@ -87,7 +87,7 @@ JWT_SECRET=<your-jwt-secret>
 ### Step 4: Install Dependencies
 ```bash
 cd app/api-server
-pnpm add @umbra/sdk @solana/web3.js @solana/spl-token bs58 crypto
+pnpm add @umbra-privacy/sdk @solana/web3.js @solana/spl-token bs58 crypto
 ```
 
 ### Step 5: Run Database Migration
@@ -380,10 +380,10 @@ async function downloadComplianceReport(fromDate, toDate) {
 
 ## Troubleshooting
 
-### Issue: "Cannot find module '@umbra/sdk'"
+### Issue: "Cannot find module '@umbra-privacy/sdk'"
 **Solution:** 
 ```bash
-pnpm add @umbra/sdk
+pnpm add @umbra-privacy/sdk
 # If fails: development mode uses simulation fallback
 ```
 
