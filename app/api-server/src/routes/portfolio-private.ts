@@ -19,7 +19,7 @@ import {
   generateComplianceReport,
 } from '../lib/umbra';
 import { query } from '../db/pool';
-import { logger } from '../utils/logger';
+import { logger } from '../lib/logger';
 import { requireAuth } from '../middleware/auth';
 
 const router = Router();

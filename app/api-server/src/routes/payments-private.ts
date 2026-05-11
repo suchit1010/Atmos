@@ -19,7 +19,7 @@ import {
   PrivateTransferRequest,
 } from '../lib/umbra';
 import { query } from '../db/pool';
-import { logger } from '../utils/logger';
+import { logger } from '../lib/logger';
 import { requireAuth } from '../middleware/auth';
 
 const router = Router();
@@ -112,7 +112,7 @@ router.post('/carbon-purchase', requireAuth, async (req: Request, res: Response)
 
     const paymentIntentId = paymentIntentResult.rows[0].id;
 
-    let umbra Result: any = null;
+    let umbraResult: any = null;
     let umbraCommitment: string | null = null;
 
     // ── PRIVATE: Use Umbra ───────────────────────────────────
