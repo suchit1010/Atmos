@@ -9,8 +9,8 @@ const DODO_API_KEY = process.env["DODO_API_KEY"] ?? "";
 const DODO_WEBHOOK_SECRET = process.env["DODO_WEBHOOK_SECRET"] ?? "";
 const DODO_MODE = process.env["DODO_MODE"] ?? "live";
 
-// Real Dodo product ID for ATMOS carbon assets
-const DODO_PRODUCT_ID = "pdt_0NeRjRfS1WBxeKVY8XD7f";
+// Test Dodo product ID for ATMOS carbon assets
+const DODO_PRODUCT_ID = "pdt_0NeTZC7YUIaCtJSBukmEK";
 
 const processedWebhookEventIds = new Set<string>();
 const WEBHOOK_TOLERANCE_SECONDS = 5 * 60;
@@ -154,12 +154,19 @@ router.post("/payments/dodo/create", async (req, res) => {
   }
 
   try {
+    // Normalize numeric inputs to avoid sending null/invalid types to Dodo
+    const rawQty = quantity ?? 1;
+    const qty = Number.isFinite(Number(rawQty)) ? Math.max(1, Math.floor(Number(rawQty))) : 1;
+    const amt = Number.isFinite(Number(amount)) ? Number(amount) : 0;
+    req.log?.info({ assetId, assetName, qty, amt, currency }, "Creating Dodo payment session - normalized payload");
+
     if (DODO_MODE === "demo") {
+      // For testing, return the provided test checkout URL so QA can complete a checkout flow.
       res.json({
         success: true,
         paymentId: `dodo_demo_${Date.now()}`,
-        paymentUrl: `https://demo.atmos.local/payment-success?assetId=${assetId}`,
-        amount,
+        paymentUrl: `https://test.checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${qty}&redirect_url=https://www.atmosexample.com`,
+        amount: amt,
         currency,
         mock: true,
         mode: "demo",
@@ -184,7 +191,7 @@ router.post("/payments/dodo/create", async (req, res) => {
       product_cart: [
         {
           product_id: DODO_PRODUCT_ID,
-          quantity: quantity ?? 1,
+          quantity: qty,
         },
       ],
       payment_link: true,
@@ -209,12 +216,12 @@ router.post("/payments/dodo/create", async (req, res) => {
 
     if (!response.ok) {
       req.log.error({ data, status: response.status }, "Dodo API error");
-      // Return mock payment URL for demo fallback (still uses real product ID)
+      // Return mock payment URL for demo fallback (use normalized qty)
       res.json({
         success: true,
         paymentId: `dodo_${Date.now()}`,
-        paymentUrl: `https://checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${quantity ?? 1}&redirect_url=https://atmos.protocol/settlement?assetId=${assetId}`,
-        amount,
+        paymentUrl: `https://test.checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${qty}&redirect_url=https://www.atmosexample.com`,
+        amount: amt,
         currency,
         mock: true,
         mode: "fallback",
@@ -226,19 +233,19 @@ router.post("/payments/dodo/create", async (req, res) => {
       success: true,
       paymentId: (data as any).payment_id ?? `dodo_${Date.now()}`,
       paymentUrl: (data as any).payment_link ?? `https://checkout.dodopayments.com/pay/${(data as any).payment_id}`,
-      amount,
+      amount: amt,
       currency,
       mock: false,
       mode: "live",
     });
   } catch (err) {
     req.log.error({ err }, "Payment creation failed");
-    // Graceful fallback for demo (uses real product ID)
+    // Graceful fallback for demo (uses normalized qty)
     res.json({
       success: true,
       paymentId: `dodo_demo_${Date.now()}`,
-      paymentUrl: `https://checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${quantity ?? 1}&redirect_url=https://atmos.protocol/settlement?assetId=${assetId}`,
-      amount,
+      paymentUrl: `https://test.checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${qty}&redirect_url=https://www.atmosexample.com`,
+      amount: amt,
       currency,
       mock: true,
       mode: "fallback",

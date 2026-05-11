@@ -16,9 +16,12 @@ import { useAtmos } from "@/context/AtmosContext";
 import { AtmosCard } from "@/components/AtmosCard";
 
 function getApiBase(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (!domain) return "http://127.0.0.1:8080";
-  return domain.startsWith("http://") || domain.startsWith("https://") ? domain : `https://${domain}`;
+  const apiUrl = typeof process !== "undefined" ? process.env["EXPO_PUBLIC_API_URL"] : undefined;
+  if (apiUrl) return apiUrl;
+  const domain = typeof process !== "undefined" ? process.env["EXPO_PUBLIC_DOMAIN"] : undefined;
+  if (domain) return domain.startsWith("http://") || domain.startsWith("https://") ? domain : `https://${domain}`;
+  // Default to the API server used in local dev
+  return "http://localhost:9001";
 }
 
 const API_BASE = getApiBase();
@@ -99,19 +102,27 @@ export default function VerifyScreen() {
 
   async function callAIVerify(): Promise<VerifyResult> {
     const url = `${API_BASE}/api/verify`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: project?.type ?? "biochar",
-        metadata: project?.metadata ?? {},
-        location: project?.location ?? "India",
-      }),
-    });
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: project?.type ?? "biochar",
+          metadata: project?.metadata ?? {},
+          location: project?.location ?? "India",
+        }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => "<no body>");
+        throw new Error(`API error ${response.status}: ${text}`);
+      }
+
+      return response.json() as Promise<VerifyResult>;
+    } catch (err: any) {
+      console.warn("callAIVerify failed", err?.message ?? err);
+      throw err;
     }
-    return response.json() as Promise<VerifyResult>;
   }
 
   async function fetchAIResult(): Promise<VerifyResult> {
@@ -140,8 +151,8 @@ export default function VerifyScreen() {
       return;
     }
 
-    if (aiResult.validationStatus && aiResult.validationStatus !== "pass") {
-      const issues = aiResult.validationIssues?.length ? aiResult.validationIssues.join(" · ") : "Your data or images need manual review before settlement.";
+    if (aiResult.validationStatus === "reject") {
+      const issues = aiResult.validationIssues?.length ? aiResult.validationIssues.join(" · ") : "Your data or images were rejected by validation.";
       setError(issues);
       setDone(false);
       updateProject(id!, {
@@ -155,6 +166,31 @@ export default function VerifyScreen() {
           validationIssues: aiResult.validationIssues?.join("; ") ?? issues,
         },
       });
+      return;
+    }
+
+    if (aiResult.validationStatus === "review") {
+      const issues = aiResult.validationIssues?.length ? aiResult.validationIssues.join(" · ") : "Your data needs manual review before settlement.";
+      setError(issues);
+      updateProject(id!, {
+        status: "verified",
+        co2: aiResult.co2,
+        confidence: aiResult.confidence,
+        grade: aiResult.grade,
+        fraudRisk: aiResult.fraudRisk,
+        metadata: {
+          ...(project?.metadata ?? {}),
+          methodology: aiResult.methodology,
+          explanation: aiResult.explanation,
+          pricePerTonne: aiResult.pricePerTonne,
+          verificationStatus: aiResult.validationStatus,
+          validationIssues: aiResult.validationIssues?.join("; ") ?? issues,
+        },
+      });
+
+      setResult(aiResult);
+      setDone(true);
+      Animated.timing(fadeIn, { toValue: 1, duration: 600, useNativeDriver: true }).start();
       return;
     }
 
