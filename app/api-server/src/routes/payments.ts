@@ -144,6 +144,13 @@ function isCreditGrantEvent(eventType: string, payload: Record<string, unknown>)
     || String(payload.payload_type ?? "").toLowerCase() === "creditledgerentry";
 }
 
+function isPaymentCompletedEvent(eventType: string, payload: Record<string, unknown>): boolean {
+  const lowered = eventType.toLowerCase();
+  return ["payment.completed", "payment_completed", "checkout.session.completed", "payment.success", "payment_success"].includes(lowered)
+    || (typeof payload.status === "string" && payload.status.toLowerCase() === "completed")
+    || (typeof payload.state === "string" && payload.state.toLowerCase() === "completed");
+}
+
 // Create a Dodo payment session
 router.post("/payments/dodo/create", async (req, res) => {
   const { amount, currency, assetName, assetId, quantity, buyerName, buyerEmail } = req.body;
@@ -296,6 +303,29 @@ router.post("/payments/dodo/webhook", (req, res) => {
     typeof payload.paymentId === "string" ? payload.paymentId :
     typeof payload.payment === "string" ? payload.payment :
     undefined;
+  const paymentCompleted = isPaymentCompletedEvent(eventType, payload);
+
+  // Handle payment completion events
+  if (paymentCompleted && eventId) {
+    const dodoPaymentId = possibleDodoPaymentId || (typeof payload.id === "string" ? payload.id : eventId);
+    const settlementId = dodoPaymentId;
+    const upsertPayload: any = {
+      id: settlementId,
+      assetId: assetId || "unknown",
+      status: "processing",
+      dodoPaymentId,
+      webhookEventId: eventId,
+      metadata: {
+        dodoEventType: eventType,
+        payload: payload,
+        paymentCompletedAt: Math.floor(Date.now() / 1000),
+      },
+    };
+
+    settlementStore.upsert(upsertPayload);
+    req.log.info({ settlementId, dodoPaymentId, assetId }, "Settlement recorded for payment completion event");
+  }
+
 
   // Persist settlement record if this is a credit event
   if (creditGrant && eventId) {
@@ -323,12 +353,14 @@ router.post("/payments/dodo/webhook", (req, res) => {
     { eventId, eventType, creditGrant, settlementReference, grantId },
     "Dodo webhook received",
   );
+  const action = paymentCompleted ? "payment_completed" : (creditGrant ? "credit_added" : "webhook_received");
+
 
   // In production: persist payment status updates and trigger Solana settlement jobs here.
   res.json({
     received: true,
     duplicate: false,
-    action: creditGrant ? "credit_added" : "webhook_received",
+    action,
     eventType,
     settlementReference: settlementReference ?? grantId ?? null,
   });
@@ -354,10 +386,16 @@ router.get("/payments/settlements/:id", (req, res) => {
 // Lookup settlement by Dodo payment id
 router.get("/payments/settlements/by-dodo/:dodoId", (req, res) => {
   const { dodoId } = req.params;
-  if (!dodoId) return res.status(400).json({ error: 'missing dodo id' });
+  if (!dodoId) {
+    res.status(400).json({ error: 'missing dodo id' });
+    return;
+  }
 
   const settlement = settlementStore.getByDodoPaymentId(dodoId);
-  if (!settlement) return res.status(404).json({ error: 'settlement not found' });
+  if (!settlement) {
+    res.status(404).json({ error: 'settlement not found' });
+    return;
+  }
   res.json(settlement);
 });
 

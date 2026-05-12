@@ -56,9 +56,11 @@ export default function PaymentScreen() {
     setLoading(true);
     setError("");
 
+    const useMockPayments = process.env.EXPO_PUBLIC_USE_MOCK_PAYMENTS === "true";
+
     try {
-      // DEV MODE: Mock payment session for instant testing
-      if (__DEV__) {
+      // Explicit mock mode for isolated local testing.
+      if (useMockPayments) {
         // eslint-disable-next-line no-console
         console.log("🎭 Using mocked Dodo payment session for faster dev iteration");
         await new Promise((r) => setTimeout(r, 300));
@@ -96,7 +98,7 @@ export default function PaymentScreen() {
         return;
       }
 
-      // PRODUCTION: Call our API server to create a Dodo payment session with retry
+      // Default path: call our API server to create a real Dodo payment session.
       const endpoint = privacyEnabled ? `/api/payments/carbon-purchase` : `/api/payments/dodo/create`;
       const candidateBases = [API_BASE, "http://localhost:8080", "http://localhost:9001"].filter(Boolean);
       const overallTimeoutMs = 30000;

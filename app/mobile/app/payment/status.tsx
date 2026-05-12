@@ -11,20 +11,17 @@ export default function PaymentStatusScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const payment = payments.find((p) => p.id === paymentId);
+  const payment = payments.find((p) => p.id === paymentId || p.dodoPaymentId === paymentId);
 
-  // If the URL contains a Dodo payment id (dodo_...), try to resolve to internal payment id
+  // If the URL contains a payment identifier, try to resolve to internal payment id.
   useEffect(() => {
-    if (!payment && typeof paymentId === "string" && paymentId.startsWith("dodo_")) {
-      // Look up locally-stored payments first
-      const local = payments.find((p) => p.dodoPaymentId === paymentId);
-      if (local) {
-        // Redirect to internal payment id
+    if (!payment && typeof paymentId === "string") {
+      const local = payments.find((p) => p.dodoPaymentId === paymentId || p.id === paymentId);
+      if (local && local.id !== paymentId) {
         router.replace(`/payment/status?paymentId=${encodeURIComponent(local.id)}`);
         return;
       }
 
-      // If not found locally, try fetching settlement by Dodo id and show settlement info
       (async () => {
         setLoading(true);
         try {
@@ -32,7 +29,13 @@ export default function PaymentStatusScreen() {
           setSettlement(s as Settlement);
           setError(null);
         } catch (err: any) {
-          setError(err?.message ?? "Settlement not found");
+          try {
+            const fallback = await fetchSettlementById(paymentId);
+            setSettlement(fallback as Settlement);
+            setError(null);
+          } catch {
+            setError(err?.message ?? "Settlement not found");
+          }
         } finally {
           setLoading(false);
         }
@@ -60,6 +63,11 @@ export default function PaymentStatusScreen() {
             settlementStatus: "credit_received",
             status: "processing",
           });
+        } else if ((data.status === "minted" || data.status === "settled") && payment.status !== "completed") {
+          updatePayment(payment.id, {
+            settlementStatus: data.status,
+            status: "completed",
+          });
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load settlement");
@@ -79,6 +87,11 @@ export default function PaymentStatusScreen() {
             settlementStatus: "credit_received",
             status: "processing",
           });
+        } else if ((updated.status === "minted" || updated.status === "settled") && payment.status !== "completed") {
+          updatePayment(payment.id, {
+            settlementStatus: updated.status,
+            status: "completed",
+          });
         }
       });
     }
@@ -96,7 +109,11 @@ export default function PaymentStatusScreen() {
         const s = await fetchSettlementByDodo(payment.dodoPaymentId!);
         if (s && mounted) {
           setSettlement(s as Settlement);
-          updatePayment(payment.id, { settlementId: s.id, settlementStatus: s.status });
+          updatePayment(payment.id, { 
+            settlementId: s.id, 
+            settlementStatus: s.status,
+            status: s.status === "processing" ? "processing" : (s.status === "credit_received" ? "processing" : (s.status === "minted" || s.status === "settled" ? "completed" : "processing"))
+          });
         }
       } catch (err) {
         // ignore not found
