@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { useAtmos } from "@/context/AtmosContext";
-import { fetchSettlementById, subscribeToSettlement, Settlement } from "@/server/settlement";
+import { fetchSettlementById, fetchSettlementByDodo, subscribeToSettlement, Settlement } from "@/server/settlement";
 
 export default function PaymentStatusScreen() {
   const { paymentId } = useLocalSearchParams<{ paymentId: string }>();
@@ -12,6 +12,33 @@ export default function PaymentStatusScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const payment = payments.find((p) => p.id === paymentId);
+
+  // If the URL contains a Dodo payment id (dodo_...), try to resolve to internal payment id
+  useEffect(() => {
+    if (!payment && typeof paymentId === "string" && paymentId.startsWith("dodo_")) {
+      // Look up locally-stored payments first
+      const local = payments.find((p) => p.dodoPaymentId === paymentId);
+      if (local) {
+        // Redirect to internal payment id
+        router.replace(`/payment/status?paymentId=${encodeURIComponent(local.id)}`);
+        return;
+      }
+
+      // If not found locally, try fetching settlement by Dodo id and show settlement info
+      (async () => {
+        setLoading(true);
+        try {
+          const s = await fetchSettlementByDodo(paymentId);
+          setSettlement(s as Settlement);
+          setError(null);
+        } catch (err: any) {
+          setError(err?.message ?? "Settlement not found");
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
+  }, [payment, paymentId, payments]);
 
   useEffect(() => {
     if (!payment?.settlementId) {
@@ -58,6 +85,29 @@ export default function PaymentStatusScreen() {
 
     return () => unsubscribe?.();
   }, [payment?.settlementId, payment?.id]);
+
+  // Poll for settlement by dodoPaymentId if payment exists but has no settlementId
+  useEffect(() => {
+    if (!payment || payment.settlementId || !payment.dodoPaymentId) return;
+
+    let mounted = true;
+    const interval = setInterval(async () => {
+      try {
+        const s = await fetchSettlementByDodo(payment.dodoPaymentId!);
+        if (s && mounted) {
+          setSettlement(s as Settlement);
+          updatePayment(payment.id, { settlementId: s.id, settlementStatus: s.status });
+        }
+      } catch (err) {
+        // ignore not found
+      }
+    }, 3000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [payment?.id, payment?.dodoPaymentId]);
 
   if (!payment) {
     return (

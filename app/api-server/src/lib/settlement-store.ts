@@ -20,6 +20,7 @@ export interface Settlement {
 class SettlementStore {
   private settlements = new Map<string, Settlement>();
   private settlementsByEventId = new Map<string, string>();
+  private settlementsByDodoId = new Map<string, string>();
 
   /**
    * Create or update a settlement record
@@ -44,7 +45,19 @@ class SettlementStore {
       this.settlementsByEventId.set(settlement.webhookEventId, settlement.id);
     }
 
+    if (typeof settlement.dodoPaymentId === 'string' && settlement.dodoPaymentId.trim()) {
+      this.settlementsByDodoId.set(settlement.dodoPaymentId, settlement.id);
+    }
+
     return record;
+  }
+
+  /**
+   * Get settlement by Dodo payment id
+   */
+  getByDodoPaymentId(dodoPaymentId: string): Settlement | undefined {
+    const settlementId = this.settlementsByDodoId.get(dodoPaymentId);
+    return settlementId ? this.settlements.get(settlementId) : undefined;
   }
 
   /**

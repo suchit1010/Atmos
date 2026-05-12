@@ -2,7 +2,7 @@
  * Settlement API helpers for fetching payment and settlement status
  */
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api";
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || "http://localhost:9001";
 
 export interface Settlement {
   id: string;
@@ -22,7 +22,7 @@ export interface Settlement {
  * Fetch all settlements or filter by status
  */
 export async function fetchSettlements(status?: string): Promise<{ settlements: Settlement[]; count: number }> {
-  const url = new URL(`${API_BASE}/payments/settlements`);
+  const url = new URL(`${API_BASE}/api/payments/settlements`);
   if (status) url.searchParams.append("status", status);
 
   const res = await fetch(url.toString(), {
@@ -41,7 +41,7 @@ export async function fetchSettlements(status?: string): Promise<{ settlements: 
  * Fetch a specific settlement by ID
  */
 export async function fetchSettlementById(settlementId: string): Promise<Settlement> {
-  const res = await fetch(`${API_BASE}/payments/settlements/${settlementId}`, {
+  const res = await fetch(`${API_BASE}/api/payments/settlements/${settlementId}`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });
@@ -51,6 +51,23 @@ export async function fetchSettlementById(settlementId: string): Promise<Settlem
       throw new Error("Settlement not found");
     }
     throw new Error(`Failed to fetch settlement: ${res.status}`);
+  }
+
+  return res.json();
+}
+
+/**
+ * Fetch a settlement by Dodo payment id
+ */
+export async function fetchSettlementByDodo(dodoPaymentId: string): Promise<Settlement> {
+  const res = await fetch(`${API_BASE}/api/payments/settlements/by-dodo/${encodeURIComponent(dodoPaymentId)}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!res.ok) {
+    if (res.status === 404) throw new Error('Settlement not found');
+    throw new Error(`Failed to fetch settlement by dodo id: ${res.status}`);
   }
 
   return res.json();

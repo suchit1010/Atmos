@@ -147,6 +147,9 @@ function isCreditGrantEvent(eventType: string, payload: Record<string, unknown>)
 // Create a Dodo payment session
 router.post("/payments/dodo/create", async (req, res) => {
   const { amount, currency, assetName, assetId, quantity, buyerName, buyerEmail } = req.body;
+  const rawQty = quantity ?? 1;
+  const qty = Number.isFinite(Number(rawQty)) ? Math.max(1, Math.floor(Number(rawQty))) : 1;
+  const amt = Number.isFinite(Number(amount)) ? Number(amount) : 0;
 
   if (!amount || !assetId) {
     res.status(400).json({ error: "amount and assetId are required" });
@@ -155,9 +158,6 @@ router.post("/payments/dodo/create", async (req, res) => {
 
   try {
     // Normalize numeric inputs to avoid sending null/invalid types to Dodo
-    const rawQty = quantity ?? 1;
-    const qty = Number.isFinite(Number(rawQty)) ? Math.max(1, Math.floor(Number(rawQty))) : 1;
-    const amt = Number.isFinite(Number(amount)) ? Number(amount) : 0;
     req.log?.info({ assetId, assetName, qty, amt, currency }, "Creating Dodo payment session - normalized payload");
 
     if (DODO_MODE === "demo") {
@@ -289,12 +289,18 @@ router.post("/payments/dodo/webhook", (req, res) => {
   const creditGrant = isCreditGrantEvent(eventType, payload);
   const settlementReference = typeof payload.reference_id === "string" ? payload.reference_id : undefined;
   const grantId = typeof payload.grant_id === "string" ? payload.grant_id : undefined;
-  const assetId = typeof payload.asset_id === "string" ? payload.asset_id : "unknown";
+  const assetId = typeof payload.asset_id === "string" ? payload.asset_id : (typeof payload.product_id === "string" ? payload.product_id : "unknown");
+  // Attempt to extract a Dodo payment id from common fields
+  const possibleDodoPaymentId =
+    typeof payload.payment_id === "string" ? payload.payment_id :
+    typeof payload.paymentId === "string" ? payload.paymentId :
+    typeof payload.payment === "string" ? payload.payment :
+    undefined;
 
   // Persist settlement record if this is a credit event
   if (creditGrant && eventId) {
     const settlementId = settlementReference ?? grantId ?? eventId;
-    settlementStore.upsert({
+    const upsertPayload: any = {
       id: settlementId,
       assetId,
       status: "credit_received",
@@ -305,7 +311,11 @@ router.post("/payments/dodo/webhook", (req, res) => {
         dodoEventType: eventType,
         payload: payload,
       },
-    });
+    };
+
+    if (possibleDodoPaymentId) upsertPayload.dodoPaymentId = possibleDodoPaymentId;
+
+    settlementStore.upsert(upsertPayload);
     req.log.info({ settlementId, grantId, assetId }, "Settlement recorded for credit event");
   }
 
@@ -338,6 +348,16 @@ router.get("/payments/settlements/:id", (req, res) => {
     res.status(404).json({ error: "settlement not found" });
     return;
   }
+  res.json(settlement);
+});
+
+// Lookup settlement by Dodo payment id
+router.get("/payments/settlements/by-dodo/:dodoId", (req, res) => {
+  const { dodoId } = req.params;
+  if (!dodoId) return res.status(400).json({ error: 'missing dodo id' });
+
+  const settlement = settlementStore.getByDodoPaymentId(dodoId);
+  if (!settlement) return res.status(404).json({ error: 'settlement not found' });
   res.json(settlement);
 });
 
