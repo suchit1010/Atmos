@@ -196,6 +196,9 @@ GET /api/payments/settlements/:id
   }
 ```
 
+Detailed integration notes: [docs/payment-umbra.md](docs/payment-umbra.md)
+
+
 ---
 
 ## Entity Types & Methodologies

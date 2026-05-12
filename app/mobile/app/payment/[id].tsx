@@ -19,18 +19,7 @@ import { useAuth } from "@/context/AuthContext";
 import { AtmosCard } from "@/components/AtmosCard";
 import { GradeTag } from "@/components/GradeTag";
 import { PrivacyToggle } from "@/components/PrivacyToggle";
-
-function getApiBase(): string {
-  // Prefer explicit env var `EXPO_PUBLIC_API_URL`, fall back to EXPO_PUBLIC_DOMAIN,
-  // then to localhost:9001 which is the API server used in local dev/test runs.
-  const apiUrl = typeof process !== "undefined" ? process.env["EXPO_PUBLIC_API_URL"] : undefined;
-  if (apiUrl) return apiUrl;
-  const domain = typeof process !== "undefined" ? process.env["EXPO_PUBLIC_DOMAIN"] : undefined;
-  if (domain) return domain.startsWith("http://") || domain.startsWith("https://") ? domain : `https://${domain}`;
-  return "http://localhost:9001";
-}
-
-const API_BASE = getApiBase();
+import { API_BASE } from "@/constants/api";
 
 export default function PaymentScreen() {
   const colors = useColors();
@@ -68,40 +57,110 @@ export default function PaymentScreen() {
     setError("");
 
     try {
-      // Call our API server to create a Dodo payment session
-      console.log(`[Payment] Calling ${API_BASE}/api/payments/dodo/create with qty=${qty}, total=${total}`);
-      // Choose endpoint based on privacy mode
+      // DEV MODE: Mock payment session for instant testing
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log("🎭 Using mocked Dodo payment session for faster dev iteration");
+        await new Promise((r) => setTimeout(r, 300));
+        const mockPaymentUrl = `https://test.checkout.dodopayments.com/buy/pdt_0NeTZC7YUIaCtJSBukmEK?quantity=${qty}&redirect_url=https://www.atmosexample.com`;
+        
+        // Open the mock payment URL
+        try {
+          if (Platform.OS === "web") {
+            const opened = window.open(mockPaymentUrl, "_blank");
+            if (!opened) {
+              console.warn("[Payment] window.open returned null - popup may have been blocked");
+            }
+          } else {
+            await WebBrowser.openBrowserAsync(mockPaymentUrl);
+          }
+        } catch (openErr) {
+          console.warn("[Payment] Failed to open payment URL:", openErr);
+        }
+
+        // Record the payment as pending and navigate to the status page using internal id
+        const mockId = `dodo_mock_${Date.now()}`;
+        const created = addPayment({
+          assetId: asset.id,
+          assetName: asset.name,
+          amount: total,
+          quantity: qty,
+          currency: method === "upi" ? "INR" : "USDC",
+          status: "pending",
+          txId: mockId,
+          dodoPaymentId: mockId,
+        });
+
+        setLoading(false);
+        router.push(`/payment/status?paymentId=${encodeURIComponent(created.id)}`);
+        return;
+      }
+
+      // PRODUCTION: Call our API server to create a Dodo payment session with retry
       const endpoint = privacyEnabled ? `/api/payments/carbon-purchase` : `/api/payments/dodo/create`;
-      const response = await fetch(`${API_BASE}${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          privacyEnabled
-            ? {
-                projectId: asset.id,
-                quantity: qty,
-                paymentMethod: "umbra-private",
-                currency: method === "upi" ? "INR" : "USD",
-              }
-            : {
-                amount: total * 100, // paise
-                currency: method === "upi" ? "INR" : "USD",
-                assetId: asset.id,
-                assetName: asset.name,
-                quantity: qty,
-                buyerName: user?.name ?? "ATMOS User",
-                buyerEmail: user?.email ?? "user@atmos.protocol",
-              }
-        ),
-      });
+      const candidateBases = [API_BASE, "http://localhost:8080", "http://localhost:9001"].filter(Boolean);
+      const overallTimeoutMs = 30000;
+      const overallController = new AbortController();
+      const overallTimer = setTimeout(() => overallController.abort(), overallTimeoutMs);
+
+      let response: Response | null = null;
+      let lastError: any = null;
+
+      const requestBody = privacyEnabled
+        ? {
+            projectId: asset.id,
+            quantity: qty,
+            paymentMethod: "umbra-private",
+            currency: method === "upi" ? "INR" : "USD",
+          }
+        : {
+            amount: total * 100, // paise
+            currency: method === "upi" ? "INR" : "USD",
+            assetId: asset.id,
+            assetName: asset.name,
+            quantity: qty,
+            buyerName: user?.name ?? "ATMOS User",
+            buyerEmail: user?.email ?? "user@atmos.protocol",
+          };
+
+      for (const base of candidateBases) {
+        try {
+          // eslint-disable-next-line no-console
+          console.log(`[Payment] Trying ${base}${endpoint}`);
+          const res = await fetch(`${base}${endpoint}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestBody),
+            signal: overallController.signal,
+          });
+
+          response = res;
+          break;
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.warn(`[Payment] Request failed for ${base}:`, err);
+          lastError = err;
+          if ((overallController as any).signal?.aborted) break;
+          continue;
+        }
+      }
+
+      clearTimeout(overallTimer);
+
+      if (!response) {
+        throw new Error(
+          lastError?.message ||
+          "Unable to reach the payment service. Check that the API server is running."
+        );
+      }
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[Payment] API error: ${response.status}`, errorText);
-        throw new Error(`API error ${response.status}: ${errorText}`);
+        const errorText = await response.text().catch(() => "<no body>");
+        throw new Error(`Payment API error ${response.status}: ${errorText}`);
       }
 
       const data: any = await response.json();
+      // eslint-disable-next-line no-console
       console.log("[Payment] API Response:", data);
 
       if (!data.success) {
@@ -112,43 +171,37 @@ export default function PaymentScreen() {
         throw new Error("Payment API did not return paymentUrl");
       }
 
+      // eslint-disable-next-line no-console
       console.log("[Payment] Redirecting to:", data.paymentUrl);
-      // Open the payment URL for both demo and live modes so user can complete checkout.
       try {
         if (Platform.OS === "web") {
-          // open in new tab on web
-          // eslint-disable-next-line no-undef
-          console.log("[Payment] Opening in new window (web)");
           const opened = window.open(data.paymentUrl, "_blank");
           if (!opened) {
             console.warn("[Payment] window.open returned null - popup may have been blocked");
           }
         } else {
-          console.log("[Payment] Opening with WebBrowser (native)");
-          const result = await WebBrowser.openBrowserAsync(data.paymentUrl);
-          console.log("[Payment] WebBrowser result:", result);
+          await WebBrowser.openBrowserAsync(data.paymentUrl);
         }
       } catch (openErr) {
-        // non-blocking: continue to record payment locally even if browser couldn't open
         console.warn("[Payment] Failed to open payment URL:", openErr);
       }
 
-      // Record the payment as pending because user still needs to complete checkout
-      addPayment({
+      // Record the payment as pending and navigate to status using internal id
+      const created = addPayment({
         assetId: asset.id,
         assetName: asset.name,
         amount: total,
         quantity: qty,
         currency: method === "upi" ? "INR" : "USDC",
         status: "pending",
-        txId: data.paymentId ?? "dodo_" + Date.now(),
+        txId: data.paymentId ?? `dodo_${Date.now()}`,
         dodoPaymentId: data.paymentId ?? undefined,
       });
 
       setLoading(false);
-      // Navigate to settlement/status (user can return to app and see pending status)
-      router.push(`/payment/status?paymentId=${encodeURIComponent(data.paymentId ?? "")}`);
+      router.push(`/payment/status?paymentId=${encodeURIComponent(created.id)}`);
     } catch (err: any) {
+      // eslint-disable-next-line no-console
       console.error("[Payment] Error:", err?.message ?? err);
       setError(err?.message ?? "Payment failed");
       setLoading(false);
@@ -295,7 +348,7 @@ export default function PaymentScreen() {
         </View>
 
         {/* Privacy toggle (Umbra) */}
-        <PrivacyToggle enabled={privacyEnabled} onToggle={setPrivacyEnabled} />
+        <PrivacyToggle privacyMode={privacyEnabled} onPrivacyModeChange={setPrivacyEnabled} />
 
         {error ? (
           <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
