@@ -53,3 +53,5 @@ attached_assets/
 .env.*
 secrets
 *.key
+.vercel
+.env*.local

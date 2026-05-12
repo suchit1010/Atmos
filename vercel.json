@@ -1,0 +1,8 @@
+{
+  "buildCommand": "pnpm run build:vercel",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "env": {
+    "DODO_MODE": "production",
+    "NODE_ENV": "production"
+  }
+}

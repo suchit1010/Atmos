@@ -9,8 +9,8 @@ const DODO_API_KEY = process.env["DODO_API_KEY"] ?? "";
 const DODO_WEBHOOK_SECRET = process.env["DODO_WEBHOOK_SECRET"] ?? "";
 const DODO_MODE = process.env["DODO_MODE"] ?? "live";
 
-// Real Dodo product ID for ATMOS carbon assets
-const DODO_PRODUCT_ID = "pdt_0NeRjRfS1WBxeKVY8XD7f";
+// Test Dodo product ID for ATMOS carbon assets
+const DODO_PRODUCT_ID = "pdt_0NeTZC7YUIaCtJSBukmEK";
 
 const processedWebhookEventIds = new Set<string>();
 const WEBHOOK_TOLERANCE_SECONDS = 5 * 60;
@@ -144,9 +144,19 @@ function isCreditGrantEvent(eventType: string, payload: Record<string, unknown>)
     || String(payload.payload_type ?? "").toLowerCase() === "creditledgerentry";
 }
 
+function isPaymentCompletedEvent(eventType: string, payload: Record<string, unknown>): boolean {
+  const lowered = eventType.toLowerCase();
+  return ["payment.completed", "payment_completed", "checkout.session.completed", "payment.success", "payment_success"].includes(lowered)
+    || (typeof payload.status === "string" && payload.status.toLowerCase() === "completed")
+    || (typeof payload.state === "string" && payload.state.toLowerCase() === "completed");
+}
+
 // Create a Dodo payment session
 router.post("/payments/dodo/create", async (req, res) => {
   const { amount, currency, assetName, assetId, quantity, buyerName, buyerEmail } = req.body;
+  const rawQty = quantity ?? 1;
+  const qty = Number.isFinite(Number(rawQty)) ? Math.max(1, Math.floor(Number(rawQty))) : 1;
+  const amt = Number.isFinite(Number(amount)) ? Number(amount) : 0;
 
   if (!amount || !assetId) {
     res.status(400).json({ error: "amount and assetId are required" });
@@ -154,12 +164,16 @@ router.post("/payments/dodo/create", async (req, res) => {
   }
 
   try {
+    // Normalize numeric inputs to avoid sending null/invalid types to Dodo
+    req.log?.info({ assetId, assetName, qty, amt, currency }, "Creating Dodo payment session - normalized payload");
+
     if (DODO_MODE === "demo") {
+      // For testing, return the provided test checkout URL so QA can complete a checkout flow.
       res.json({
         success: true,
         paymentId: `dodo_demo_${Date.now()}`,
-        paymentUrl: `https://demo.atmos.local/payment-success?assetId=${assetId}`,
-        amount,
+        paymentUrl: `https://test.checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${qty}&redirect_url=https://www.atmosexample.com`,
+        amount: amt,
         currency,
         mock: true,
         mode: "demo",
@@ -184,7 +198,7 @@ router.post("/payments/dodo/create", async (req, res) => {
       product_cart: [
         {
           product_id: DODO_PRODUCT_ID,
-          quantity: quantity ?? 1,
+          quantity: qty,
         },
       ],
       payment_link: true,
@@ -209,12 +223,12 @@ router.post("/payments/dodo/create", async (req, res) => {
 
     if (!response.ok) {
       req.log.error({ data, status: response.status }, "Dodo API error");
-      // Return mock payment URL for demo fallback (still uses real product ID)
+      // Return mock payment URL for demo fallback (use normalized qty)
       res.json({
         success: true,
         paymentId: `dodo_${Date.now()}`,
-        paymentUrl: `https://checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${quantity ?? 1}&redirect_url=https://atmos.protocol/settlement?assetId=${assetId}`,
-        amount,
+        paymentUrl: `https://test.checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${qty}&redirect_url=https://www.atmosexample.com`,
+        amount: amt,
         currency,
         mock: true,
         mode: "fallback",
@@ -226,19 +240,19 @@ router.post("/payments/dodo/create", async (req, res) => {
       success: true,
       paymentId: (data as any).payment_id ?? `dodo_${Date.now()}`,
       paymentUrl: (data as any).payment_link ?? `https://checkout.dodopayments.com/pay/${(data as any).payment_id}`,
-      amount,
+      amount: amt,
       currency,
       mock: false,
       mode: "live",
     });
   } catch (err) {
     req.log.error({ err }, "Payment creation failed");
-    // Graceful fallback for demo (uses real product ID)
+    // Graceful fallback for demo (uses normalized qty)
     res.json({
       success: true,
       paymentId: `dodo_demo_${Date.now()}`,
-      paymentUrl: `https://checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${quantity ?? 1}&redirect_url=https://atmos.protocol/settlement?assetId=${assetId}`,
-      amount,
+      paymentUrl: `https://test.checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${qty}&redirect_url=https://www.atmosexample.com`,
+      amount: amt,
       currency,
       mock: true,
       mode: "fallback",
@@ -282,12 +296,41 @@ router.post("/payments/dodo/webhook", (req, res) => {
   const creditGrant = isCreditGrantEvent(eventType, payload);
   const settlementReference = typeof payload.reference_id === "string" ? payload.reference_id : undefined;
   const grantId = typeof payload.grant_id === "string" ? payload.grant_id : undefined;
-  const assetId = typeof payload.asset_id === "string" ? payload.asset_id : "unknown";
+  const assetId = typeof payload.asset_id === "string" ? payload.asset_id : (typeof payload.product_id === "string" ? payload.product_id : "unknown");
+  // Attempt to extract a Dodo payment id from common fields
+  const possibleDodoPaymentId =
+    typeof payload.payment_id === "string" ? payload.payment_id :
+    typeof payload.paymentId === "string" ? payload.paymentId :
+    typeof payload.payment === "string" ? payload.payment :
+    undefined;
+  const paymentCompleted = isPaymentCompletedEvent(eventType, payload);
+
+  // Handle payment completion events
+  if (paymentCompleted && eventId) {
+    const dodoPaymentId = possibleDodoPaymentId || (typeof payload.id === "string" ? payload.id : eventId);
+    const settlementId = dodoPaymentId;
+    const upsertPayload: any = {
+      id: settlementId,
+      assetId: assetId || "unknown",
+      status: "processing",
+      dodoPaymentId,
+      webhookEventId: eventId,
+      metadata: {
+        dodoEventType: eventType,
+        payload: payload,
+        paymentCompletedAt: Math.floor(Date.now() / 1000),
+      },
+    };
+
+    settlementStore.upsert(upsertPayload);
+    req.log.info({ settlementId, dodoPaymentId, assetId }, "Settlement recorded for payment completion event");
+  }
+
 
   // Persist settlement record if this is a credit event
   if (creditGrant && eventId) {
     const settlementId = settlementReference ?? grantId ?? eventId;
-    settlementStore.upsert({
+    const upsertPayload: any = {
       id: settlementId,
       assetId,
       status: "credit_received",
@@ -298,7 +341,11 @@ router.post("/payments/dodo/webhook", (req, res) => {
         dodoEventType: eventType,
         payload: payload,
       },
-    });
+    };
+
+    if (possibleDodoPaymentId) upsertPayload.dodoPaymentId = possibleDodoPaymentId;
+
+    settlementStore.upsert(upsertPayload);
     req.log.info({ settlementId, grantId, assetId }, "Settlement recorded for credit event");
   }
 
@@ -306,12 +353,14 @@ router.post("/payments/dodo/webhook", (req, res) => {
     { eventId, eventType, creditGrant, settlementReference, grantId },
     "Dodo webhook received",
   );
+  const action = paymentCompleted ? "payment_completed" : (creditGrant ? "credit_added" : "webhook_received");
+
 
   // In production: persist payment status updates and trigger Solana settlement jobs here.
   res.json({
     received: true,
     duplicate: false,
-    action: creditGrant ? "credit_added" : "webhook_received",
+    action,
     eventType,
     settlementReference: settlementReference ?? grantId ?? null,
   });
@@ -329,6 +378,22 @@ router.get("/payments/settlements/:id", (req, res) => {
   const settlement = settlementStore.get(req.params.id);
   if (!settlement) {
     res.status(404).json({ error: "settlement not found" });
+    return;
+  }
+  res.json(settlement);
+});
+
+// Lookup settlement by Dodo payment id
+router.get("/payments/settlements/by-dodo/:dodoId", (req, res) => {
+  const { dodoId } = req.params;
+  if (!dodoId) {
+    res.status(400).json({ error: 'missing dodo id' });
+    return;
+  }
+
+  const settlement = settlementStore.getByDodoPaymentId(dodoId);
+  if (!settlement) {
+    res.status(404).json({ error: 'settlement not found' });
     return;
   }
   res.json(settlement);

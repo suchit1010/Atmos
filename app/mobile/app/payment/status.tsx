@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { useAtmos } from "@/context/AtmosContext";
-import { fetchSettlementById, subscribeToSettlement, Settlement } from "@/server/settlement";
+import { fetchSettlementById, fetchSettlementByDodo, subscribeToSettlement, Settlement } from "@/server/settlement";
 
 export default function PaymentStatusScreen() {
   const { paymentId } = useLocalSearchParams<{ paymentId: string }>();
@@ -11,7 +11,37 @@ export default function PaymentStatusScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const payment = payments.find((p) => p.id === paymentId);
+  const payment = payments.find((p) => p.id === paymentId || p.dodoPaymentId === paymentId);
+
+  // If the URL contains a payment identifier, try to resolve to internal payment id.
+  useEffect(() => {
+    if (!payment && typeof paymentId === "string") {
+      const local = payments.find((p) => p.dodoPaymentId === paymentId || p.id === paymentId);
+      if (local && local.id !== paymentId) {
+        router.replace(`/payment/status?paymentId=${encodeURIComponent(local.id)}`);
+        return;
+      }
+
+      (async () => {
+        setLoading(true);
+        try {
+          const s = await fetchSettlementByDodo(paymentId);
+          setSettlement(s as Settlement);
+          setError(null);
+        } catch (err: any) {
+          try {
+            const fallback = await fetchSettlementById(paymentId);
+            setSettlement(fallback as Settlement);
+            setError(null);
+          } catch {
+            setError(err?.message ?? "Settlement not found");
+          }
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
+  }, [payment, paymentId, payments]);
 
   useEffect(() => {
     if (!payment?.settlementId) {
@@ -33,6 +63,11 @@ export default function PaymentStatusScreen() {
             settlementStatus: "credit_received",
             status: "processing",
           });
+        } else if ((data.status === "minted" || data.status === "settled") && payment.status !== "completed") {
+          updatePayment(payment.id, {
+            settlementStatus: data.status,
+            status: "completed",
+          });
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load settlement");
@@ -52,12 +87,44 @@ export default function PaymentStatusScreen() {
             settlementStatus: "credit_received",
             status: "processing",
           });
+        } else if ((updated.status === "minted" || updated.status === "settled") && payment.status !== "completed") {
+          updatePayment(payment.id, {
+            settlementStatus: updated.status,
+            status: "completed",
+          });
         }
       });
     }
 
     return () => unsubscribe?.();
   }, [payment?.settlementId, payment?.id]);
+
+  // Poll for settlement by dodoPaymentId if payment exists but has no settlementId
+  useEffect(() => {
+    if (!payment || payment.settlementId || !payment.dodoPaymentId) return;
+
+    let mounted = true;
+    const interval = setInterval(async () => {
+      try {
+        const s = await fetchSettlementByDodo(payment.dodoPaymentId!);
+        if (s && mounted) {
+          setSettlement(s as Settlement);
+          updatePayment(payment.id, { 
+            settlementId: s.id, 
+            settlementStatus: s.status,
+            status: s.status === "processing" ? "processing" : (s.status === "credit_received" ? "processing" : (s.status === "minted" || s.status === "settled" ? "completed" : "processing"))
+          });
+        }
+      } catch (err) {
+        // ignore not found
+      }
+    }, 3000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [payment?.id, payment?.dodoPaymentId]);
 
   if (!payment) {
     return (
