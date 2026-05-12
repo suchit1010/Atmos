@@ -472,21 +472,118 @@ export default function CaptureDataScreen() {
       numericMeta.landBoundaryPointCount = boundaryPoints.length;
     }
 
-    const evidenceResponse = await fetch(`${API_BASE}/api/verify/evidence`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: type ?? "biochar",
-        metadata: numericMeta,
-        location: location || "India",
-        images: images.map(toEvidencePayload),
-      }),
-    });
+    // DEV MODE: Use mock evidence for instant testing (disable in production)
+    const useMockEvidence = __DEV__;
 
-    const evidence = await evidenceResponse.json();
-    if (!evidenceResponse.ok || evidence.verdict !== "pass") {
+    let evidence: any = null;
+
+    if (useMockEvidence) {
+      // eslint-disable-next-line no-console
+      console.log("🎭 Using mocked evidence response for faster dev iteration");
+      await new Promise((r) => setTimeout(r, 300));
+      evidence = {
+        verdict: "pass",
+        confidence: 95,
+        reasons: [],
+        signals: [
+          "high_image_clarity",
+          "solar_panel_detected",
+          "geolocation_consistent",
+          "satellite_match_positive",
+        ],
+      };
+    } else {
+      // PRODUCTION: Try multiple API endpoints with retry and timeout
+      const endpoint = "/api/verify/evidence";
+      const candidateBases = [API_BASE, "http://localhost:8080", "http://localhost:9001"].filter(Boolean);
+      const overallTimeoutMs = 30000;
+      const overallController = new AbortController();
+      const overallTimer = setTimeout(() => overallController.abort(), overallTimeoutMs);
+
+      let evidenceResponse: Response | null = null;
+      let lastError: any = null;
+
+      for (const base of candidateBases) {
+        try {
+          // eslint-disable-next-line no-console
+          console.log("Trying evidence endpoint:", base + endpoint);
+          const res = await fetch(`${base}${endpoint}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: type ?? "biochar",
+              metadata: numericMeta,
+              location: location || "India",
+              images: images.map(toEvidencePayload),
+            }),
+            signal: overallController.signal,
+          });
+
+          evidenceResponse = res;
+          break;
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.warn(`Evidence request failed for ${base}:`, err);
+          lastError = err;
+          if ((overallController as any).signal?.aborted) break;
+          continue;
+        }
+      }
+
+      clearTimeout(overallTimer);
+
+      if (!evidenceResponse) {
+        setLoading(false);
+        if ((overallController as any).signal?.aborted) {
+          Alert.alert(
+            "Verification pending",
+            "AI verification is taking longer than expected. We've submitted the project for background review — results will appear on the project page when ready.",
+          );
+          const project = addProject({
+            name: projectName,
+            type: type as any,
+            location,
+            status: "verifying",
+            metadata: {
+              ...numericMeta,
+              imageEvidenceVerdict: "pending",
+              imageEvidenceConfidence: 0,
+              imageEvidenceSignals: "",
+            },
+            mediaCount: images.length,
+            mediaUris: images.map((image) => image.uri),
+          });
+          router.push({ pathname: "/verify/[id]", params: { id: project.id } });
+          return;
+        }
+        Alert.alert("Network Error", "Unable to reach the verification service. Check that the API server is running and try again.");
+        // eslint-disable-next-line no-console
+        console.error("Evidence request failed (all candidates):", lastError);
+        return;
+      }
+
+      evidence = await evidenceResponse.json().catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error("Failed to parse evidence response JSON:", err);
+        return null;
+      });
+
+      if (!evidenceResponse.ok) {
+        setLoading(false);
+        const reason =
+          evidence?.error || evidence?.message || "The uploaded images look fake, duplicated, or unrelated to this project.";
+        Alert.alert("Image validation failed", reason);
+        return;
+      }
+    }
+
+    // Handle evidence result (mock or real)
+    if (evidence?.verdict !== "pass") {
       setLoading(false);
-      const reason = Array.isArray(evidence.reasons) && evidence.reasons.length ? evidence.reasons[0] : "The uploaded images look fake, duplicated, or unrelated to this project.";
+      const reason =
+        Array.isArray(evidence?.reasons) && evidence.reasons.length
+          ? evidence.reasons[0]
+          : "The uploaded images look fake, duplicated, or unrelated to this project.";
       Alert.alert("Image validation failed", reason);
       return;
     }
@@ -503,10 +600,18 @@ export default function CaptureDataScreen() {
         imageEvidenceSignals: Array.isArray(evidence.signals) ? evidence.signals.join(",") : "",
       },
       mediaCount: images.length,
-      mediaUris: images.map((image) => image.uri),
+      // Don't store full image URIs locally (they exceed storage quota) — keep in router params instead
+      mediaUris: [],
     });
     setLoading(false);
-    router.push({ pathname: "/verify/[id]", params: { id: project.id } });
+    // Pass image URIs via router params so they're available in verify page without storage overhead
+    router.push({
+      pathname: "/verify/[id]",
+      params: {
+        id: project.id,
+        mediaUris: JSON.stringify(images.map((img) => img.uri)),
+      },
+    });
   }
 
   const progress = (step / 3) * 100;

@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: app/api-server/Dockerfile
+    ports:
+      - "9001:9001"
+    environment:
+      - NODE_ENV=development
+      - PORT=9001
+    volumes:
+      - ./:/app:cached
+
+  web:
+    build:
+      context: .
+      dockerfile: app/mockup-sandbox/Dockerfile
+    ports:
+      - "8080:80"

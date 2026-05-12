@@ -14,17 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAtmos } from "@/context/AtmosContext";
 import { AtmosCard } from "@/components/AtmosCard";
-
-function getApiBase(): string {
-  const apiUrl = typeof process !== "undefined" ? process.env["EXPO_PUBLIC_API_URL"] : undefined;
-  if (apiUrl) return apiUrl;
-  const domain = typeof process !== "undefined" ? process.env["EXPO_PUBLIC_DOMAIN"] : undefined;
-  if (domain) return domain.startsWith("http://") || domain.startsWith("https://") ? domain : `https://${domain}`;
-  // Default to the API server used in local dev
-  return "http://localhost:9001";
-}
-
-const API_BASE = getApiBase();
+import { API_BASE } from "@/constants/api";
 
 const PHASES = [
   { label: "Fetching satellite data", sub: "Sentinel-2 Imagery · NIR / Red — Live use", duration: 2500 },
@@ -101,28 +91,85 @@ export default function VerifyScreen() {
   }, []);
 
   async function callAIVerify(): Promise<VerifyResult> {
-    const url = `${API_BASE}/api/verify`;
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: project?.type ?? "biochar",
-          metadata: project?.metadata ?? {},
-          location: project?.location ?? "India",
-        }),
-      });
-
-      if (!response.ok) {
-        const text = await response.text().catch(() => "<no body>");
-        throw new Error(`API error ${response.status}: ${text}`);
-      }
-
-      return response.json() as Promise<VerifyResult>;
-    } catch (err: any) {
-      console.warn("callAIVerify failed", err?.message ?? err);
-      throw err;
+    // DEV MODE: Mock verification result for instant testing
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log("🎭 Using mocked verification result for faster dev iteration");
+      await new Promise((r) => setTimeout(r, 200));
+      return {
+        co2: 2.46,
+        confidence: 92,
+        grade: "A",
+        methodology: project?.metadata?.methodology as string ?? "VM0044 (Biochar)",
+        fraudRisk: "LOW",
+        explanation: "AI verification passed: high image clarity, satellite match positive, geolocation consistent.",
+        pricePerTonne: 1485,
+        verificationEngine: "ai-mock-dev",
+        satelliteDataSource: "Sentinel-2",
+        validationStatus: "pass",
+        requiresManualReview: false,
+        validationIssues: [],
+        satellite: {
+          source: "Sentinel-2",
+          imageryAvailable: true,
+          provider: "USGS",
+          boundaryPoints: 4,
+          landAreaHectares: 0.5,
+        },
+      };
     }
+
+    // PRODUCTION: Try multiple API endpoints with retry and timeout
+    const endpoint = "/api/verify";
+    const candidateBases = [API_BASE, "http://localhost:8080", "http://localhost:9001"].filter(Boolean);
+    const overallTimeoutMs = 30000;
+    const overallController = new AbortController();
+    const overallTimer = setTimeout(() => overallController.abort(), overallTimeoutMs);
+
+    let response: Response | null = null;
+    let lastError: any = null;
+
+    for (const base of candidateBases) {
+      try {
+        // eslint-disable-next-line no-console
+        console.log("Trying verification endpoint:", base + endpoint);
+        const res = await fetch(`${base}${endpoint}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: project?.type ?? "biochar",
+            metadata: project?.metadata ?? {},
+            location: project?.location ?? "India",
+          }),
+          signal: overallController.signal,
+        });
+
+        response = res;
+        break;
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn(`Verification request failed for ${base}:`, err);
+        lastError = err;
+        if ((overallController as any).signal?.aborted) break;
+        continue;
+      }
+    }
+
+    clearTimeout(overallTimer);
+
+    if (!response) {
+      if ((overallController as any).signal?.aborted) {
+        throw new Error("Verification timed out. Please try again.");
+      }
+      throw new Error("Unable to reach the verification service. Check that the API server is running.");
+    }
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "<no body>");
+      throw new Error(`API error ${response.status}: ${text}`);
+    }
+
+    return response.json() as Promise<VerifyResult>;
   }
 
   async function fetchAIResult(): Promise<VerifyResult> {

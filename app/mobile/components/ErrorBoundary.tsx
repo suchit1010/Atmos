@@ -19,10 +19,18 @@ export class ErrorBoundary extends Component<
 > {
   state: ErrorBoundaryState = { error: null };
 
-  static defaultProps: {
-    FallbackComponent: ComponentType<ErrorFallbackProps>;
-  } = {
+  static defaultProps: Partial<ErrorBoundaryProps> = {
     FallbackComponent: ErrorFallback,
+    onError: (error: Error, stackTrace: string) => {
+      try {
+        // Ensure we always surface errors to console for web/devtools and CI logs
+        // Keep this lightweight and safe if console isn't available in some runtimes
+        // eslint-disable-next-line no-console
+        console.error("ErrorBoundary caught error:", error, stackTrace);
+      } catch (e) {
+        // noop
+      }
+    },
   };
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
@@ -30,8 +38,22 @@ export class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, info: { componentStack: string }): void {
+    // Always log to console first so terminal/DevTools capture it immediately
+    try {
+      // eslint-disable-next-line no-console
+      console.error("Uncaught component error:", error, info.componentStack);
+    } catch (e) {
+      // ignore
+    }
+
     if (typeof this.props.onError === "function") {
-      this.props.onError(error, info.componentStack);
+      try {
+        this.props.onError(error, info.componentStack);
+      } catch (e) {
+        // ensure any user-provided handler does not crash the boundary
+        // eslint-disable-next-line no-console
+        console.error("Error in onError handler:", e);
+      }
     }
   }
 

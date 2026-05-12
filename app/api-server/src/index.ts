@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import dotenv from "dotenv";
 import app from "./app";
 import { logger } from "./lib/logger";
@@ -21,22 +22,14 @@ for (const envPath of envCandidates) {
 
 }
 
-const rawPort = process.env["PORT"];
-
 // Export app for serverless deployment (e.g., Vercel)
 export default app;
 
 // Handle standalone server execution
-const standalone = import.meta.url === `file://${process.argv[1]}`;
+const standalone = import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
 
 if (standalone) {
-  const rawPort = process.env["PORT"];
-
-  if (!rawPort) {
-    throw new Error(
-      "PORT environment variable is required but was not provided.",
-    );
-  }
+  const rawPort = process.env["PORT"] ?? "9001";
 
   const port = Number(rawPort);
 
