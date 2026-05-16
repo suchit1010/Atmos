@@ -1,5 +1,5 @@
-{
-  "buildCommand": "pnpm run build:ci",
+﻿{
+  "buildCommand": "pnpm run build:libs && echo 'Libs built' && pnpm run build:vercel",
   "installCommand": "pnpm install --frozen-lockfile --prod=false",
   "env": {
     "DODO_MODE": "production",
