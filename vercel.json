@@ -1,7 +1,10 @@
 {
-  "buildCommand": "pnpm run build:vercel",
+  "buildCommand": "pnpm run build:ci",
   "installCommand": "pnpm install --frozen-lockfile --prod=false",
   "env": {
-    "DODO_MODE": "production"
+    "DODO_MODE": "production",
+    "DODO_CHECKOUT_BASE_URL": "https://checkout.dodopayments.com",
+    "DODO_TEST_CHECKOUT_BASE_URL": "https://test.checkout.dodopayments.com",
+    "NODE_ENV": "production"
   }
 }

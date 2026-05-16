@@ -1,21 +1,14 @@
-// Mock database adapter for testing without real DB
-// In production, connect to real PostgreSQL via @workspace/db
+import { pool as workspacePool } from "@workspace/db";
 
 interface MockQueryResult {
   rows: any[];
   rowCount: number;
 }
 
-// Try to import real pool; fall back to mock if DB not available
-let pool: any = null;
-try {
-  // Only import if DATABASE_URL is set
-  if (process.env.DATABASE_URL) {
-    const dbModule = require('@workspace/db');
-    pool = dbModule.pool;
-  }
-} catch {
-  console.warn('Database not available; using mock queries for development/testing');
+const pool = process.env.DATABASE_URL ? workspacePool : null;
+
+if (!pool) {
+  console.warn("Database not available; using mock queries for development/testing");
 }
 
 export async function query(text: string, params?: any[]): Promise<MockQueryResult> {

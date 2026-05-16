@@ -77,6 +77,9 @@ cp .env.example .env
 # - DODO_API_KEY (get from https://api.dodopayments.com)
 # - DODO_WEBHOOK_SECRET (from Dodo dashboard)
 # - DODO_MODE (demo | live | fallback)
+# - DODO_CHECKOUT_BASE_URL (default: https://checkout.dodopayments.com)
+# - DODO_TEST_CHECKOUT_BASE_URL (default: https://test.checkout.dodopayments.com)
+# - JWT_SECRET (required for API auth)
 ```
 
 ### 3. Start the API Server
@@ -417,6 +420,9 @@ pnpm --filter @workspace/mockup-sandbox dev
 | `DODO_MODE` | ✅ | Payment mode | `demo` \| `live` \| `fallback` |
 | `DODO_API_KEY` | ✅ (for live) | Dodo API authentication | `sk_live_xxxxx` |
 | `DODO_WEBHOOK_SECRET` | ✅ | Svix webhook secret | `whsec_xxxxx` |
+| `DODO_CHECKOUT_BASE_URL` | Optional | Live checkout base URL | `https://checkout.dodopayments.com` |
+| `DODO_TEST_CHECKOUT_BASE_URL` | Optional | Test checkout base URL | `https://test.checkout.dodopayments.com` |
+| `JWT_SECRET` | ✅ | API authentication signing key | `long-random-secret` |
 | `PORT` | Optional | API server port | `3000` (default) |
 | `EXPO_PUBLIC_DOMAIN` | Optional | Mobile app domain | `https://atmos.protocol` |
 

@@ -128,24 +128,18 @@ async function startMetro(expoPublicDomain) {
     ...process.env,
     EXPO_PUBLIC_DOMAIN: expoPublicDomain,
   };
+  const packageManagerExecutable = process.env.npm_execpath;
+  const spawnCommand = packageManagerExecutable ? process.execPath : (process.platform === "win32" ? "pnpm.cmd" : "pnpm");
+  const spawnArgs = packageManagerExecutable
+    ? [packageManagerExecutable, "exec", "expo", "start", "--no-dev", "--minify", "--localhost"]
+    : ["exec", "expo", "start", "--no-dev", "--minify", "--localhost"];
 
-  metroProcess = spawn(
-    "pnpm",
-    [
-      "exec",
-      "expo",
-      "start",
-      "--no-dev",
-      "--minify",
-      "--localhost",
-    ],
-    {
-      stdio: ["ignore", "pipe", "pipe"],
-      detached: false,
-      cwd: projectRoot,
-      env,
-    },
-  );
+  metroProcess = spawn(spawnCommand, spawnArgs, {
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: false,
+    cwd: projectRoot,
+    env,
+  });
 
   if (metroProcess.stdout) {
     metroProcess.stdout.on("data", (data) => {
