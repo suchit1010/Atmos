@@ -1,0 +1,293 @@
+import { z } from "zod/v4";
+/**
+ * Users table - Core user identity and KYC tracking
+ */
+export declare const usersTable: import("drizzle-orm/pg-core").PgTableWithColumns<{
+    name: "users";
+    schema: undefined;
+    columns: {
+        id: import("drizzle-orm/pg-core").PgColumn<{
+            name: "id";
+            tableName: "users";
+            dataType: "string";
+            columnType: "PgUUID";
+            data: string;
+            driverParam: string;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: true;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        phone: import("drizzle-orm/pg-core").PgColumn<{
+            name: "phone";
+            tableName: "users";
+            dataType: "string";
+            columnType: "PgText";
+            data: string;
+            driverParam: string;
+            notNull: true;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: [string, ...string[]];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        email: import("drizzle-orm/pg-core").PgColumn<{
+            name: "email";
+            tableName: "users";
+            dataType: "string";
+            columnType: "PgText";
+            data: string;
+            driverParam: string;
+            notNull: false;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: [string, ...string[]];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        walletAddress: import("drizzle-orm/pg-core").PgColumn<{
+            name: "wallet_address";
+            tableName: "users";
+            dataType: "string";
+            columnType: "PgText";
+            data: string;
+            driverParam: string;
+            notNull: false;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: [string, ...string[]];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        walletPublicKey: import("drizzle-orm/pg-core").PgColumn<{
+            name: "wallet_public_key";
+            tableName: "users";
+            dataType: "string";
+            columnType: "PgText";
+            data: string;
+            driverParam: string;
+            notNull: false;
+            hasDefault: false;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: [string, ...string[]];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        role: import("drizzle-orm/pg-core").PgColumn<{
+            name: "role";
+            tableName: "users";
+            dataType: "string";
+            columnType: "PgText";
+            data: "producer" | "buyer" | "admin";
+            driverParam: string;
+            notNull: false;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: ["producer", "buyer", "admin"];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        kycStatus: import("drizzle-orm/pg-core").PgColumn<{
+            name: "kyc_status";
+            tableName: "users";
+            dataType: "string";
+            columnType: "PgText";
+            data: "not_started" | "pending" | "verified" | "rejected";
+            driverParam: string;
+            notNull: false;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: ["not_started", "pending", "verified", "rejected"];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        kycAadhaar: import("drizzle-orm/pg-core").PgColumn<{
+            name: "kyc_aadhaar_status";
+            tableName: "users";
+            dataType: "string";
+            columnType: "PgText";
+            data: "not_started" | "pending" | "verified";
+            driverParam: string;
+            notNull: false;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: ["not_started", "pending", "verified"];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        kycPan: import("drizzle-orm/pg-core").PgColumn<{
+            name: "kyc_pan_status";
+            tableName: "users";
+            dataType: "string";
+            columnType: "PgText";
+            data: "not_started" | "pending" | "verified";
+            driverParam: string;
+            notNull: false;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: ["not_started", "pending", "verified"];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        kycFarmDoc: import("drizzle-orm/pg-core").PgColumn<{
+            name: "kyc_farm_doc_status";
+            tableName: "users";
+            dataType: "string";
+            columnType: "PgText";
+            data: "not_started" | "pending" | "verified";
+            driverParam: string;
+            notNull: false;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: ["not_started", "pending", "verified"];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        authProvider: import("drizzle-orm/pg-core").PgColumn<{
+            name: "auth_provider";
+            tableName: "users";
+            dataType: "string";
+            columnType: "PgText";
+            data: "phone" | "google" | "apple";
+            driverParam: string;
+            notNull: false;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: ["phone", "google", "apple"];
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        isActive: import("drizzle-orm/pg-core").PgColumn<{
+            name: "is_active";
+            tableName: "users";
+            dataType: "boolean";
+            columnType: "PgBoolean";
+            data: boolean;
+            driverParam: boolean;
+            notNull: false;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        createdAt: import("drizzle-orm/pg-core").PgColumn<{
+            name: "created_at";
+            tableName: "users";
+            dataType: "date";
+            columnType: "PgTimestamp";
+            data: Date;
+            driverParam: string;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+        updatedAt: import("drizzle-orm/pg-core").PgColumn<{
+            name: "updated_at";
+            tableName: "users";
+            dataType: "date";
+            columnType: "PgTimestamp";
+            data: Date;
+            driverParam: string;
+            notNull: true;
+            hasDefault: true;
+            isPrimaryKey: false;
+            isAutoincrement: false;
+            hasRuntimeDefault: false;
+            enumValues: undefined;
+            baseColumn: never;
+            identity: undefined;
+            generated: undefined;
+        }, {}, {}>;
+    };
+    dialect: "pg";
+}>;
+export declare const insertUserSchema: z.ZodObject<{
+    phone: z.ZodString;
+    email: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
+    walletAddress: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
+    walletPublicKey: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodString>>>;
+    role: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
+        producer: "producer";
+        buyer: "buyer";
+        admin: "admin";
+    }>>>;
+    kycStatus: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
+        not_started: "not_started";
+        pending: "pending";
+        verified: "verified";
+        rejected: "rejected";
+    }>>>;
+    kycAadhaar: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodEnum<{
+        not_started: "not_started";
+        pending: "pending";
+        verified: "verified";
+    }>>>>;
+    kycPan: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodEnum<{
+        not_started: "not_started";
+        pending: "pending";
+        verified: "verified";
+    }>>>>;
+    kycFarmDoc: z.ZodOptional<z.ZodOptional<z.ZodNullable<z.ZodEnum<{
+        not_started: "not_started";
+        pending: "pending";
+        verified: "verified";
+    }>>>>;
+    authProvider: z.ZodOptional<z.ZodNullable<z.ZodEnum<{
+        phone: "phone";
+        google: "google";
+        apple: "apple";
+    }>>>;
+    isActive: z.ZodOptional<z.ZodNullable<z.ZodBoolean>>;
+}, {
+    out: {};
+    in: {};
+}>;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof usersTable.$inferSelect;
+//# sourceMappingURL=users.d.ts.map
