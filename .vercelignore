@@ -1,25 +1,29 @@
+﻿# Exclude dependencies  
 node_modules
 .pnpm-store
+
+# Exclude build outputs
 dist
 build
 coverage
+
+# Exclude development files
 .git
-.gitignore
 *.log
 .DS_Store
-README.md
-LICENSE
+
+# Exclude documentation & tests
 test/
 docs/
 scripts/
 .env.local
 .env.*.local
-tsconfig.json
-vitest.config.ts
 **/*.test.ts
 **/*.spec.ts
 **/*.test.js
 **/*.spec.js
+
+# Exclude large non-essential directories
 attached_assets/
 claudeatmos/
 mockup-sandbox/
