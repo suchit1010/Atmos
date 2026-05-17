@@ -1,10 +1,5 @@
 ﻿{
-  "buildCommand": "pnpm run build:ci",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "pnpm install --frozen-lockfile --prod=false",
-  "env": {
-    "DODO_MODE": "production",
-    "DODO_CHECKOUT_BASE_URL": "https://checkout.dodopayments.com",
-    "DODO_TEST_CHECKOUT_BASE_URL": "https://test.checkout.dodopayments.com",
-    "NODE_ENV": "production"
-  }
+  "buildCommand": "pnpm run build:ci"
 }
