@@ -11,16 +11,18 @@ globalThis.require = createRequire(import.meta.url);
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 
 async function buildAll() {
-  const distDir = path.resolve(artifactDir, "build");
+  // Emit the serverless function bundle into the repo `api/api-server` directory
+  const repoRoot = path.resolve(artifactDir, "..", "..");
+  const distDir = path.resolve(repoRoot, "api", "api-server");
   await rm(distDir, { recursive: true, force: true });
 
   await esbuild({
     entryPoints: [path.resolve(artifactDir, "src/index.ts")],
     platform: "node",
     bundle: true,
-    format: "esm",
+    format: "cjs",
     outdir: distDir,
-    outExtension: { ".js": ".mjs" },
+    outExtension: { ".js": ".js" },
     logLevel: "info",
     // Some packages may not be bundleable, so we externalize them, we can add more here as needed.
     // Some of the packages below may not be imported or installed, but we're adding them in case they are in the future.
@@ -107,15 +109,9 @@ async function buildAll() {
       esbuildPluginPino({ transports: ["pino-pretty"] })
     ],
     // Make sure packages that are cjs only (e.g. express) but are bundled continue to work in our esm output file
+    // Keep a small compatibility banner for CJS consumers if necessary
     banner: {
-      js: `import { createRequire as __bannerCrReq } from 'node:module';
-import __bannerPath from 'node:path';
-import __bannerUrl from 'node:url';
-
-globalThis.require = __bannerCrReq(import.meta.url);
-globalThis.__filename = __bannerUrl.fileURLToPath(import.meta.url);
-globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
-    `,
+      js: `var __filename = require('path').basename(__filename || '');`,
     },
   });
 }
