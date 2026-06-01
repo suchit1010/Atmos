@@ -1,4 +1,24 @@
 {
   "installCommand": "pnpm install --frozen-lockfile --prod=false",
-  "buildCommand": "pnpm -w run build:ci"
+  "buildCommand": "pnpm -w run build:ci",
+  "outputDirectory": "app/mockup-sandbox/dist",
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/healthz",
+      "dest": "/api/healthz.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }

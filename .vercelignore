@@ -1,11 +1,6 @@
-﻿# Exclude dependencies  
+﻿# Exclude dependencies
 node_modules
 .pnpm-store
-
-# Exclude build outputs
-dist
-build
-coverage
 
 # Exclude development files
 .git
@@ -24,7 +19,7 @@ scripts/
 **/*.spec.js
 
 # Exclude large non-essential directories
-attached_assets/
-claudeatmos/
-mockup-sandbox/
 app/mobile/
+# app/mockup-sandbox/ is the frontend — do NOT exclude it
+
+# NOTE: Do NOT exclude dist/ or build/ — the built api/api-server/ bundle is needed by Vercel
