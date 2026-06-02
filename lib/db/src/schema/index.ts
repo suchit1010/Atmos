@@ -1,20 +1,20 @@
-// Export your models here. Add one export per file
-// export * from "./posts";
-//
-// Each model/table should ideally be split into different files.
-// Each model/table should define a Drizzle table, insert schema, and types:
-//
-//   import { pgTable, text, serial } from "drizzle-orm/pg-core";
-//   import { createInsertSchema } from "drizzle-zod";
-//   import { z } from "zod/v4";
-//
-//   export const postsTable = pgTable("posts", {
-//     id: serial("id").primaryKey(),
-//     title: text("title").notNull(),
-//   });
-//
-//   export const insertPostSchema = createInsertSchema(postsTable).omit({ id: true });
-//   export type InsertPost = z.infer<typeof insertPostSchema>;
-//   export type Post = typeof postsTable.$inferSelect;
+/**
+ * ATMOS Database Schema
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Complete Drizzle ORM schema for carbon credit platform on Solana
+ * 
+ * Tables:
+ * - users: Core user identity and KYC tracking
+ * - projects: Carbon reduction projects
+ * - assets: Minted carbon credit SPL tokens
+ * - payments: Payment transactions
+ * - settlements: Final settlement records on Solana
+ * - holdings: User portfolio of carbon credits
+ */
 
-export {}
+export * from "./users";
+export * from "./projects";
+export * from "./assets";
+export * from "./payments";
+export * from "./settlements";
+export * from "./holdings";

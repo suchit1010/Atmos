@@ -101,7 +101,36 @@ export default function ZKProofScreen() {
       metadata: project?.metadata,
       mediaCount: project?.mediaCount,
     };
-    const hash = buildSimulatedProofHash(proofPayload);
+    
+    let hash = buildSimulatedProofHash(proofPayload);
+    
+    try {
+      // Call real Solana anchor API
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL || "http://localhost:9001"}/api/proofs/anchor`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            projectId: id,
+            proofHash: hash,
+            co2Amount: project?.co2 ?? 0,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        hash = data.txHash || hash; // Use transaction hash as proof anchor
+        console.log("Proof anchored on Solana:", data);
+      } else {
+        console.warn("Anchor failed, using simulated hash");
+      }
+    } catch (err: any) {
+      console.warn("Solana anchor failed, using simulated hash", err.message);
+      // Fallback: use simulated hash if API fails
+    }
+
     setProofHash(hash);
     updateProject(id!, {
       proofHash: hash,

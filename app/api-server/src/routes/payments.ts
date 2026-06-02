@@ -1,10 +1,13 @@
 import { Router } from "express";
 import crypto from "crypto";
 import { settlementStore } from "../lib/settlement-store";
+import { retireCredits } from "../lib/solana";
 
 const router = Router();
 
 const DODO_BASE_URL = "https://api.dodopayments.com";
+const DODO_CHECKOUT_BASE_URL = process.env["DODO_CHECKOUT_BASE_URL"] ?? "https://checkout.dodopayments.com";
+const DODO_TEST_CHECKOUT_BASE_URL = process.env["DODO_TEST_CHECKOUT_BASE_URL"] ?? "https://test.checkout.dodopayments.com";
 const DODO_API_KEY = process.env["DODO_API_KEY"] ?? "";
 const DODO_WEBHOOK_SECRET = process.env["DODO_WEBHOOK_SECRET"] ?? "";
 const DODO_MODE = process.env["DODO_MODE"] ?? "live";
@@ -153,10 +156,13 @@ function isPaymentCompletedEvent(eventType: string, payload: Record<string, unkn
 
 // Create a Dodo payment session
 router.post("/payments/dodo/create", async (req, res) => {
-  const { amount, currency, assetName, assetId, quantity, buyerName, buyerEmail } = req.body;
+  const { amount, currency, assetName, assetId, quantity, buyerName, buyerEmail, returnUrl } = req.body;
   const rawQty = quantity ?? 1;
   const qty = Number.isFinite(Number(rawQty)) ? Math.max(1, Math.floor(Number(rawQty))) : 1;
   const amt = Number.isFinite(Number(amount)) ? Number(amount) : 0;
+  const redirectTarget = typeof returnUrl === "string" && returnUrl.trim()
+    ? returnUrl.trim()
+    : "https://dodo.pe/atmoscarboncredit";
 
   if (!amount || !assetId) {
     res.status(400).json({ error: "amount and assetId are required" });
@@ -172,7 +178,7 @@ router.post("/payments/dodo/create", async (req, res) => {
       res.json({
         success: true,
         paymentId: `dodo_demo_${Date.now()}`,
-        paymentUrl: `https://test.checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${qty}&redirect_url=https://www.atmosexample.com`,
+        paymentUrl: `${DODO_TEST_CHECKOUT_BASE_URL}/buy/${DODO_PRODUCT_ID}?quantity=${qty}&redirect_url=${encodeURIComponent(redirectTarget)}`,
         amount: amt,
         currency,
         mock: true,
@@ -202,7 +208,7 @@ router.post("/payments/dodo/create", async (req, res) => {
         },
       ],
       payment_link: true,
-      return_url: `https://atmos.protocol/settlement?assetId=${assetId}`,
+      return_url: redirectTarget,
       metadata: {
         asset_id: assetId,
         asset_name: assetName ?? "Carbon Asset",
@@ -227,7 +233,7 @@ router.post("/payments/dodo/create", async (req, res) => {
       res.json({
         success: true,
         paymentId: `dodo_${Date.now()}`,
-        paymentUrl: `https://test.checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${qty}&redirect_url=https://www.atmosexample.com`,
+        paymentUrl: `https://test.checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${qty}&redirect_url=${encodeURIComponent(redirectTarget)}`,
         amount: amt,
         currency,
         mock: true,
@@ -239,7 +245,7 @@ router.post("/payments/dodo/create", async (req, res) => {
     res.json({
       success: true,
       paymentId: (data as any).payment_id ?? `dodo_${Date.now()}`,
-      paymentUrl: (data as any).payment_link ?? `https://checkout.dodopayments.com/pay/${(data as any).payment_id}`,
+      paymentUrl: (data as any).payment_link ?? `${DODO_CHECKOUT_BASE_URL}/pay/${(data as any).payment_id}`,
       amount: amt,
       currency,
       mock: false,
@@ -251,7 +257,7 @@ router.post("/payments/dodo/create", async (req, res) => {
     res.json({
       success: true,
       paymentId: `dodo_demo_${Date.now()}`,
-      paymentUrl: `https://test.checkout.dodopayments.com/buy/${DODO_PRODUCT_ID}?quantity=${qty}&redirect_url=https://www.atmosexample.com`,
+      paymentUrl: `${DODO_TEST_CHECKOUT_BASE_URL}/buy/${DODO_PRODUCT_ID}?quantity=${qty}&redirect_url=https://www.atmosexample.com`,
       amount: amt,
       currency,
       mock: true,
@@ -261,7 +267,7 @@ router.post("/payments/dodo/create", async (req, res) => {
 });
 
 // Webhook handler for Dodo payment events
-router.post("/payments/dodo/webhook", (req, res) => {
+router.post("/payments/dodo/webhook", async (req, res) => {
   const rawBody = getRawBody(req) || safeStringify(req.body);
 
   if (!verifyWebhookSignature(req, rawBody)) {
@@ -347,6 +353,30 @@ router.post("/payments/dodo/webhook", (req, res) => {
 
     settlementStore.upsert(upsertPayload);
     req.log.info({ settlementId, grantId, assetId }, "Settlement recorded for credit event");
+
+    // Trigger Solana retirement (burn) and issue certificate
+    (async () => {
+      try {
+        const creditAmount = typeof payload.amount === "number" ? payload.amount : 1;
+        const mintAddress = typeof payload.mint === "string" ? payload.mint : assetId;
+        const tokenAccount = typeof payload.token_account === "string" ? payload.token_account : undefined;
+
+        if (tokenAccount && mintAddress !== assetId) {
+          await retireCredits(
+            mintAddress,
+            tokenAccount,
+            creditAmount,
+            "dodo.payments",
+            "ATMOS Settlement",
+            assetId
+          );
+          settlementStore.upsert({ id: settlementId, status: "settled" });
+          req.log.info({ settlementId, mintAddress }, "Solana retirement completed");
+        }
+      } catch (err: any) {
+        req.log.warn({ err: err.message, settlementId }, "Solana retirement failed (non-blocking)");
+      }
+    })();
   }
 
   req.log.info(

@@ -1,57 +1,36 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
-
-# compiled output
+﻿# Build outputs (except lib package dist which is needed for Vercel)
 dist
-tmp
-out-tsc
+!lib/*/dist
+build
+app/api-server/dist
 *.tsbuildinfo
-.expo
-.expo-shared
 
-# dependencies
+# Dependencies
 node_modules
+pnpm-store
 
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
+# Env
+.env
+.env.local
+.env.*.local
 
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+# OS
+.DS_Store
+*.swp
+*.swo
+*~
 
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
+# IDE
+.vscode/launch.json
+.vscode/settings.json
+.idea/
+
+# Testing
+.next
+out
+coverage
+
+# Logs
 npm-debug.log
 yarn-error.log
-testem.log
-/typings
-
-# System Files
-.DS_Store
-Thumbs.db
-
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
-
-.cache/
-.local/
-
-# Sensitive assets and environment files
-attached_assets/
-.env
-.env.*
-secrets
-*.key
-.vercel
-.env*.local
+pnpm-debug.log

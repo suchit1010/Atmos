@@ -23,6 +23,7 @@ import { logger } from '../lib/logger';
 import { requireAuth } from '../middleware/auth';
 
 const router = Router();
+const DODO_TEST_CHECKOUT_BASE_URL = process.env["DODO_TEST_CHECKOUT_BASE_URL"] ?? "https://test.checkout.dodopayments.com";
 
 // ─── POST: Carbon Purchase (with privacy option) ─────────────────
 /**
@@ -155,7 +156,7 @@ router.post('/carbon-purchase', requireAuth, async (req: Request, res: Response)
       }
     } else {
       // ── PUBLIC: Dodo payment ─────────────────────────────────
-      const dodoCheckoutUrl = `https://test.checkout.dodopayments.com/buy/pdt_0NeTZC7YUIaCtJSBukmEK?quantity=${quantity}&redirect_url=https://www.atmosexample.com`;
+      const dodoCheckoutUrl = `${DODO_TEST_CHECKOUT_BASE_URL}/buy/pdt_0NeTZC7YUIaCtJSBukmEK?quantity=${quantity}&redirect_url=${encodeURIComponent("https://dodo.pe/atmoscarboncredit")}`;
 
       await query(
         `UPDATE payment_intents 

@@ -11,7 +11,11 @@ export default function PaymentStatusScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const payment = payments.find((p) => p.id === paymentId || p.dodoPaymentId === paymentId);
+  const latestLocalPayment = [...payments]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .find((p) => p.status === "pending" || p.status === "processing");
+  const payment = payments.find((p) => p.id === paymentId || p.dodoPaymentId === paymentId)
+    ?? (typeof paymentId !== "string" || !paymentId ? latestLocalPayment : undefined);
 
   // If the URL contains a payment identifier, try to resolve to internal payment id.
   useEffect(() => {
@@ -108,11 +112,18 @@ export default function PaymentStatusScreen() {
       try {
         const s = await fetchSettlementByDodo(payment.dodoPaymentId!);
         if (s && mounted) {
+          const nextPaymentStatus =
+            s.status === "minted" || s.status === "settled"
+              ? "completed"
+              : s.status === "failed"
+                ? "failed"
+                : "processing";
+
           setSettlement(s as Settlement);
           updatePayment(payment.id, { 
             settlementId: s.id, 
             settlementStatus: s.status,
-            status: s.status === "processing" ? "processing" : (s.status === "credit_received" ? "processing" : (s.status === "minted" || s.status === "settled" ? "completed" : "processing"))
+            status: nextPaymentStatus
           });
         }
       } catch (err) {

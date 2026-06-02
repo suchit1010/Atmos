@@ -21,6 +21,8 @@ import { GradeTag } from "@/components/GradeTag";
 import { PrivacyToggle } from "@/components/PrivacyToggle";
 import { API_BASE } from "@/constants/api";
 
+const DODO_TEST_CHECKOUT_BASE_URL = process.env.EXPO_PUBLIC_DODO_TEST_CHECKOUT_BASE_URL ?? "https://test.checkout.dodopayments.com";
+
 export default function PaymentScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -50,6 +52,9 @@ export default function PaymentScreen() {
   }
 
   const topPad = Platform.OS === "web" ? insets.top + 67 : insets.top;
+  const returnUrl = Platform.OS === "web"
+    ? `${typeof window !== "undefined" ? window.location.origin : "http://localhost:8081"}/payment/status`
+    : "atmos://payment/status";
 
   async function handleDodoPay() {
     if (!asset) return;
@@ -64,7 +69,7 @@ export default function PaymentScreen() {
         // eslint-disable-next-line no-console
         console.log("🎭 Using mocked Dodo payment session for faster dev iteration");
         await new Promise((r) => setTimeout(r, 300));
-        const mockPaymentUrl = `https://test.checkout.dodopayments.com/buy/pdt_0NeTZC7YUIaCtJSBukmEK?quantity=${qty}&redirect_url=https://www.atmosexample.com`;
+        const mockPaymentUrl = `${DODO_TEST_CHECKOUT_BASE_URL}/buy/pdt_0NeTZC7YUIaCtJSBukmEK?quantity=${qty}&redirect_url=${encodeURIComponent("https://dodo.pe/atmoscarboncredit")}`;
         
         // Open the mock payment URL
         try {
@@ -123,6 +128,7 @@ export default function PaymentScreen() {
             quantity: qty,
             buyerName: user?.name ?? "ATMOS User",
             buyerEmail: user?.email ?? "user@atmos.protocol",
+            returnUrl,
           };
 
       for (const base of candidateBases) {
