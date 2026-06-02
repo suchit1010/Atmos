@@ -7,16 +7,22 @@ const router = Router();
 // Mint a carbon credit SPL token on Solana devnet
 router.post("/assets/mint", async (req, res) => {
   const { projectId, recipientAddress, co2Amount, grade } = req.body;
+  const parsedCo2Amount = Number(co2Amount);
 
-  if (!projectId || !co2Amount) {
-    res.status(400).json({ error: "projectId and co2Amount are required" });
+  if (!projectId) {
+    res.status(400).json({ error: "projectId is required" });
+    return;
+  }
+
+  if (!Number.isFinite(parsedCo2Amount) || parsedCo2Amount <= 0) {
+    res.status(400).json({ error: "co2Amount must be a finite positive number" });
     return;
   }
 
   try {
     const recipient = recipientAddress || getPayer().publicKey.toBase58();
 
-    const result = await mintCarbonCredit(projectId, recipient, co2Amount, grade || "B");
+    const result = await mintCarbonCredit(projectId, recipient, parsedCo2Amount, grade || "B");
 
     res.json({
       success: true,
