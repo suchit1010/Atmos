@@ -1,0 +1,10 @@
+**/node_modules/
+**/dist/
+**/target/
+**/coverage/
+**/.expo/
+**/.turbo/
+**/*.log
+.env
+.env.*
+!.env.example

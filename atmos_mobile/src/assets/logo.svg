@@ -1,0 +1,30 @@
+<svg viewBox="0 0 400 400" width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <title>ATMOS Protocol — Flower of Life Logo</title>
+
+  <defs>
+    <clipPath id="boundary">
+      <circle cx="200" cy="200" r="155"/>
+    </clipPath>
+  </defs>
+
+  <!-- Outer ring -->
+  <circle cx="200" cy="200" r="155" fill="none" stroke="#22C55E" stroke-width="3"/>
+  <!-- Inner ring at 90% -->
+  <circle cx="200" cy="200" r="139" fill="none" stroke="#22C55E" stroke-width="1" opacity="0.3"/>
+
+  <!-- Seven overlapping circles (flower of life), radius=78, clipped -->
+  <!-- Center -->
+  <circle cx="200" cy="200" r="78" fill="none" stroke="#22C55E" stroke-width="2" clip-path="url(#boundary)"/>
+  <!-- Top -->
+  <circle cx="200" cy="122" r="78" fill="none" stroke="#22C55E" stroke-width="2" clip-path="url(#boundary)"/>
+  <!-- Top-right -->
+  <circle cx="267.5" cy="161" r="78" fill="none" stroke="#22C55E" stroke-width="2" clip-path="url(#boundary)"/>
+  <!-- Bottom-right -->
+  <circle cx="267.5" cy="239" r="78" fill="none" stroke="#22C55E" stroke-width="2" clip-path="url(#boundary)"/>
+  <!-- Bottom -->
+  <circle cx="200" cy="278" r="78" fill="none" stroke="#22C55E" stroke-width="2" clip-path="url(#boundary)"/>
+  <!-- Bottom-left -->
+  <circle cx="132.5" cy="239" r="78" fill="none" stroke="#22C55E" stroke-width="2" clip-path="url(#boundary)"/>
+  <!-- Top-left -->
+  <circle cx="132.5" cy="161" r="78" fill="none" stroke="#22C55E" stroke-width="2" clip-path="url(#boundary)"/>
+</svg>

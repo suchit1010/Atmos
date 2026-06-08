@@ -1,0 +1,820 @@
+TAP version 13
+# Subtest: P00: Health endpoint responds OK
+ok 1 - P00: Health endpoint responds OK
+  ---
+  duration_ms: 242.3747
+  type: 'test'
+  ...
+# Subtest: P1.1: OTP send validation matrix case \#1
+ok 2 - P1.1: OTP send validation matrix case \#1
+  ---
+  duration_ms: 11.265
+  type: 'test'
+  ...
+# Subtest: P1.2: OTP send validation matrix case \#2
+ok 3 - P1.2: OTP send validation matrix case \#2
+  ---
+  duration_ms: 10.4763
+  type: 'test'
+  ...
+# Subtest: P1.3: OTP send validation matrix case \#3
+ok 4 - P1.3: OTP send validation matrix case \#3
+  ---
+  duration_ms: 12.1034
+  type: 'test'
+  ...
+# Subtest: P1.4: OTP send validation matrix case \#4
+ok 5 - P1.4: OTP send validation matrix case \#4
+  ---
+  duration_ms: 14.2825
+  type: 'test'
+  ...
+# Subtest: P1.5: OTP send validation matrix case \#5
+ok 6 - P1.5: OTP send validation matrix case \#5
+  ---
+  duration_ms: 8.3723
+  type: 'test'
+  ...
+# Subtest: P1.6: OTP send validation matrix case \#6
+ok 7 - P1.6: OTP send validation matrix case \#6
+  ---
+  duration_ms: 7.5255
+  type: 'test'
+  ...
+# Subtest: P1.7: OTP send validation matrix case \#7
+ok 8 - P1.7: OTP send validation matrix case \#7
+  ---
+  duration_ms: 7.6327
+  type: 'test'
+  ...
+# Subtest: P1.8: OTP send validation matrix case \#8
+ok 9 - P1.8: OTP send validation matrix case \#8
+  ---
+  duration_ms: 9.5667
+  type: 'test'
+  ...
+# Subtest: P1.9: OTP send validation matrix case \#9
+ok 10 - P1.9: OTP send validation matrix case \#9
+  ---
+  duration_ms: 7.3726
+  type: 'test'
+  ...
+# Subtest: P1.10: OTP send validation matrix case \#10
+ok 11 - P1.10: OTP send validation matrix case \#10
+  ---
+  duration_ms: 5.1823
+  type: 'test'
+  ...
+# Subtest: P1.11: OTP send validation matrix case \#11
+ok 12 - P1.11: OTP send validation matrix case \#11
+  ---
+  duration_ms: 4.8561
+  type: 'test'
+  ...
+# Subtest: P1.12: OTP send validation matrix case \#12
+ok 13 - P1.12: OTP send validation matrix case \#12
+  ---
+  duration_ms: 6.0881
+  type: 'test'
+  ...
+# Subtest: P1.13: OTP send validation matrix case \#13
+ok 14 - P1.13: OTP send validation matrix case \#13
+  ---
+  duration_ms: 5.5254
+  type: 'test'
+  ...
+# Subtest: P1.14: OTP send validation matrix case \#14
+ok 15 - P1.14: OTP send validation matrix case \#14
+  ---
+  duration_ms: 5.8224
+  type: 'test'
+  ...
+# Subtest: P1.15: OTP send validation matrix case \#15
+ok 16 - P1.15: OTP send validation matrix case \#15
+  ---
+  duration_ms: 5.3323
+  type: 'test'
+  ...
+# Subtest: P1.16: OTP send validation matrix case \#16
+ok 17 - P1.16: OTP send validation matrix case \#16
+  ---
+  duration_ms: 5.5965
+  type: 'test'
+  ...
+# Subtest: P1.17: OTP send validation matrix case \#17
+ok 18 - P1.17: OTP send validation matrix case \#17
+  ---
+  duration_ms: 5.6328
+  type: 'test'
+  ...
+# Subtest: P1.18: OTP send validation matrix case \#18
+ok 19 - P1.18: OTP send validation matrix case \#18
+  ---
+  duration_ms: 6.1236
+  type: 'test'
+  ...
+# Subtest: P1.19: OTP send validation matrix case \#19
+ok 20 - P1.19: OTP send validation matrix case \#19
+  ---
+  duration_ms: 5.8378
+  type: 'test'
+  ...
+# Subtest: P1.20: OTP send validation matrix case \#20
+ok 21 - P1.20: OTP send validation matrix case \#20
+  ---
+  duration_ms: 6.4437
+  type: 'test'
+  ...
+# Subtest: P1.21: OTP send validation matrix case \#21
+ok 22 - P1.21: OTP send validation matrix case \#21
+  ---
+  duration_ms: 6.3432
+  type: 'test'
+  ...
+# Subtest: P1.22: OTP send validation matrix case \#22
+ok 23 - P1.22: OTP send validation matrix case \#22
+  ---
+  duration_ms: 5.5552
+  type: 'test'
+  ...
+# Subtest: P1.23: OTP send validation matrix case \#23
+ok 24 - P1.23: OTP send validation matrix case \#23
+  ---
+  duration_ms: 5.7894
+  type: 'test'
+  ...
+# Subtest: P1.24: OTP send validation matrix case \#24
+ok 25 - P1.24: OTP send validation matrix case \#24
+  ---
+  duration_ms: 5.3167
+  type: 'test'
+  ...
+# Subtest: P1.25: OTP send validation matrix case \#25
+ok 26 - P1.25: OTP send validation matrix case \#25
+  ---
+  duration_ms: 4.7717
+  type: 'test'
+  ...
+# Subtest: P1.26: OTP send validation matrix case \#26
+ok 27 - P1.26: OTP send validation matrix case \#26
+  ---
+  duration_ms: 4.3733
+  type: 'test'
+  ...
+# Subtest: P1.27: OTP send validation matrix case \#27
+ok 28 - P1.27: OTP send validation matrix case \#27
+  ---
+  duration_ms: 5.0847
+  type: 'test'
+  ...
+# Subtest: P1.28: OTP send validation matrix case \#28
+ok 29 - P1.28: OTP send validation matrix case \#28
+  ---
+  duration_ms: 5.3423
+  type: 'test'
+  ...
+# Subtest: P1.29: OTP send validation matrix case \#29
+ok 30 - P1.29: OTP send validation matrix case \#29
+  ---
+  duration_ms: 6.117
+  type: 'test'
+  ...
+# Subtest: P1.30: OTP send validation matrix case \#30
+ok 31 - P1.30: OTP send validation matrix case \#30
+  ---
+  duration_ms: 5.1078
+  type: 'test'
+  ...
+# Subtest: P1.31: OTP send validation matrix case \#31
+ok 32 - P1.31: OTP send validation matrix case \#31
+  ---
+  duration_ms: 5.6407
+  type: 'test'
+  ...
+# Subtest: P1.32: OTP send validation matrix case \#32
+ok 33 - P1.32: OTP send validation matrix case \#32
+  ---
+  duration_ms: 5.0294
+  type: 'test'
+  ...
+# Subtest: P1.33: OTP send validation matrix case \#33
+ok 34 - P1.33: OTP send validation matrix case \#33
+  ---
+  duration_ms: 4.7104
+  type: 'test'
+  ...
+# Subtest: P1.34: OTP send validation matrix case \#34
+ok 35 - P1.34: OTP send validation matrix case \#34
+  ---
+  duration_ms: 5.6261
+  type: 'test'
+  ...
+# Subtest: P1.35: OTP send validation matrix case \#35
+ok 36 - P1.35: OTP send validation matrix case \#35
+  ---
+  duration_ms: 5.6771
+  type: 'test'
+  ...
+# Subtest: P1.36: OTP send validation matrix case \#36
+ok 37 - P1.36: OTP send validation matrix case \#36
+  ---
+  duration_ms: 7.5441
+  type: 'test'
+  ...
+# Subtest: P1.37: OTP send validation matrix case \#37
+ok 38 - P1.37: OTP send validation matrix case \#37
+  ---
+  duration_ms: 5.4811
+  type: 'test'
+  ...
+# Subtest: P1.38: OTP send validation matrix case \#38
+ok 39 - P1.38: OTP send validation matrix case \#38
+  ---
+  duration_ms: 5.6418
+  type: 'test'
+  ...
+# Subtest: P1.39: OTP send validation matrix case \#39
+ok 40 - P1.39: OTP send validation matrix case \#39
+  ---
+  duration_ms: 5.3738
+  type: 'test'
+  ...
+# Subtest: P1.40: OTP send validation matrix case \#40
+ok 41 - P1.40: OTP send validation matrix case \#40
+  ---
+  duration_ms: 5.3309
+  type: 'test'
+  ...
+# Subtest: P2.1: OTP send accepts valid unique phone \#1
+ok 42 - P2.1: OTP send accepts valid unique phone \#1
+  ---
+  duration_ms: 6.6386
+  type: 'test'
+  ...
+# Subtest: P2.2: OTP send accepts valid unique phone \#2
+ok 43 - P2.2: OTP send accepts valid unique phone \#2
+  ---
+  duration_ms: 6.3913
+  type: 'test'
+  ...
+# Subtest: P2.3: OTP send accepts valid unique phone \#3
+ok 44 - P2.3: OTP send accepts valid unique phone \#3
+  ---
+  duration_ms: 5.6095
+  type: 'test'
+  ...
+# Subtest: P2.4: OTP send accepts valid unique phone \#4
+ok 45 - P2.4: OTP send accepts valid unique phone \#4
+  ---
+  duration_ms: 5.7481
+  type: 'test'
+  ...
+# Subtest: P2.5: OTP send accepts valid unique phone \#5
+ok 46 - P2.5: OTP send accepts valid unique phone \#5
+  ---
+  duration_ms: 5.4827
+  type: 'test'
+  ...
+# Subtest: P2.6: OTP send accepts valid unique phone \#6
+ok 47 - P2.6: OTP send accepts valid unique phone \#6
+  ---
+  duration_ms: 5.0842
+  type: 'test'
+  ...
+# Subtest: P2.7: OTP send accepts valid unique phone \#7
+ok 48 - P2.7: OTP send accepts valid unique phone \#7
+  ---
+  duration_ms: 5.6557
+  type: 'test'
+  ...
+# Subtest: P2.8: OTP send accepts valid unique phone \#8
+ok 49 - P2.8: OTP send accepts valid unique phone \#8
+  ---
+  duration_ms: 6.0713
+  type: 'test'
+  ...
+# Subtest: P2.9: OTP send accepts valid unique phone \#9
+ok 50 - P2.9: OTP send accepts valid unique phone \#9
+  ---
+  duration_ms: 5.1761
+  type: 'test'
+  ...
+# Subtest: P2.10: OTP send accepts valid unique phone \#10
+ok 51 - P2.10: OTP send accepts valid unique phone \#10
+  ---
+  duration_ms: 6.362
+  type: 'test'
+  ...
+# Subtest: P2.11: OTP send accepts valid unique phone \#11
+ok 52 - P2.11: OTP send accepts valid unique phone \#11
+  ---
+  duration_ms: 5.6012
+  type: 'test'
+  ...
+# Subtest: P2.12: OTP send accepts valid unique phone \#12
+ok 53 - P2.12: OTP send accepts valid unique phone \#12
+  ---
+  duration_ms: 7.7205
+  type: 'test'
+  ...
+# Subtest: P2.13: OTP send accepts valid unique phone \#13
+ok 54 - P2.13: OTP send accepts valid unique phone \#13
+  ---
+  duration_ms: 6.6887
+  type: 'test'
+  ...
+# Subtest: P2.14: OTP send accepts valid unique phone \#14
+ok 55 - P2.14: OTP send accepts valid unique phone \#14
+  ---
+  duration_ms: 5.8171
+  type: 'test'
+  ...
+# Subtest: P2.15: OTP send accepts valid unique phone \#15
+ok 56 - P2.15: OTP send accepts valid unique phone \#15
+  ---
+  duration_ms: 5.3245
+  type: 'test'
+  ...
+# Subtest: P2.16: OTP send accepts valid unique phone \#16
+ok 57 - P2.16: OTP send accepts valid unique phone \#16
+  ---
+  duration_ms: 5.1238
+  type: 'test'
+  ...
+# Subtest: P2.17: OTP send accepts valid unique phone \#17
+ok 58 - P2.17: OTP send accepts valid unique phone \#17
+  ---
+  duration_ms: 4.8752
+  type: 'test'
+  ...
+# Subtest: P2.18: OTP send accepts valid unique phone \#18
+ok 59 - P2.18: OTP send accepts valid unique phone \#18
+  ---
+  duration_ms: 5.0061
+  type: 'test'
+  ...
+# Subtest: P2.19: OTP send accepts valid unique phone \#19
+ok 60 - P2.19: OTP send accepts valid unique phone \#19
+  ---
+  duration_ms: 5.5393
+  type: 'test'
+  ...
+# Subtest: P2.20: OTP send accepts valid unique phone \#20
+ok 61 - P2.20: OTP send accepts valid unique phone \#20
+  ---
+  duration_ms: 5.9815
+  type: 'test'
+  ...
+# Subtest: P2.21: OTP send accepts valid unique phone \#21
+ok 62 - P2.21: OTP send accepts valid unique phone \#21
+  ---
+  duration_ms: 5.5352
+  type: 'test'
+  ...
+# Subtest: P2.22: OTP send accepts valid unique phone \#22
+ok 63 - P2.22: OTP send accepts valid unique phone \#22
+  ---
+  duration_ms: 5.631
+  type: 'test'
+  ...
+# Subtest: P2.23: OTP send accepts valid unique phone \#23
+ok 64 - P2.23: OTP send accepts valid unique phone \#23
+  ---
+  duration_ms: 6.1294
+  type: 'test'
+  ...
+# Subtest: P2.24: OTP send accepts valid unique phone \#24
+ok 65 - P2.24: OTP send accepts valid unique phone \#24
+  ---
+  duration_ms: 6.9457
+  type: 'test'
+  ...
+# Subtest: P2.25: OTP send accepts valid unique phone \#25
+ok 66 - P2.25: OTP send accepts valid unique phone \#25
+  ---
+  duration_ms: 9.2119
+  type: 'test'
+  ...
+# Subtest: P2.26: OTP send accepts valid unique phone \#26
+ok 67 - P2.26: OTP send accepts valid unique phone \#26
+  ---
+  duration_ms: 6.8133
+  type: 'test'
+  ...
+# Subtest: P2.27: OTP send accepts valid unique phone \#27
+ok 68 - P2.27: OTP send accepts valid unique phone \#27
+  ---
+  duration_ms: 6.91
+  type: 'test'
+  ...
+# Subtest: P2.28: OTP send accepts valid unique phone \#28
+ok 69 - P2.28: OTP send accepts valid unique phone \#28
+  ---
+  duration_ms: 5.7475
+  type: 'test'
+  ...
+# Subtest: P2.29: OTP send accepts valid unique phone \#29
+ok 70 - P2.29: OTP send accepts valid unique phone \#29
+  ---
+  duration_ms: 6.393
+  type: 'test'
+  ...
+# Subtest: P2.30: OTP send accepts valid unique phone \#30
+ok 71 - P2.30: OTP send accepts valid unique phone \#30
+  ---
+  duration_ms: 7.7138
+  type: 'test'
+  ...
+# Subtest: P3.1: Protected endpoint rejects missing auth \#1
+ok 72 - P3.1: Protected endpoint rejects missing auth \#1
+  ---
+  duration_ms: 4.058
+  type: 'test'
+  ...
+# Subtest: P3.8: Protected endpoint rejects invalid token \#1
+ok 73 - P3.8: Protected endpoint rejects invalid token \#1
+  ---
+  duration_ms: 4.158
+  type: 'test'
+  ...
+# Subtest: P3.2: Protected endpoint rejects missing auth \#2
+ok 74 - P3.2: Protected endpoint rejects missing auth \#2
+  ---
+  duration_ms: 4.1646
+  type: 'test'
+  ...
+# Subtest: P3.9: Protected endpoint rejects invalid token \#2
+ok 75 - P3.9: Protected endpoint rejects invalid token \#2
+  ---
+  duration_ms: 3.6796
+  type: 'test'
+  ...
+# Subtest: P3.3: Protected endpoint rejects missing auth \#3
+ok 76 - P3.3: Protected endpoint rejects missing auth \#3
+  ---
+  duration_ms: 3.8136
+  type: 'test'
+  ...
+# Subtest: P3.10: Protected endpoint rejects invalid token \#3
+ok 77 - P3.10: Protected endpoint rejects invalid token \#3
+  ---
+  duration_ms: 5.009
+  type: 'test'
+  ...
+# Subtest: P3.4: Protected endpoint rejects missing auth \#4
+ok 78 - P3.4: Protected endpoint rejects missing auth \#4
+  ---
+  duration_ms: 3.9309
+  type: 'test'
+  ...
+# Subtest: P3.11: Protected endpoint rejects invalid token \#4
+ok 79 - P3.11: Protected endpoint rejects invalid token \#4
+  ---
+  duration_ms: 3.5925
+  type: 'test'
+  ...
+# Subtest: P3.5: Protected endpoint rejects missing auth \#5
+ok 80 - P3.5: Protected endpoint rejects missing auth \#5
+  ---
+  duration_ms: 4.4106
+  type: 'test'
+  ...
+# Subtest: P3.12: Protected endpoint rejects invalid token \#5
+ok 81 - P3.12: Protected endpoint rejects invalid token \#5
+  ---
+  duration_ms: 4.6322
+  type: 'test'
+  ...
+# Subtest: P3.6: Protected endpoint rejects missing auth \#6
+ok 82 - P3.6: Protected endpoint rejects missing auth \#6
+  ---
+  duration_ms: 4.9148
+  type: 'test'
+  ...
+# Subtest: P3.13: Protected endpoint rejects invalid token \#6
+ok 83 - P3.13: Protected endpoint rejects invalid token \#6
+  ---
+  duration_ms: 3.9204
+  type: 'test'
+  ...
+# Subtest: P3.7: Protected endpoint rejects missing auth \#7
+ok 84 - P3.7: Protected endpoint rejects missing auth \#7
+  ---
+  duration_ms: 3.8373
+  type: 'test'
+  ...
+# Subtest: P3.14: Protected endpoint rejects invalid token \#7
+ok 85 - P3.14: Protected endpoint rejects invalid token \#7
+  ---
+  duration_ms: 7.1847
+  type: 'test'
+  ...
+# Subtest: P4.1: Project creation rejects invalid payload case \#1
+ok 86 - P4.1: Project creation rejects invalid payload case \#1
+  ---
+  duration_ms: 20.2734
+  type: 'test'
+  ...
+# Subtest: P4.2: Project creation rejects invalid payload case \#2
+ok 87 - P4.2: Project creation rejects invalid payload case \#2
+  ---
+  duration_ms: 6.4722
+  type: 'test'
+  ...
+# Subtest: P4.3: Project creation rejects invalid payload case \#3
+ok 88 - P4.3: Project creation rejects invalid payload case \#3
+  ---
+  duration_ms: 11.4555
+  type: 'test'
+  ...
+# Subtest: P4.4: Project creation rejects invalid payload case \#4
+ok 89 - P4.4: Project creation rejects invalid payload case \#4
+  ---
+  duration_ms: 5.2911
+  type: 'test'
+  ...
+# Subtest: P4.5: Project creation rejects invalid payload case \#5
+ok 90 - P4.5: Project creation rejects invalid payload case \#5
+  ---
+  duration_ms: 5.2571
+  type: 'test'
+  ...
+# Subtest: P4.6: Project creation rejects invalid payload case \#6
+ok 91 - P4.6: Project creation rejects invalid payload case \#6
+  ---
+  duration_ms: 5.2251
+  type: 'test'
+  ...
+# Subtest: P4.7: Project creation rejects invalid payload case \#7
+ok 92 - P4.7: Project creation rejects invalid payload case \#7
+  ---
+  duration_ms: 5.1979
+  type: 'test'
+  ...
+# Subtest: P4.8: Project creation rejects invalid payload case \#8
+ok 93 - P4.8: Project creation rejects invalid payload case \#8
+  ---
+  duration_ms: 4.7314
+  type: 'test'
+  ...
+# Subtest: P4.9: Project creation rejects invalid payload case \#9
+ok 94 - P4.9: Project creation rejects invalid payload case \#9
+  ---
+  duration_ms: 5.1951
+  type: 'test'
+  ...
+# Subtest: P4.10: Project creation rejects invalid payload case \#10
+ok 95 - P4.10: Project creation rejects invalid payload case \#10
+  ---
+  duration_ms: 5.022
+  type: 'test'
+  ...
+# Subtest: P4.11: Project creation rejects invalid payload case \#11
+ok 96 - P4.11: Project creation rejects invalid payload case \#11
+  ---
+  duration_ms: 6.7712
+  type: 'test'
+  ...
+# Subtest: P4.12: Project creation rejects invalid payload case \#12
+ok 97 - P4.12: Project creation rejects invalid payload case \#12
+  ---
+  duration_ms: 5.2499
+  type: 'test'
+  ...
+# Subtest: P4.13: Project creation rejects invalid payload case \#13
+ok 98 - P4.13: Project creation rejects invalid payload case \#13
+  ---
+  duration_ms: 4.5447
+  type: 'test'
+  ...
+# Subtest: P4.14: Project creation rejects invalid payload case \#14
+ok 99 - P4.14: Project creation rejects invalid payload case \#14
+  ---
+  duration_ms: 5.3796
+  type: 'test'
+  ...
+# Subtest: P4.15: Project creation rejects invalid payload case \#15
+ok 100 - P4.15: Project creation rejects invalid payload case \#15
+  ---
+  duration_ms: 6.4334
+  type: 'test'
+  ...
+# Subtest: P4.16: Project creation rejects invalid payload case \#16
+ok 101 - P4.16: Project creation rejects invalid payload case \#16
+  ---
+  duration_ms: 4.4152
+  type: 'test'
+  ...
+# Subtest: P4.17: Project creation rejects invalid payload case \#17
+ok 102 - P4.17: Project creation rejects invalid payload case \#17
+  ---
+  duration_ms: 4.8263
+  type: 'test'
+  ...
+# Subtest: P4.18: Project creation rejects invalid payload case \#18
+ok 103 - P4.18: Project creation rejects invalid payload case \#18
+  ---
+  duration_ms: 5.1379
+  type: 'test'
+  ...
+# Subtest: P4.19: Project creation rejects invalid payload case \#19
+ok 104 - P4.19: Project creation rejects invalid payload case \#19
+  ---
+  duration_ms: 5.9296
+  type: 'test'
+  ...
+# Subtest: P4.20: Project creation rejects invalid payload case \#20
+ok 105 - P4.20: Project creation rejects invalid payload case \#20
+  ---
+  duration_ms: 5.1609
+  type: 'test'
+  ...
+# Subtest: P5.1: Project list contract for query case \#1
+ok 106 - P5.1: Project list contract for query case \#1
+  ---
+  duration_ms: 6.848
+  type: 'test'
+  ...
+# Subtest: P5.2: Project list contract for query case \#2
+ok 107 - P5.2: Project list contract for query case \#2
+  ---
+  duration_ms: 82.9422
+  type: 'test'
+  ...
+# Subtest: P5.3: Project list contract for query case \#3
+ok 108 - P5.3: Project list contract for query case \#3
+  ---
+  duration_ms: 50.7918
+  type: 'test'
+  ...
+# Subtest: P5.4: Project list contract for query case \#4
+ok 109 - P5.4: Project list contract for query case \#4
+  ---
+  duration_ms: 44.4319
+  type: 'test'
+  ...
+# Subtest: P5.5: Project list contract for query case \#5
+ok 110 - P5.5: Project list contract for query case \#5
+  ---
+  duration_ms: 19.7336
+  type: 'test'
+  ...
+# Subtest: P5.6: Project list contract for query case \#6
+ok 111 - P5.6: Project list contract for query case \#6
+  ---
+  duration_ms: 32.1386
+  type: 'test'
+  ...
+# Subtest: P5.7: Project list contract for query case \#7
+ok 112 - P5.7: Project list contract for query case \#7
+  ---
+  duration_ms: 42.4259
+  type: 'test'
+  ...
+# Subtest: P5.8: Project list contract for query case \#8
+ok 113 - P5.8: Project list contract for query case \#8
+  ---
+  duration_ms: 27.6176
+  type: 'test'
+  ...
+# Subtest: P5.9: Project list contract for query case \#9
+ok 114 - P5.9: Project list contract for query case \#9
+  ---
+  duration_ms: 23.5929
+  type: 'test'
+  ...
+# Subtest: P5.10: Project list contract for query case \#10
+ok 115 - P5.10: Project list contract for query case \#10
+  ---
+  duration_ms: 33.6374
+  type: 'test'
+  ...
+# Subtest: P5.11: Project list contract for query case \#11
+ok 116 - P5.11: Project list contract for query case \#11
+  ---
+  duration_ms: 54.8607
+  type: 'test'
+  ...
+# Subtest: P5.12: Project list contract for query case \#12
+ok 117 - P5.12: Project list contract for query case \#12
+  ---
+  duration_ms: 25.541
+  type: 'test'
+  ...
+# Subtest: P5.13: Project list contract for query case \#13
+ok 118 - P5.13: Project list contract for query case \#13
+  ---
+  duration_ms: 18.5721
+  type: 'test'
+  ...
+# Subtest: P5.14: Project list contract for query case \#14
+ok 119 - P5.14: Project list contract for query case \#14
+  ---
+  duration_ms: 27.8393
+  type: 'test'
+  ...
+# Subtest: P5.15: Project list contract for query case \#15
+ok 120 - P5.15: Project list contract for query case \#15
+  ---
+  duration_ms: 68.8169
+  type: 'test'
+  ...
+# Subtest: P6.1: Refresh token endpoint rejects missing refreshToken \#1
+ok 121 - P6.1: Refresh token endpoint rejects missing refreshToken \#1
+  ---
+  duration_ms: 52.1845
+  type: 'test'
+  ...
+# Subtest: P6.2: Refresh token endpoint rejects missing refreshToken \#2
+ok 122 - P6.2: Refresh token endpoint rejects missing refreshToken \#2
+  ---
+  duration_ms: 28.1609
+  type: 'test'
+  ...
+# Subtest: P6.3: Refresh token endpoint rejects missing refreshToken \#3
+ok 123 - P6.3: Refresh token endpoint rejects missing refreshToken \#3
+  ---
+  duration_ms: 17.8711
+  type: 'test'
+  ...
+# Subtest: P6.4: Refresh token endpoint rejects missing refreshToken \#4
+ok 124 - P6.4: Refresh token endpoint rejects missing refreshToken \#4
+  ---
+  duration_ms: 15.0995
+  type: 'test'
+  ...
+# Subtest: P6.5: Refresh token endpoint rejects missing refreshToken \#5
+ok 125 - P6.5: Refresh token endpoint rejects missing refreshToken \#5
+  ---
+  duration_ms: 61.1635
+  type: 'test'
+  ...
+# Subtest: P6.6: Refresh token endpoint rejects missing refreshToken \#6
+ok 126 - P6.6: Refresh token endpoint rejects missing refreshToken \#6
+  ---
+  duration_ms: 9.7643
+  type: 'test'
+  ...
+# Subtest: P6.7: Refresh token endpoint rejects missing refreshToken \#7
+ok 127 - P6.7: Refresh token endpoint rejects missing refreshToken \#7
+  ---
+  duration_ms: 15.0101
+  type: 'test'
+  ...
+# Subtest: P6.8: Refresh token endpoint rejects missing refreshToken \#8
+ok 128 - P6.8: Refresh token endpoint rejects missing refreshToken \#8
+  ---
+  duration_ms: 31.8633
+  type: 'test'
+  ...
+# Subtest: P6.9: Refresh token endpoint rejects missing refreshToken \#9
+ok 129 - P6.9: Refresh token endpoint rejects missing refreshToken \#9
+  ---
+  duration_ms: 12.0933
+  type: 'test'
+  ...
+# Subtest: P6.10: Refresh token endpoint rejects missing refreshToken \#10
+ok 130 - P6.10: Refresh token endpoint rejects missing refreshToken \#10
+  ---
+  duration_ms: 10.781
+  type: 'test'
+  ...
+# Subtest: P7.1: Auth me works reliably for valid token call \#1
+ok 131 - P7.1: Auth me works reliably for valid token call \#1
+  ---
+  duration_ms: 33.9901
+  type: 'test'
+  ...
+# Subtest: P7.2: Auth me works reliably for valid token call \#2
+ok 132 - P7.2: Auth me works reliably for valid token call \#2
+  ---
+  duration_ms: 16.4256
+  type: 'test'
+  ...
+# Subtest: P7.3: Auth me works reliably for valid token call \#3
+ok 133 - P7.3: Auth me works reliably for valid token call \#3
+  ---
+  duration_ms: 28.2506
+  type: 'test'
+  ...
+# Subtest: P7.4: Auth me works reliably for valid token call \#4
+ok 134 - P7.4: Auth me works reliably for valid token call \#4
+  ---
+  duration_ms: 14.5723
+  type: 'test'
+  ...
+# Subtest: P7.5: Auth me works reliably for valid token call \#5
+ok 135 - P7.5: Auth me works reliably for valid token call \#5
+  ---
+  duration_ms: 103.8873
+  type: 'test'
+  ...
+1..135
+# tests 135
+# suites 0
+# pass 135
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2478.4785

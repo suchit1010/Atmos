@@ -1,0 +1,356 @@
+// Atmos Protocol — Solana Smart Contract (Anchor)
+// This contract handles:
+// 1. Carbon Credit SPL token minting
+// 2. ZK proof verification
+// 3. Settlement record anchoring
+// 4. Marketplace trading (future)
+
+use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Mint, MintTo, TokenAccount, Transfer};
+use anchor_spl::associated_token::AssociatedToken;
+
+declare_id!("AtmosXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"); // TODO: Replace with actual program ID
+
+#[program]
+pub mod atmos_protocol {
+    use super::*;
+
+    // ─── Initialize Carbon Credit Mint ──────────────────────
+    pub fn initialize_mint(ctx: Context<InitializeMint>) -> Result<()> {
+        let mint = &mut ctx.accounts.mint;
+        msg!("Initialized ATMOS Carbon Credit mint: {}", mint.key());
+        Ok(())
+    }
+
+    // ─── Verify & Mint Carbon Credits ──────────────────────
+    // Called after AI verification + ZK proof on backend
+    pub fn mint_carbon_credits(
+        ctx: Context<MintCarbonCredits>,
+        amount: u64,
+        project_id: String,
+        zk_proof: Vec<u8>,
+    ) -> Result<()> {
+        // Verify ZK proof (placeholder - actual verification is complex)
+        require!(
+            verify_groth16_proof(&zk_proof)?,
+            AtmosError::InvalidProof
+        );
+
+        // Store verification record on-chain
+        let verification_record = &mut ctx.accounts.verification_record;
+        verification_record.project_id = project_id;
+        verification_record.amount = amount;
+        verification_record.zk_proof = zk_proof;
+        verification_record.minted_at = Clock::get()?.unix_timestamp;
+        verification_record.recipient = ctx.accounts.recipient.key();
+
+        // Mint tokens to recipient
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_accounts = MintTo {
+            mint: ctx.accounts.mint.to_account_info(),
+            to: ctx.accounts.recipient.to_account_info(),
+            authority: ctx.accounts.payer.to_account_info(),
+        };
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+        token::mint_to(cpi_ctx, amount)?;
+
+        msg!("Minted {} ATMOS tokens for project {}", amount, verification_record.project_id);
+        emit!(CarbonCreditsMinted {
+            project_id: verification_record.project_id.clone(),
+            amount,
+            recipient: verification_record.recipient,
+            timestamp: verification_record.minted_at,
+        });
+
+        Ok(())
+    }
+
+    // ─── Batch Mint (1000+ transactions in single block) ─────
+    pub fn batch_mint_carbon_credits(
+        ctx: Context<BatchMintCarbonCredits>,
+        batches: Vec<MintBatch>,
+    ) -> Result<()> {
+        require!(batches.len() <= 1000, AtmosError::BatchTooLarge);
+
+        let mut total_minted: u64 = 0;
+
+        for batch in batches {
+            // Verify each proof
+            require!(
+                verify_groth16_proof(&batch.zk_proof)?,
+                AtmosError::InvalidProof
+            );
+
+            // Mint tokens
+            let cpi_program = ctx.accounts.token_program.to_account_info();
+            let cpi_accounts = MintTo {
+                mint: ctx.accounts.mint.to_account_info(),
+                to: batch.recipient.to_account_info(),
+                authority: ctx.accounts.payer.to_account_info(),
+            };
+            let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+            token::mint_to(cpi_ctx, batch.amount)?;
+
+            total_minted += batch.amount;
+        }
+
+        msg!("Batch minted {} ATMOS tokens across {} projects", total_minted, batches.len());
+
+        Ok(())
+    }
+
+    // ─── Record Settlement ──────────────────────────────────
+    pub fn record_settlement(
+        ctx: Context<RecordSettlement>,
+        settlement_id: String,
+        amount: u64,
+        buyer: Pubkey,
+        seller: Pubkey,
+    ) -> Result<()> {
+        let settlement = &mut ctx.accounts.settlement;
+        settlement.settlement_id = settlement_id;
+        settlement.amount = amount;
+        settlement.buyer = buyer;
+        settlement.seller = seller;
+        settlement.settled_at = Clock::get()?.unix_timestamp;
+        settlement.status = SettlementStatus::Completed;
+
+        emit!(SettlementRecorded {
+            settlement_id: settlement.settlement_id.clone(),
+            amount,
+            buyer,
+            seller,
+            timestamp: settlement.settled_at,
+        });
+
+        Ok(())
+    }
+
+    // ─── Burn Credits (for retirement) ──────────────────────
+    pub fn retire_carbon_credits(
+        ctx: Context<RetireCarbonCredits>,
+        amount: u64,
+        project_id: String,
+    ) -> Result<()> {
+        // Burn tokens (remove from circulation)
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let burn_ctx = CpiContext::new(
+            cpi_program,
+            token::Burn {
+                mint: ctx.accounts.mint.to_account_info(),
+                from: ctx.accounts.holder.to_account_info(),
+                authority: ctx.accounts.payer.to_account_info(),
+            },
+        );
+        token::burn(burn_ctx, amount)?;
+
+        // Record retirement
+        let retirement = &mut ctx.accounts.retirement_record;
+        retirement.project_id = project_id;
+        retirement.amount = amount;
+        retirement.retired_at = Clock::get()?.unix_timestamp;
+        retirement.retired_by = ctx.accounts.payer.key();
+
+        msg!("Retired {} ATMOS tokens for project {}", amount, retirement.project_id);
+
+        emit!(CarbonCreditsRetired {
+            project_id: retirement.project_id.clone(),
+            amount,
+            retired_by: retirement.retired_by,
+            timestamp: retirement.retired_at,
+        });
+
+        Ok(())
+    }
+}
+
+// ─── Account Structs ────────────────────────────────────────
+
+#[derive(Accounts)]
+pub struct InitializeMint<'info> {
+    #[account(
+        init,
+        payer = payer,
+        mint::decimals = 2,
+        mint::authority = payer,
+    )]
+    pub mint: Account<'info, Mint>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, token::Token>,
+    pub rent: Sysvar<'info, Rent>,
+}
+
+#[derive(Accounts)]
+pub struct MintCarbonCredits<'info> {
+    pub mint: Account<'info, Mint>,
+
+    #[account(mut)]
+    pub recipient: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    #[account(
+        init,
+        payer = payer,
+        space = 8 + 300,
+        seeds = [b"verification", payer.key().as_ref()],
+        bump
+    )]
+    pub verification_record: Account<'info, VerificationRecord>,
+
+    pub token_program: Program<'info, token::Token>,
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
+}
+
+#[derive(Accounts)]
+pub struct BatchMintCarbonCredits<'info> {
+    pub mint: Account<'info, Mint>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    pub token_program: Program<'info, token::Token>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct RecordSettlement<'info> {
+    #[account(
+        init,
+        payer = payer,
+        space = 8 + 300,
+    )]
+    pub settlement: Account<'info, SettlementRecord>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct RetireCarbonCredits<'info> {
+    pub mint: Account<'info, Mint>,
+
+    #[account(mut)]
+    pub holder: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    #[account(
+        init,
+        payer = payer,
+        space = 8 + 300,
+    )]
+    pub retirement_record: Account<'info, RetirementRecord>,
+
+    pub token_program: Program<'info, token::Token>,
+    pub system_program: Program<'info, System>,
+}
+
+// ─── Data Structs ──────────────────────────────────────────
+
+#[account]
+pub struct VerificationRecord {
+    pub project_id: String,      // max 255 bytes
+    pub amount: u64,             // tokens minted (in smallest units)
+    pub zk_proof: Vec<u8>,       // serialized Groth16 proof (~288 bytes)
+    pub minted_at: i64,          // Unix timestamp
+    pub recipient: Pubkey,       // SPL token account holder
+}
+
+#[account]
+pub struct SettlementRecord {
+    pub settlement_id: String,   // Dodo reference ID
+    pub amount: u64,             // USD amount
+    pub buyer: Pubkey,
+    pub seller: Pubkey,
+    pub settled_at: i64,
+    pub status: SettlementStatus,
+}
+
+#[account]
+pub struct RetirementRecord {
+    pub project_id: String,
+    pub amount: u64,
+    pub retired_at: i64,
+    pub retired_by: Pubkey,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug)]
+pub enum SettlementStatus {
+    Pending,
+    Completed,
+    Failed,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize)]
+pub struct MintBatch {
+    pub recipient: Pubkey,
+    pub amount: u64,
+    pub project_id: String,
+    pub zk_proof: Vec<u8>,
+}
+
+// ─── Events ────────────────────────────────────────────────
+
+#[event]
+pub struct CarbonCreditsMinted {
+    pub project_id: String,
+    pub amount: u64,
+    pub recipient: Pubkey,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct SettlementRecorded {
+    pub settlement_id: String,
+    pub amount: u64,
+    pub buyer: Pubkey,
+    pub seller: Pubkey,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct CarbonCreditsRetired {
+    pub project_id: String,
+    pub amount: u64,
+    pub retired_by: Pubkey,
+    pub timestamp: i64,
+}
+
+// ─── Errors ────────────────────────────────────────────────
+
+#[error_code]
+pub enum AtmosError {
+    #[msg("Invalid ZK proof")]
+    InvalidProof,
+
+    #[msg("Batch size exceeds maximum")]
+    BatchTooLarge,
+
+    #[msg("Settlement not found")]
+    SettlementNotFound,
+
+    #[msg("Unauthorized")]
+    Unauthorized,
+}
+
+// ─── Proof Verification (placeholder) ──────────────────────
+// In production, use:
+// - circom-based Groth16 verification
+// - Plonk verification
+// - Or delegate to specialized service
+
+fn verify_groth16_proof(proof: &[u8]) -> Result<bool> {
+    // TODO: Implement actual verification
+    // For now, accept any non-empty proof
+    Ok(!proof.is_empty())
+}

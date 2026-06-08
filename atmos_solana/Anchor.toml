@@ -1,0 +1,14 @@
+[toolchain]
+anchor_version = "0.31.0"
+
+[provider]
+cluster = "Localnet"
+wallet = "~/.config/solana/id.json"
+
+[[test.genesis]]
+address = "ComputeBudget111111111111111111111111111111"
+program = "ComputeBudget111111111111111111111111111111"
+# Compute budget program authority
+
+[scripts]
+test = "bash -c 'anchor test --skip-local-validator'"
