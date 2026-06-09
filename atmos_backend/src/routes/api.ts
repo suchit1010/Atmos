@@ -26,6 +26,19 @@ import {
 export async function registerRoutes(app: FastifyInstance): Promise<void> {
 
   // ──────────────────────────────────────────────────
+  // ROOT
+  // ──────────────────────────────────────────────────
+  app.get('/', async () => {
+    return {
+      name: 'ATMOS Protocol API',
+      status: 'ok',
+      version: '1.0.0',
+      health: '/api/healthz',
+      docs: '/api/v1',
+    };
+  });
+
+  // ──────────────────────────────────────────────────
   // HEALTH
   // ──────────────────────────────────────────────────
   app.get('/health', async () => {

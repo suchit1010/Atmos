@@ -66,6 +66,19 @@ describe('API integration tests (route-level)', () => {
     await app.close();
   });
 
+  it('GET / returns the API landing payload', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/',
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.name).toBe('ATMOS Protocol API');
+    expect(body.status).toBe('ok');
+    expect(body.health).toBe('/api/healthz');
+  });
+
   it('POST /api/v1/auth/otp/send returns 200 with mocked service response', async () => {
     (AuthSvc.sendOTP as jest.Mock).mockResolvedValue({
       status: 'sent',
