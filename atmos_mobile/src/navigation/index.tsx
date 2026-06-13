@@ -11,8 +11,8 @@ import { Colors, Typography, Spacing } from '../theme';
 // Screens
 import { DashboardScreen }   from '../screens/dashboard';
 import { MarketplaceScreen } from '../screens/marketplace';
-import { PortfolioScreen } from '../screens/portfolio';
-import { ProfileScreen } from '../screens/profile';
+import { PortfolioScreen }   from '../screens/portfolio';
+import { ProfileScreen }     from '../screens/profile';
 import {
   SelectProjectTypeScreen,
   CaptureDataScreen,
@@ -37,12 +37,20 @@ const SCREEN_OPTIONS = { headerShown: false, animationEnabled: true };
 // ─── Custom tab bar ───────────────────────────────────
 function ATMOSTabBar({ state, descriptors, navigation }: any) {
   const TABS = [
-    { key: 'Home',      icon: '⌂',  label: 'Home' },
-    { key: 'Projects',  icon: '📋', label: 'Projects' },
-    { key: 'NewProject',icon: '+',  label: '' },
-    { key: 'Market',    icon: '⇄',  label: 'Market' },
-    { key: 'Profile',   icon: '👤', label: 'Profile' },
+    { key: 'Home',       icon: '⌂',  iconActive: '⌂',  label: 'Home' },
+    { key: 'Projects',   icon: '◫',  iconActive: '◫',  label: 'Projects' },
+    { key: 'NewProject', icon: '+',  iconActive: '+',  label: '' },
+    { key: 'Market',     icon: '↗↙', iconActive: '↗↙', label: 'Market' },
+    { key: 'Profile',    icon: '○',  iconActive: '●',  label: 'Profile' },
   ];
+
+  const TAB_ICONS: Record<string, { active: string; inactive: string }> = {
+    Home:       { active: '🏠', inactive: '🏠' },
+    Projects:   { active: '📋', inactive: '📋' },
+    NewProject: { active: '+',  inactive: '+' },
+    Market:     { active: '🏦', inactive: '🏦' },
+    Profile:    { active: '👤', inactive: '👤' },
+  };
 
   return (
     <View style={styles.tabBar}>
@@ -59,19 +67,38 @@ function ATMOSTabBar({ state, descriptors, navigation }: any) {
         if (isCenter) {
           return (
             <TouchableOpacity key={route.key} onPress={onPress} style={styles.centerBtn}>
-              <View style={styles.centerBtnInner}>
-                <Text style={{ fontSize: 28, color: '#040C06', fontWeight: '300', lineHeight: 32 }}>+</Text>
-              </View>
+              <LinearGradient
+                colors={['#22C55E', '#16A34A']}
+                style={styles.centerBtnInner}
+              >
+                <Text style={{ fontSize: 26, color: '#040C06', fontWeight: '400', lineHeight: 30, marginTop: -1 }}>+</Text>
+              </LinearGradient>
             </TouchableOpacity>
           );
         }
 
+        const icons: Record<string, string> = {
+          Home:     '⌂',
+          Projects: '⊟',
+          Market:   '⇄',
+          Profile:  '◉',
+        };
+        const icon = icons[tab?.key] || '●';
+
         return (
           <TouchableOpacity key={route.key} onPress={onPress} style={styles.tabItem}>
-            <Text style={[{ fontSize: 20 }, isFocused ? styles.tabIconActive : styles.tabIcon]}>
-              {tab?.icon}
-            </Text>
-            <Text style={[Typography.bodyXs, isFocused ? styles.tabLabelActive : styles.tabLabel]}>
+            <View style={[styles.tabIconWrap, isFocused && styles.tabIconWrapActive]}>
+              <Text style={[
+                styles.tabIconText,
+                { color: isFocused ? Colors.primary : Colors.textDim },
+              ]}>
+                {icon}
+              </Text>
+            </View>
+            <Text style={[
+              Typography.bodyXs,
+              { color: isFocused ? Colors.primary : Colors.textDim, marginTop: 2, fontWeight: isFocused ? '600' : '400' },
+            ]}>
               {tab?.label}
             </Text>
           </TouchableOpacity>
@@ -171,6 +198,7 @@ export function AppNavigator() {
         <Stack.Screen name="ZKProof"       component={ZKProofScreen} />
         <Stack.Screen name="AssetCreated"  component={AssetCreatedScreen} />
         <Stack.Screen name="Marketplace"   component={MarketplaceScreen} />
+        <Stack.Screen name="Portfolio"     component={PortfolioScreen} />
         <Stack.Screen name="Payment"       component={PaymentScreen} />
         <Stack.Screen name="Settlement"    component={SettlementScreen} />
         <Stack.Screen name="Profile"       component={ProfileScreen} />
@@ -185,23 +213,32 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bgCard,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
-    paddingBottom: 24,
+    paddingBottom: 28,
     paddingTop: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
+    alignItems: 'center',
   },
   tabItem: {
     flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 4,
   },
-  tabIcon:       { opacity: 0.4 },
-  tabIconActive: { opacity: 1 },
+  tabIconWrap: {
+    width: 36, height: 28, alignItems: 'center', justifyContent: 'center',
+    borderRadius: 8,
+  },
+  tabIconWrapActive: {
+    backgroundColor: Colors.primaryDim,
+  },
+  tabIconText: {
+    fontSize: 18,
+    lineHeight: 22,
+  },
   tabLabel:      { ...Typography.bodyXs, color: Colors.textDim, marginTop: 2 },
   tabLabelActive:{ ...Typography.bodyXs, color: Colors.primary, marginTop: 2 },
   centerBtn: {
-    flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: -20,
+    flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: -24,
   },
   centerBtnInner: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: Colors.primary,
+    width: 52, height: 52, borderRadius: 26,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },

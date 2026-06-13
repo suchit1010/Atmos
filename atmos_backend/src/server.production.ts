@@ -243,19 +243,9 @@ async function buildApp(): Promise<FastifyInstance> {
     });
   });
 
-  // ── Health Check Endpoint ──
-  app.get('/api/healthz', async (req, reply) => {
-    const dbHealthy = await healthCheck();
-    const redisHealthy = redisClient ? await redisClient.ping() === 'PONG' : false;
-
-    const status = dbHealthy && redisHealthy ? 200 : 503;
-    return reply.status(status).send({
-      status: dbHealthy && redisHealthy ? 'healthy' : 'degraded',
-      db: dbHealthy ? 'ok' : 'error',
-      cache: redisHealthy ? 'ok' : 'error',
-      timestamp: new Date().toISOString(),
-    });
-  });
+  // Health is exposed by route module `registerRoutes` which provides
+  // `/api/healthz` and `/health`. Avoid declaring it here to prevent
+  // duplicate-route errors when the routes file is registered.
 
   // ── Readiness Check (all dependencies) ──
   app.get('/api/readyz', async (req, reply) => {

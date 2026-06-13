@@ -214,7 +214,7 @@ export function PortfolioScreen({ navigation }: any) {
 }
 
 // ─── Profile / Settings screen ────────────────────────
-export function ProfileScreen({ navigation }: any) {
+export function SettingsScreen({ navigation }: any) {
   const user       = useAuthStore(s => s.user);
   const logout     = useAuthStore(s => s.logout);
   const { language, currency, toggleTheme, setLanguage, setCurrency } = useUIStore();

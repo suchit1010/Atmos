@@ -12,8 +12,12 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL || (() => {
     return 'http://127.0.0.1:3000';
   }
 
-  return `${(window as any).location.protocol}//${hostname}:3000`;
+  return 'https://atmosbackend.vercel.app';
 })();
+
+// Log the API URL for debugging
+console.log('[API] Base URL:', BASE_URL);
+
 const ACCESS_TOKEN_KEY = 'atmos_access_token';
 const REFRESH_TOKEN_KEY = 'atmos_refresh_token';
 
@@ -96,7 +100,18 @@ let refreshing = false;
 api.interceptors.response.use(
   (res) => res,
   async (err: AxiosError) => {
-    if (err.response?.status === 401 && !refreshing) {
+    const status = err.response?.status;
+    
+    // Log all API errors for debugging
+    console.error('[API Error]', {
+      url: err.config?.url,
+      method: err.config?.method,
+      status,
+      data: err.response?.data,
+      message: err.message,
+    });
+
+    if (status === 401 && !refreshing) {
       refreshing = true;
       try {
         const refresh = await TokenStore.getRefresh();
@@ -109,7 +124,8 @@ api.interceptors.response.use(
             return api.request(err.config);
           }
         }
-      } catch {
+      } catch (refreshErr) {
+        console.error('[API] Token refresh failed:', refreshErr);
         await TokenStore.clear();
       } finally {
         refreshing = false;
@@ -190,7 +206,7 @@ export function connectMRVWebSocket(
   token:     string,
   onEvent:   (step: string, data: any) => void
 ): WebSocket {
-  const wsUrl = BASE_URL.replace('http', 'ws') + `?projectId=${projectId}&token=${token}`;
+  const wsUrl = BASE_URL.replace(/^http/, 'ws') + `/ws?projectId=${projectId}&token=${token}`;
   const ws    = new WebSocket(wsUrl);
 
   ws.onmessage = (e) => {

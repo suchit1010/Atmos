@@ -64,7 +64,17 @@ curl http://localhost:3000/health
 # → {"status":"ok","version":"1.0.0","services":{"database":"ok","solana":"ok"}}
 ```
 
-### 4. Start mobile app
+### 4. Deploy to Vercel
+
+Run this from `atmos_backend`, not `atmos_mobile`:
+
+```bash
+vercel deploy --prod
+# or
+npm run deploy:prod
+```
+
+### 5. Start mobile app
 
 ```bash
 cd ../mobile

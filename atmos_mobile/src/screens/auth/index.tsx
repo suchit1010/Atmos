@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, Radius, Shadow } from '../../theme';
 import { Button, Input } from '../../components/common';
+import { OTPInput } from '../../components/production';
 import { AtmosLogo } from '../../components/common/AtmosLogo';
 import { AuthAPI, TokenStore } from '../../services/api';
 import { useAuthStore } from '../../store';
@@ -89,10 +90,10 @@ export function AuthScreen({ onSuccess }: { onSuccess: () => void }) {
   const [step, setStep]               = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone]             = useState('');
   const [countryCode, setCountryCode] = useState('91');
-  const [otp, setOtp]                 = useState(['', '', '', '', '', '']);
+  const [otp, setOtp]                 = useState('');
+  const [otpError, setOtpError]       = useState(false);
   const [loading, setLoading]         = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
-  const otpRefs = useRef<(TextInput | null)[]>([]);
   const login   = useAuthStore(s => s.login);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -114,11 +115,12 @@ export function AuthScreen({ onSuccess }: { onSuccess: () => void }) {
       const { data } = await AuthAPI.sendOTP(phone, countryCode);
       setStep('otp');
       setResendTimer(30);
+      setOtp(''); // Reset OTP
+      setOtpError(false); // Reset error
       fadeAnim.setValue(0);
 
       if (data.devOtp) {
-        const otpDigits = data.devOtp.split('').slice(0, 6);
-        setOtp([...otpDigits, ...Array(6 - otpDigits.length).fill('')]);
+        setOtp(data.devOtp);
         await new Promise(resolve => setTimeout(resolve, 250));
         await handleVerifyOTP(data.devOtp);
         return;
@@ -129,34 +131,30 @@ export function AuthScreen({ onSuccess }: { onSuccess: () => void }) {
   };
 
   const handleVerifyOTP = async (overrideOtp?: string) => {
-    const otpStr = overrideOtp || otp.join('');
-    if (otpStr.length < 6) return Alert.alert('Enter the 6-digit OTP');
+    const otpStr = overrideOtp || otp;
+    if (otpStr.length < 6) {
+      setOtpError(true);
+      return;
+    }
     setLoading(true);
+    setOtpError(false);
     try {
       const fingerprint = `mobile-${Platform.OS}-${Date.now()}`;
       const { data }    = await AuthAPI.verifyOTP(phone, countryCode, otpStr, fingerprint);
+      console.log('[Auth] verifyOTP response:', data);
       await login(data.user, data.accessToken, data.refreshToken);
       onSuccess();
     } catch (e: any) {
-      Alert.alert('Invalid OTP', e.response?.data?.message || 'Please check and retry');
+      console.error('[Auth] verifyOTP error:', e);
+      setOtpError(true);
+      Alert.alert('Invalid OTP', e.response?.data?.message || e.message || 'Please check and retry');
     } finally { setLoading(false); }
   };
 
-  const handleOTPChange = (val: string, idx: number) => {
-    if (val.length > 1) {
-      // Paste handling
-      const digits = val.replace(/\D/g, '').split('').slice(0, 6);
-      const newOtp = [...otp];
-      digits.forEach((d, i) => { if (i < 6) newOtp[i] = d; });
-      setOtp(newOtp);
-      otpRefs.current[Math.min(digits.length, 5)]?.focus();
-      return;
-    }
-    const newOtp = [...otp];
-    newOtp[idx]  = val;
-    setOtp(newOtp);
-    if (val && idx < 5) otpRefs.current[idx + 1]?.focus();
-    else if (!val && idx > 0) otpRefs.current[idx - 1]?.focus();
+  const handleOTPComplete = (completedOtp: string) => {
+    setOtp(completedOtp);
+    // Auto-verify when OTP is complete
+    setTimeout(() => handleVerifyOTP(completedOtp), 300);
   };
 
   const COUNTRIES = [
@@ -242,31 +240,29 @@ export function AuthScreen({ onSuccess }: { onSuccess: () => void }) {
                 </View>
               ) : (
                 <View>
-                  {/* OTP boxes */}
+                  {/* OTP Input with new production component */}
                   <Text style={[Typography.labelSm, { color: Colors.textMuted, marginBottom: Spacing.md, textAlign: 'center' }]}>
-                    Enter OTP
+                    Enter 6-digit OTP
                   </Text>
-                  <View style={styles.otpRow}>
-                    {otp.map((digit, i) => (
-                      <TextInput
-                        key={i}
-                        ref={r => { otpRefs.current[i] = r; }}
-                        style={[styles.otpBox, digit ? styles.otpBoxFilled : {}]}
-                        value={digit}
-                        onChangeText={v => handleOTPChange(v, i)}
-                        keyboardType="number-pad"
-                        maxLength={6}
-                        textAlign="center"
-                        selectionColor={Colors.primary}
-                      />
-                    ))}
-                  </View>
+                  
+                  <OTPInput
+                    value={otp}
+                    onChange={(value) => {
+                      setOtp(value);
+                      setOtpError(false); // Clear error on change
+                    }}
+                    onComplete={handleOTPComplete}
+                    error={otpError}
+                    disabled={loading}
+                    autoFocus
+                  />
 
                   <Button
                     label="Verify OTP"
-                    onPress={handleVerifyOTP}
+                    onPress={() => handleVerifyOTP()}
                     loading={loading}
-                    style={{ marginTop: Spacing.xl }}
+                    disabled={otp.length < 6}
+                    style={{ marginTop: Spacing.lg }}
                   />
 
                   <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: Spacing.lg }}>
@@ -284,7 +280,7 @@ export function AuthScreen({ onSuccess }: { onSuccess: () => void }) {
                     )}
                   </View>
 
-                  <TouchableOpacity onPress={() => setStep('phone')} style={{ alignItems: 'center', marginTop: Spacing.md }}>
+                  <TouchableOpacity onPress={() => { setStep('phone'); setOtp(''); setOtpError(false); }} style={{ alignItems: 'center', marginTop: Spacing.md }}>
                     <Text style={[Typography.bodySm, { color: Colors.textMuted }]}>← Change number</Text>
                   </TouchableOpacity>
                 </View>

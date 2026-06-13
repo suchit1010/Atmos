@@ -2,91 +2,261 @@
  * ATMOS Protocol — Design System
  * Bloomberg Terminal × Stripe × Apple
  * Dark-first, premium, minimal
+ * Version 2.0 - Enterprise Grade
  */
 
+// Import token system
+import { Tokens as T, Primitives as P } from '../tokens';
+
+// ─── FONT FAMILIES ─────────────────────────────────────────
+// Note: For production, install these fonts via expo-font
+// For now, using system fallbacks
+export const FontFamily = {
+  // PRIMARY: All UI, body, labels
+  sans: {
+    regular: 'System', // TODO: Install Inter-Regular
+    medium: 'System', // TODO: Install Inter-Medium
+    semibold: 'System', // TODO: Install Inter-SemiBold
+    bold: 'System', // TODO: Install Inter-Bold
+  },
+  // DISPLAY: Headers only, for impact
+  display: {
+    medium: 'System', // TODO: Install Poppins-Medium
+    semibold: 'System', // TODO: Install Poppins-SemiBold
+    bold: 'System', // TODO: Install Poppins-Bold
+  },
+  // MONO: Numbers, hashes, technical data (critical for fintech)
+  mono: {
+    regular: 'monospace', // Native monospace (works on all platforms)
+    medium: 'monospace',
+    semibold: 'monospace',
+  },
+} as const;
+
+// ─── TYPOGRAPHY SCALE ──────────────────────────────────────
+export const Typography = {
+  // Display (Poppins for headers >20px)
+  display2xl: { 
+    fontSize: 40, 
+    lineHeight: 44, 
+    letterSpacing: -1.5, 
+    fontFamily: FontFamily.display.bold,
+    fontWeight: '700' as const,
+  },
+  displayXl: { 
+    fontSize: 32, 
+    lineHeight: 36, 
+    letterSpacing: -1.2, 
+    fontFamily: FontFamily.display.bold,
+    fontWeight: '700' as const,
+  },
+  displayLg: { 
+    fontSize: 28, 
+    lineHeight: 32, 
+    letterSpacing: -0.8, 
+    fontFamily: FontFamily.display.semibold,
+    fontWeight: '600' as const,
+  },
+  displayMd: { 
+    fontSize: 24, 
+    lineHeight: 28, 
+    letterSpacing: -0.5, 
+    fontFamily: FontFamily.display.semibold,
+    fontWeight: '600' as const,
+  },
+  displaySm: { 
+    fontSize: 20, 
+    lineHeight: 24, 
+    letterSpacing: -0.3, 
+    fontFamily: FontFamily.display.medium,
+    fontWeight: '500' as const,
+  },
+
+  // Headings (Inter semibold)
+  headingLg: { 
+    fontSize: 18, 
+    lineHeight: 24, 
+    letterSpacing: -0.2, 
+    fontFamily: FontFamily.sans.semibold,
+    fontWeight: '600' as const,
+  },
+  headingMd: { 
+    fontSize: 16, 
+    lineHeight: 22, 
+    letterSpacing: -0.1, 
+    fontFamily: FontFamily.sans.semibold,
+    fontWeight: '600' as const,
+  },
+  headingSm: { 
+    fontSize: 14, 
+    lineHeight: 20, 
+    letterSpacing: 0, 
+    fontFamily: FontFamily.sans.semibold,
+    fontWeight: '600' as const,
+  },
+
+  // Body (Inter regular)
+  bodyLg: { 
+    fontSize: 16, 
+    lineHeight: 24, 
+    letterSpacing: 0.1, 
+    fontFamily: FontFamily.sans.regular,
+    fontWeight: '400' as const,
+  },
+  bodyMd: { 
+    fontSize: 15, 
+    lineHeight: 22, 
+    letterSpacing: 0.1, 
+    fontFamily: FontFamily.sans.regular,
+    fontWeight: '400' as const,
+  },
+  bodySm: { 
+    fontSize: 13, 
+    lineHeight: 20, 
+    letterSpacing: 0.1, 
+    fontFamily: FontFamily.sans.regular,
+    fontWeight: '400' as const,
+  },
+  bodyXs: { 
+    fontSize: 12, 
+    lineHeight: 18, 
+    letterSpacing: 0.1, 
+    fontFamily: FontFamily.sans.regular,
+    fontWeight: '400' as const,
+  },
+
+  // Labels (Inter medium)
+  labelLg: { 
+    fontSize: 14, 
+    lineHeight: 18, 
+    letterSpacing: 0.2, 
+    fontFamily: FontFamily.sans.medium,
+    fontWeight: '500' as const,
+  },
+  labelMd: { 
+    fontSize: 12, 
+    lineHeight: 16, 
+    letterSpacing: 0.3, 
+    fontFamily: FontFamily.sans.medium,
+    fontWeight: '500' as const,
+  },
+  labelSm: { 
+    fontSize: 10, 
+    lineHeight: 14, 
+    letterSpacing: 0.5, 
+    fontFamily: FontFamily.sans.medium,
+    fontWeight: '500' as const,
+  },
+  labelXs: { 
+    fontSize: 9, 
+    lineHeight: 12, 
+    letterSpacing: 0.8, 
+    fontFamily: FontFamily.sans.semibold,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase' as const,
+  },
+
+  // MONO — for prices, hashes, scores, block numbers
+  monoXl: { 
+    fontSize: 24, 
+    lineHeight: 28, 
+    letterSpacing: -0.5, 
+    fontFamily: FontFamily.mono.semibold,
+    fontWeight: '600' as const,
+  },
+  monoLg: { 
+    fontSize: 20, 
+    lineHeight: 24, 
+    letterSpacing: -0.3, 
+    fontFamily: FontFamily.mono.semibold,
+    fontWeight: '600' as const,
+  },
+  monoMd: { 
+    fontSize: 16, 
+    lineHeight: 20, 
+    letterSpacing: 0, 
+    fontFamily: FontFamily.mono.medium,
+    fontWeight: '500' as const,
+  },
+  monoSm: { 
+    fontSize: 13, 
+    lineHeight: 18, 
+    letterSpacing: 0.1, 
+    fontFamily: FontFamily.mono.regular,
+    fontWeight: '400' as const,
+  },
+  monoXs: { 
+    fontSize: 11, 
+    lineHeight: 14, 
+    letterSpacing: 0.1, 
+    fontFamily: FontFamily.mono.regular,
+    fontWeight: '400' as const,
+  },
+} as const;
+
+// ─── COLORS (Using Token System) ───────────────────────────
 export const Colors = {
   // ─── Brand ─────────────────────────────
-  primary:     '#22C55E',   // Electric green
-  primaryDim:  'rgba(34,197,94,0.12)',
-  primaryGlow: 'rgba(34,197,94,0.25)',
-  primaryDark: '#16A34A',
+  primary: T.interactive.primary,
+  primaryDim: T.interactive.secondary,
+  primaryGlow: T.shadow.glow,
+  primaryDark: T.interactive.primaryActive,
 
   // ─── Background layers ──────────────────
-  bg:          '#040C06',   // Deepest black-green
-  bgDark:     '#040C06',   // Backward-compatible alias for legacy screens
-  bgCard:      '#091410',   // Card surface
-  bgElevated:  '#0E1E12',   // Elevated modal
-  bgInput:     '#111D13',   // Input fields
-  bgOverlay:   'rgba(4,12,6,0.92)',
+  bg: T.bg.screen,
+  bgDark: T.bg.screen, // Backward-compatible alias
+  bgCard: T.bg.elevated,
+  bgElevated: T.bg.elevated,
+  bgInput: T.bg.input,
+  bgOverlay: T.bg.overlay,
 
   // ─── Borders ────────────────────────────
-  border:      'rgba(34,197,94,0.10)',
-  borderBright:'rgba(34,197,94,0.25)',
-  borderSubtle:'rgba(255,255,255,0.05)',
+  border: T.border.default,
+  borderBright: T.border.accent,
+  borderSubtle: T.border.subtle,
 
   // ─── Text ───────────────────────────────
-  text:        '#E8F5EA',   // Primary text
-  textMuted:   '#6B9B74',   // Secondary text
-  textDim:     '#2E4D35',   // Placeholder
-  textInverse: '#040C06',   // On green backgrounds
+  text: T.text.primary,
+  textMuted: T.text.secondary,
+  textDim: T.text.tertiary,
+  textInverse: T.text.inverse,
 
   // ─── Status ─────────────────────────────
-  success:     '#22C55E',
-  successDim:  'rgba(34,197,94,0.12)',
-  warning:     '#F59E0B',
-  warningDim:  'rgba(245,158,11,0.12)',
-  error:       '#EF4444',
-  errorDim:    'rgba(239,68,68,0.12)',
-  info:        '#3B82F6',
-  infoDim:     'rgba(59,130,246,0.12)',
+  success: T.text.success,
+  successDim: T.status.verified.bg,
+  warning: T.text.warning,
+  warningDim: T.status.pending.bg,
+  error: T.text.error,
+  errorDim: T.status.rejected.bg,
+  info: T.text.info,
+  infoDim: P.blue[900],
 
   // ─── Grades ─────────────────────────────
-  gradeS:      '#10B981',  gradeSBg: 'rgba(16,185,129,0.15)',
-  gradeA:      '#22C55E',  gradeABg: 'rgba(34,197,94,0.15)',
-  gradeB:      '#F59E0B',  gradeBBg: 'rgba(245,158,11,0.15)',
-  gradeC:      '#F97316',  gradeCBg: 'rgba(249,115,22,0.15)',
-  gradeD:      '#EF4444',  gradeDBg: 'rgba(239,68,68,0.15)',
+  gradeS: T.grade.S.text,
+  gradeSBg: T.grade.S.bg,
+  gradeA: T.grade.A.text,
+  gradeABg: T.grade.A.bg,
+  gradeB: T.grade.B.text,
+  gradeBBg: T.grade.B.bg,
+  gradeC: T.grade.C.text,
+  gradeCBg: T.grade.C.bg,
+  gradeD: T.grade.D.text,
+  gradeDBg: T.grade.D.bg,
 
   // ─── Special ────────────────────────────
-  solana:      '#9945FF',
-  solanaDim:   'rgba(153,69,255,0.12)',
-  dodo:        '#FF6B35',
-  dodoDim:     'rgba(255,107,53,0.12)',
-  zkPurple:    '#8B5CF6',
-  zkDim:       'rgba(139,92,246,0.12)',
-  satellite:   '#06B6D4',
-  satelliteDim:'rgba(6,182,212,0.12)',
+  solana: P.purple[500],
+  solanaDim: P.purple[900],
+  dodo: '#FF6B35',
+  dodoDim: 'rgba(255,107,53,0.12)',
+  zkPurple: P.purple[500],
+  zkDim: P.purple[900],
+  satellite: P.blue[500],
+  satelliteDim: P.blue[900],
 
   // ─── White alpha ────────────────────────
   white10: 'rgba(255,255,255,0.10)',
   white06: 'rgba(255,255,255,0.06)',
   white04: 'rgba(255,255,255,0.04)',
-} as const;
-
-export const Typography = {
-  // Display (Sora-like)
-  display2xl: { fontSize: 40, fontWeight: '700' as const, letterSpacing: -1.5, lineHeight: 46 },
-  displayXl:  { fontSize: 32, fontWeight: '700' as const, letterSpacing: -1.0, lineHeight: 38 },
-  displayLg:  { fontSize: 28, fontWeight: '600' as const, letterSpacing: -0.8, lineHeight: 34 },
-  displayMd:  { fontSize: 24, fontWeight: '600' as const, letterSpacing: -0.5, lineHeight: 30 },
-  displaySm:  { fontSize: 20, fontWeight: '600' as const, letterSpacing: -0.3, lineHeight: 26 },
-
-  // Body
-  bodyLg:  { fontSize: 17, fontWeight: '400' as const, lineHeight: 26 },
-  bodyMd:  { fontSize: 15, fontWeight: '400' as const, lineHeight: 24 },
-  bodySm:  { fontSize: 13, fontWeight: '400' as const, lineHeight: 20 },
-  bodyXs:  { fontSize: 11, fontWeight: '400' as const, lineHeight: 17 },
-
-  // Labels
-  labelLg: { fontSize: 15, fontWeight: '600' as const, letterSpacing: 0.1, lineHeight: 22 },
-  labelMd: { fontSize: 13, fontWeight: '600' as const, letterSpacing: 0.1, lineHeight: 20 },
-  labelSm: { fontSize: 11, fontWeight: '600' as const, letterSpacing: 0.2, lineHeight: 16 },
-  labelXs: { fontSize: 10, fontWeight: '700' as const, letterSpacing: 0.5, lineHeight: 14 },
-
-  // Mono (for hashes, amounts)
-  monoLg:  { fontSize: 17, fontFamily: 'monospace' as const, fontWeight: '500' as const },
-  monoMd:  { fontSize: 13, fontFamily: 'monospace' as const, fontWeight: '500' as const },
-  monoSm:  { fontSize: 11, fontFamily: 'monospace' as const, fontWeight: '400' as const },
 } as const;
 
 export const Spacing = {

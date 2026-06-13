@@ -2,13 +2,13 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Animated, Dimensions,
-  Linking,
+  Linking, Modal, TextInput, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, Spacing, Radius, Shadow } from '../../theme';
 import { Button, Card, GradeBadge } from '../../components/common';
-import { ProjectsAPI, connectMRVWebSocket, TokenStore } from '../../services/api';
+import { ProjectsAPI, connectMRVWebSocket, TokenStore, MarketAPI } from '../../services/api';
 import { useMRVStore } from '../../store';
 
 const { width } = Dimensions.get('window');
@@ -516,6 +516,9 @@ export function AssetCreatedScreen({ route, navigation }: any) {
   const [minting, setMinting] = useState(false);
   const [minted,  setMinted]  = useState(false);
   const [mintData, setMintData] = useState<any>(null);
+  const [showListingModal, setShowListingModal] = useState(false);
+  const [listingPrice, setListingPrice] = useState('');
+  const [creating, setCreating] = useState(false);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const explorerUrl = mintData?.mintAddress
     ? `https://explorer.solana.com/address/${mintData.mintAddress}?cluster=devnet`
@@ -529,6 +532,46 @@ export function AssetCreatedScreen({ route, navigation }: any) {
       setMinted(true);
       Animated.spring(scaleAnim, { toValue: 1, friction: 5, useNativeDriver: true }).start();
     } catch { setMinting(false); }
+  };
+
+  const handleListOnMarket = () => {
+    setShowListingModal(true);
+  };
+
+  const handleCreateListing = async () => {
+    if (!listingPrice || parseFloat(listingPrice) <= 0) {
+      Alert.alert('Invalid Price', 'Please enter a valid price');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      await MarketAPI.createListing({
+        creditId: mintData?.creditId || projectId,
+        quantity: parseFloat(result?.co2e_estimated || 2.46),
+        unitPriceInr: parseFloat(listingPrice),
+      });
+
+      setShowListingModal(false);
+      Alert.alert(
+        'Success!',
+        'Your carbon credits are now listed on the marketplace',
+        [
+          {
+            text: 'View Marketplace',
+            onPress: () => navigation.navigate('Marketplace'),
+          },
+          {
+            text: 'Go Home',
+            onPress: () => navigation.navigate('Main'),
+          },
+        ]
+      );
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.error || 'Failed to create listing');
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
@@ -627,7 +670,11 @@ export function AssetCreatedScreen({ route, navigation }: any) {
         <View style={styles.bottomBar}>
           {minted ? (
             <View style={{ gap: Spacing.sm }}>
-              <Button label="Register on Marketplace →" onPress={() => navigation.navigate('Marketplace')} size="lg" />
+              <Button 
+                label="List on Marketplace 🏦" 
+                onPress={handleListOnMarket} 
+                size="lg" 
+              />
               <Button label="Back to Home" variant="ghost" onPress={() => navigation.navigate('Main')} />
               {explorerUrl && (
                 <Button
@@ -641,6 +688,107 @@ export function AssetCreatedScreen({ route, navigation }: any) {
             <Button label="Mint on Solana 🪙" onPress={handleMint} loading={minting} size="lg" />
           )}
         </View>
+
+        {/* Listing Creation Modal */}
+        <Modal
+          visible={showListingModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowListingModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={[Typography.displaySm, { color: Colors.text }]}>
+                  List on Marketplace
+                </Text>
+                <TouchableOpacity onPress={() => setShowListingModal(false)}>
+                  <Text style={[Typography.displaySm, { color: Colors.textMuted }]}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={{ maxHeight: 500 }}>
+                <Card style={{ marginBottom: Spacing.md }}>
+                  <Text style={[Typography.labelMd, { color: Colors.textMuted, marginBottom: Spacing.md }]}>
+                    ASSET DETAILS
+                  </Text>
+                  <View style={styles.assetMetaRow}>
+                    <Text style={[Typography.labelSm, { color: Colors.textMuted }]}>Amount</Text>
+                    <Text style={[Typography.labelMd, { color: Colors.primary }]}>
+                      {parseFloat(result?.co2e_estimated || 2.46).toFixed(2)} tCO₂e
+                    </Text>
+                  </View>
+                  <View style={styles.assetMetaRow}>
+                    <Text style={[Typography.labelSm, { color: Colors.textMuted }]}>Grade</Text>
+                    <GradeBadge grade={result?.grade || 'A'} />
+                  </View>
+                  <View style={[styles.assetMetaRow, { borderBottomWidth: 0 }]}>
+                    <Text style={[Typography.labelSm, { color: Colors.textMuted }]}>Methodology</Text>
+                    <Text style={[Typography.monoSm, { color: Colors.text }]}>
+                      {result?.methodology_match || 'VM0044'}
+                    </Text>
+                  </View>
+                </Card>
+
+                <Card style={{ marginBottom: Spacing.md }}>
+                  <Text style={[Typography.labelMd, { color: Colors.textMuted, marginBottom: Spacing.sm }]}>
+                    SET PRICE
+                  </Text>
+                  <Text style={[Typography.bodyXs, { color: Colors.textDim, marginBottom: Spacing.md }]}>
+                    Suggested price range: ₹{(result?.price_min_inr || 1500).toLocaleString('en-IN')} - ₹{(result?.price_max_inr || 1850).toLocaleString('en-IN')} per tCO₂e
+                  </Text>
+                  
+                  <View style={styles.priceInputContainer}>
+                    <Text style={[Typography.labelLg, { color: Colors.textMuted, marginRight: Spacing.xs }]}>₹</Text>
+                    <TextInput
+                      style={styles.priceInput}
+                      placeholder="1500"
+                      placeholderTextColor={Colors.textDim}
+                      keyboardType="numeric"
+                      value={listingPrice}
+                      onChangeText={setListingPrice}
+                    />
+                    <Text style={[Typography.labelSm, { color: Colors.textMuted, marginLeft: Spacing.xs }]}>
+                      /tCO₂e
+                    </Text>
+                  </View>
+
+                  {listingPrice && parseFloat(listingPrice) > 0 && (
+                    <View style={{ marginTop: Spacing.md, padding: Spacing.md, backgroundColor: Colors.primaryDim, borderRadius: Radius.md }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <Text style={[Typography.labelSm, { color: Colors.text }]}>Total Listing Value</Text>
+                        <Text style={[Typography.labelLg, { color: Colors.primary }]}>
+                          ₹{(parseFloat(listingPrice) * parseFloat(result?.co2e_estimated || 2.46)).toFixed(2)}
+                        </Text>
+                      </View>
+                      <Text style={[Typography.bodyXs, { color: Colors.textDim }]}>
+                        = ₹{listingPrice} × {parseFloat(result?.co2e_estimated || 2.46).toFixed(2)} tCO₂e
+                      </Text>
+                    </View>
+                  )}
+                </Card>
+
+                <Text style={[Typography.bodyXs, { color: Colors.textDim, textAlign: 'center', marginBottom: Spacing.lg }]}>
+                  Your listing will appear on the marketplace immediately. You can withdraw it anytime.
+                </Text>
+              </ScrollView>
+
+              <View style={{ gap: Spacing.sm }}>
+                <Button 
+                  label={creating ? "Creating Listing..." : "Create Listing →"} 
+                  onPress={handleCreateListing}
+                  loading={creating}
+                  size="lg"
+                />
+                <Button 
+                  label="Cancel" 
+                  variant="ghost" 
+                  onPress={() => setShowListingModal(false)}
+                />
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -692,5 +840,41 @@ const styles = StyleSheet.create({
   assetMetaRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: Spacing.sm, borderBottomWidth: 1, borderColor: Colors.border,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.bgCard,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    padding: Spacing.lg,
+    paddingBottom: Spacing['3xl'],
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  priceInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bgInput,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  priceInput: {
+    flex: 1,
+    ...Typography.displayMd,
+    color: Colors.text,
+    padding: 0,
+    textAlign: 'center',
   },
 });

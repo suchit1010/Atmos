@@ -65,12 +65,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Map API response to UI user object
     const mappedUser: User = {
       id: user.id,
-      phone: user.phone_number || '',
+      phone: user.phone || user.phone_number || '',
       name: user.name || null,
       role: user.role,
-      kycStatus: user.kyc_status,
+      kycStatus: user.kycStatus || user.kyc_status || 'pending',
       organisation: user.organisation || null,
-      walletAddress: user.wallet_address || null,
+      walletAddress: user.walletAddress || user.wallet_address || null,
     };
     set({ user: mappedUser, isLoggedIn: true, isLoading: false });
   },
@@ -89,18 +89,20 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
       // Token exists, validate it
       const { data } = await AuthAPI.getMe();
+      console.log('[Auth] getMe response:', data);
       const mappedUser: User = {
         id: data.id,
-        phone: data.phone_number || '',
+        phone: data.phone || data.phone_number || '',
         name: data.name || null,
         role: data.role,
-        kycStatus: data.kyc_status,
+        kycStatus: data.kycStatus || data.kyc_status || 'pending',
         organisation: data.organisation || null,
-        walletAddress: data.wallet_address || null,
+        walletAddress: data.walletAddress || data.wallet_address || null,
       };
       set({ user: mappedUser, isLoggedIn: true, isLoading: false });
     } catch (e) {
       // Token invalid, clear it
+      console.error('[Auth] loadFromStorage failed:', e);
       await TokenStore.clear();
       set({ user: null, isLoggedIn: false, isLoading: false });
     }
