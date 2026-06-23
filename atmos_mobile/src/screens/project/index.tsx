@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   bottomBar: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: Colors.bg, borderTopWidth: 1, borderColor: Colors.border,
-    padding: Spacing.lg, paddingBottom: Spacing['2xl'],
+    padding: Spacing.lg, paddingBottom: 110, // Added padding to clear the 80px floating tab bar
   },
   locationResult: {
     flexDirection: 'row', alignItems: 'center',
