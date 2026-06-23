@@ -51,6 +51,9 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 2, staleTime: 30000 } },
 });
 
+import { AuthScreen } from './src/screens/auth';
+import { AppNavigator } from './src/navigation';
+
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +120,7 @@ export default function App() {
           <SafeAreaProvider>
             <StatusBar style="light" />
             <QueryClientProvider client={queryClient}>
-              <AuthScreenWrapper />
+              <AuthScreen onSuccess={() => {}} />
             </QueryClientProvider>
           </SafeAreaProvider>
         </WebMobileContainer>
@@ -132,78 +135,10 @@ export default function App() {
         <SafeAreaProvider>
           <StatusBar style="light" />
           <QueryClientProvider client={queryClient}>
-            <MainAppWrapper />
+            <AppNavigator />
           </QueryClientProvider>
         </SafeAreaProvider>
       </WebMobileContainer>
     </GestureHandlerRootView>
   );
-}
-
-// Lazy load auth screen
-function AuthScreenWrapper() {
-  const [AuthScreen, setAuthScreen] = useState<any>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    import('./src/screens/auth')
-      .then(module => setAuthScreen(() => module.AuthScreen))
-      .catch(err => {
-        console.error('[App] Failed to load AuthScreen:', String(err));
-        setLoadError(String(err));
-      });
-  }, []);
-
-  if (loadError) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#030A05', padding: 20 }}>
-        <Text style={{ color: '#EF4444', fontSize: 16, marginBottom: 10 }}>Failed to load Auth Screen</Text>
-        <Text style={{ color: '#FFFFFF', fontSize: 12 }}>{loadError}</Text>
-      </View>
-    );
-  }
-
-  if (!AuthScreen) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#030A05' }}>
-        <ActivityIndicator size="large" color="#22C55E" />
-      </View>
-    );
-  }
-
-  return <AuthScreen onSuccess={() => {}} />;
-}
-
-// Lazy load main navigator
-function MainAppWrapper() {
-  const [AppNavigator, setAppNavigator] = useState<any>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    import('./src/navigation')
-      .then(module => setAppNavigator(() => module.AppNavigator))
-      .catch(err => {
-        console.error('[App] Failed to load AppNavigator:', String(err));
-        setLoadError(String(err));
-      });
-  }, []);
-
-  if (loadError) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#030A05', padding: 20 }}>
-        <Text style={{ color: '#EF4444', fontSize: 16, marginBottom: 10 }}>Failed to load App Navigator</Text>
-        <Text style={{ color: '#FFFFFF', fontSize: 12 }}>{loadError}</Text>
-      </View>
-    );
-  }
-
-  if (!AppNavigator) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#030A05' }}>
-        <ActivityIndicator size="large" color="#22C55E" />
-      </View>
-    );
-  }
-
-  return <AppNavigator />;
 }
