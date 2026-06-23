@@ -115,7 +115,7 @@ export function SelectProjectTypeScreen({ navigation }: any) {
         </Text>
 
         <ScrollView contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
             {ENTITIES.map((e) => {
               const isSelected = selected === e.id;
               return (
@@ -381,11 +381,12 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   entityCard: {
-    width: (width - Spacing.lg * 2 - Spacing.sm * 2) / 3,
+    flexBasis: '48%',
     backgroundColor: Colors.bgCard, borderRadius: Radius.lg,
     borderWidth: 1, borderColor: Colors.border,
     padding: Spacing.md, alignItems: 'center',
     minHeight: 110, position: 'relative',
+    marginBottom: Spacing.sm,
   },
   entityCardSelected: {
     borderColor: Colors.primary,
@@ -410,13 +411,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
   },
   photoThumb: {
-    width: (width - Spacing.lg * 2 - Spacing.sm * 5) / 4,
-    height: (width - Spacing.lg * 2 - Spacing.sm * 5) / 4,
+    flexBasis: '23%',
+    aspectRatio: 1,
     borderRadius: Radius.sm,
   },
   addPhoto: {
-    width: (width - Spacing.lg * 2 - Spacing.sm * 5) / 4,
-    height: (width - Spacing.lg * 2 - Spacing.sm * 5) / 4,
+    flexBasis: '23%',
+    aspectRatio: 1,
     borderRadius: Radius.sm, backgroundColor: Colors.bgInput,
     borderWidth: 1, borderColor: Colors.border, borderStyle: 'dashed',
     alignItems: 'center', justifyContent: 'center',

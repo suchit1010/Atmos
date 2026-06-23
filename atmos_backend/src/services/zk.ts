@@ -232,33 +232,49 @@ export async function generateZKProof(input: ZKProofInput): Promise<ZKProofOutpu
   };
 
   // Persist to DB
-  await query(
-    `INSERT INTO zk_proofs (
-      project_id, verification_id, proof_hash, proof_data,
-      public_signals, private_inputs_hash, circuit_version,
-      verification_status, solana_anchor_tx, anchor_slot,
-      anchored_at
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-    [
-      projectId,
-      verificationId,
-      proofHash,
-      proofData,
-      JSON.stringify(publicSignals),
-      privateInputHash,
-      'carbon_mrv_v1',
-      output.verificationStatus,
-      solanaAnchorTx,
-      anchorSlot,
-      solanaAnchorTx !== 'pending' ? new Date() : null,
-    ]
-  );
+  try {
+    await query(
+      `INSERT INTO zk_proofs (
+        project_id, verification_id, proof_hash, proof_data,
+        public_signals, private_inputs_hash, circuit_version,
+        verification_status, solana_anchor_tx, anchor_slot,
+        anchored_at
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      [
+        projectId,
+        verificationId,
+        proofHash,
+        proofData,
+        JSON.stringify(publicSignals),
+        privateInputHash,
+        'carbon_mrv_v1',
+        output.verificationStatus,
+        solanaAnchorTx,
+        anchorSlot,
+        solanaAnchorTx !== 'pending' ? new Date() : null,
+      ]
+    );
+  } catch (err: any) {
+    logger.warn('DB unavailable, persisting ZK proof to mock store', { projectId, error: err.message });
+    const { mockProofs } = await import('../db/mockStore');
+    mockProofs.set(projectId, output);
+  }
 
   // Update project status
-  await query(
-    `UPDATE projects SET status = 'zk_generated', updated_at = NOW() WHERE id = $1`,
-    [projectId]
-  );
+  try {
+    await query(
+      `UPDATE projects SET status = 'zk_generated', updated_at = NOW() WHERE id = $1`,
+      [projectId]
+    );
+  } catch (err: any) {
+    logger.warn('DB unavailable, updating mock project status to zk_generated', { projectId });
+    const { mockProjects } = await import('../db/mockStore');
+    const mockProj = mockProjects.get(projectId);
+    if (mockProj) {
+      mockProj.status = 'zk_generated';
+      mockProj.updated_at = new Date().toISOString();
+    }
+  }
 
   logger.info('ZK proof generated + anchored', {
     projectId, proofHash, solanaAnchorTx,
@@ -273,26 +289,52 @@ export async function verifyExistingProof(proofHash: string): Promise<{
   publicSignals: PublicSignals | null;
   anchorTx: string;
 }> {
-  const result = await query(
-    `SELECT public_signals, proof_data, solana_anchor_tx, verification_status
-     FROM zk_proofs WHERE proof_hash = $1 LIMIT 1`,
-    [proofHash]
-  );
+  try {
+    const result = await query(
+      `SELECT public_signals, proof_data, solana_anchor_tx, verification_status
+       FROM zk_proofs WHERE proof_hash = $1 LIMIT 1`,
+      [proofHash]
+    );
 
-  if (result.rows.length === 0) {
-    return { valid: false, publicSignals: null, anchorTx: '' };
+    if (result.rows.length === 0) {
+      return await verifyMockProof(proofHash);
+    }
+
+    const row         = result.rows[0];
+    const parsed      = JSON.parse(row.proof_data || '{}');
+    const valid       = verifyProof(parsed.proof, parsed.publicSignals);
+
+    return {
+      valid:         valid && row.verification_status === 'verified',
+      publicSignals: row.public_signals,
+      anchorTx:      row.solana_anchor_tx,
+    };
+  } catch {
+    logger.warn('DB unavailable during proof verification, checking mock store', { proofHash });
+    return await verifyMockProof(proofHash);
   }
-
-  const row         = result.rows[0];
-  const parsed      = JSON.parse(row.proof_data || '{}');
-  const valid       = verifyProof(parsed.proof, parsed.publicSignals);
-
-  return {
-    valid:         valid && row.verification_status === 'verified',
-    publicSignals: row.public_signals,
-    anchorTx:      row.solana_anchor_tx,
-  };
 }
+
+async function verifyMockProof(proofHash: string): Promise<{
+  valid: boolean;
+  publicSignals: PublicSignals | null;
+  anchorTx: string;
+}> {
+  const { mockProofs } = await import('../db/mockStore');
+  for (const [_, p] of mockProofs.entries()) {
+    if (p.proofHash === proofHash) {
+      const parsed = JSON.parse(p.proofData || '{}');
+      const valid = verifyProof(parsed.proof, parsed.publicSignals);
+      return {
+        valid: valid && p.verificationStatus === 'verified',
+        publicSignals: p.publicSignals,
+        anchorTx: p.solanaAnchorTx,
+      };
+    }
+  }
+  return { valid: false, publicSignals: null, anchorTx: '' };
+}
+
 
 function getMethodologyCode(entityType: string): string {
   const map: Record<string, string> = {

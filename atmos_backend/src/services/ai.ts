@@ -484,32 +484,38 @@ export async function runAIVerification(
   };
 
   // Persist to DB
-  await query(
-    `INSERT INTO ai_verifications (
-      project_id, co2e_estimated, co2e_lower_bound, co2e_upper_bound,
-      confidence_score, fraud_risk, activity_detection,
-      satellite_consistency, data_quality, methodology_match,
-      permanence_score, co_benefit_score, grade,
-      price_min_inr, price_max_inr
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
-    [
-      projectId,
-      result.co2eEstimated,
-      result.co2eLowerBound,
-      result.co2eUpperBound,
-      result.confidence.overall,
-      result.fraud.risk,
-      result.confidence.activityDetection,
-      result.confidence.satelliteConsistency,
-      result.confidence.dataQuality,
-      result.confidence.methodologyMatch,
-      result.confidence.permanenceScore,
-      result.confidence.coBenefitScore,
-      result.grade,
-      result.priceMinInr,
-      result.priceMaxInr,
-    ]
-  );
+  try {
+    await query(
+      `INSERT INTO ai_verifications (
+        project_id, co2e_estimated, co2e_lower_bound, co2e_upper_bound,
+        confidence_score, fraud_risk, activity_detection,
+        satellite_consistency, data_quality, methodology_match,
+        permanence_score, co_benefit_score, grade,
+        price_min_inr, price_max_inr
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+      [
+        projectId,
+        result.co2eEstimated,
+        result.co2eLowerBound,
+        result.co2eUpperBound,
+        result.confidence.overall,
+        result.fraud.risk,
+        result.confidence.activityDetection,
+        result.confidence.satelliteConsistency,
+        result.confidence.dataQuality,
+        result.confidence.methodologyMatch,
+        result.confidence.permanenceScore,
+        result.confidence.coBenefitScore,
+        result.grade,
+        result.priceMinInr,
+        result.priceMaxInr,
+      ]
+    );
+  } catch (err: any) {
+    logger.warn('DB unavailable, persisting AI verification to mock store', { projectId, error: err.message });
+    const { mockVerifications } = await import('../db/mockStore');
+    mockVerifications.set(projectId, result);
+  }
 
   logger.info('AI verification complete', {
     projectId,

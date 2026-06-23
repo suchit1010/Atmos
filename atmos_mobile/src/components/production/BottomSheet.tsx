@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Dimensions,
   GestureResponderEvent,
+  Text,
 } from 'react-native';
 import { Colors, Spacing, Radius } from '../../theme';
 

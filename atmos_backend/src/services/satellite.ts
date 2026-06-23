@@ -344,28 +344,33 @@ export async function runSatelliteAnalysis(req: SatelliteRequest): Promise<Satel
   };
 
   // Persist to DB
-  await query(
-    `INSERT INTO satellite_analyses (
-      project_id, ndvi_current, ndvi_baseline, ndvi_trend,
-      biomass_tonnes, land_use, land_consistency, crop_activity,
-      fire_detected, cloud_cover_pct, image_date, raw_response
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-    ON CONFLICT DO NOTHING`,
-    [
-      projectId,
-      result.ndviCurrent,
-      result.ndviBaseline,
-      JSON.stringify(result.ndviTrend),
-      result.biomassTonesPerHa,
-      result.landUse,
-      result.landConsistency,
-      result.cropActivity,
-      result.fireDetected,
-      result.cloudCoverPct,
-      result.imageDate,
-      JSON.stringify({ confidenceScore: result.confidenceScore, bands: result.rawBands }),
-    ]
-  );
+  try {
+    await query(
+      `INSERT INTO satellite_analyses (
+        project_id, ndvi_current, ndvi_baseline, ndvi_trend,
+        biomass_tonnes, land_use, land_consistency, crop_activity,
+        fire_detected, cloud_cover_pct, image_date, raw_response
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      ON CONFLICT DO NOTHING`,
+      [
+        projectId,
+        result.ndviCurrent,
+        result.ndviBaseline,
+        JSON.stringify(result.ndviTrend),
+        result.biomassTonesPerHa,
+        result.landUse,
+        result.landConsistency,
+        result.cropActivity,
+        result.fireDetected,
+        result.cloudCoverPct,
+        result.imageDate,
+        JSON.stringify({ confidenceScore: result.confidenceScore, bands: result.rawBands }),
+      ]
+    );
+  } catch (err: any) {
+    logger.warn('DB unavailable, skipping satellite analysis persistence', { projectId, error: err.message });
+  }
+
 
   logger.info('Satellite analysis complete', {
     projectId,

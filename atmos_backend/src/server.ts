@@ -43,9 +43,39 @@ async function buildApp(): Promise<FastifyInstance> {
   });
 
   await app.register(cors, {
-    origin: process.env.NODE_ENV === 'production'
-      ? (process.env.ALLOWED_ORIGINS || 'http://localhost:19006').split(',')
-      : true,
+    origin: (origin, cb) => {
+      // Allow requests with no origin (like mobile apps, curl, etc.)
+      if (!origin) {
+        cb(null, true);
+        return;
+      }
+
+      // Allow localhost in development
+      if (process.env.NODE_ENV !== 'production') {
+        cb(null, true);
+        return;
+      }
+
+      // Production origins list/regex
+      const allowedOrigins = [
+        'https://atmosmobile.vercel.app',
+        /^https:\/\/atmosmobile-.*\.vercel\.app$/,
+        ...(process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean),
+      ];
+
+      const isAllowed = allowedOrigins.some((pattern) => {
+        if (pattern instanceof RegExp) {
+          return pattern.test(origin);
+        }
+        return pattern === origin;
+      });
+
+      if (isAllowed) {
+        cb(null, true);
+      } else {
+        cb(new Error('Not allowed by CORS'), false);
+      }
+    },
     credentials: true,
     methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });

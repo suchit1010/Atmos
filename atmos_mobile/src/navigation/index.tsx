@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, RefreshControl, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -7,6 +7,8 @@ import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing } from '../theme';
+import { Home, FolderKey, LineChart, User, Plus } from 'lucide-react-native';
+import { BlurView } from 'expo-blur';
 
 // Screens
 import { DashboardScreen }   from '../screens/dashboard';
@@ -37,73 +39,69 @@ const SCREEN_OPTIONS = { headerShown: false, animationEnabled: true };
 // ─── Custom tab bar ───────────────────────────────────
 function ATMOSTabBar({ state, descriptors, navigation }: any) {
   const TABS = [
-    { key: 'Home',       icon: '⌂',  iconActive: '⌂',  label: 'Home' },
-    { key: 'Projects',   icon: '◫',  iconActive: '◫',  label: 'Projects' },
-    { key: 'NewProject', icon: '+',  iconActive: '+',  label: '' },
-    { key: 'Market',     icon: '↗↙', iconActive: '↗↙', label: 'Market' },
-    { key: 'Profile',    icon: '○',  iconActive: '●',  label: 'Profile' },
+    { key: 'Home',       label: 'Home' },
+    { key: 'Projects',   label: 'Projects' },
+    { key: 'NewProject', label: '' },
+    { key: 'Market',     label: 'Market' },
+    { key: 'Profile',    label: 'Profile' },
   ];
 
-  const TAB_ICONS: Record<string, { active: string; inactive: string }> = {
-    Home:       { active: '🏠', inactive: '🏠' },
-    Projects:   { active: '📋', inactive: '📋' },
-    NewProject: { active: '+',  inactive: '+' },
-    Market:     { active: '🏦', inactive: '🏦' },
-    Profile:    { active: '👤', inactive: '👤' },
+  const TAB_ICONS: Record<string, any> = {
+    Home:     Home,
+    Projects: FolderKey,
+    Market:   LineChart,
+    Profile:  User,
   };
 
   return (
-    <View style={styles.tabBar}>
-      {state.routes.map((route: any, i: number) => {
-        const isFocused = state.index === i;
-        const tab       = TABS[i];
-        const isCenter  = tab?.key === 'NewProject';
+    <View style={styles.tabBarContainer}>
+      <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+      <View style={styles.tabBarInner}>
+        {state.routes.map((route: any, i: number) => {
+          const isFocused = state.index === i;
+          const tab       = TABS[i];
+          const isCenter  = tab?.key === 'NewProject';
 
-        const onPress = () => {
-          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-          if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
-        };
+          const onPress = () => {
+            const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+            if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
+          };
 
-        if (isCenter) {
+          if (isCenter) {
+            return (
+              <TouchableOpacity key={route.key} onPress={onPress} style={styles.centerBtn} activeOpacity={0.8}>
+                <LinearGradient
+                  colors={['#22C55E', '#16A34A']}
+                  style={styles.centerBtnInner}
+                >
+                  <Plus color="#040C06" size={28} strokeWidth={3} />
+                </LinearGradient>
+              </TouchableOpacity>
+            );
+          }
+
+          const IconComponent = TAB_ICONS[tab?.key] || Home;
+
           return (
-            <TouchableOpacity key={route.key} onPress={onPress} style={styles.centerBtn}>
-              <LinearGradient
-                colors={['#22C55E', '#16A34A']}
-                style={styles.centerBtnInner}
-              >
-                <Text style={{ fontSize: 26, color: '#040C06', fontWeight: '400', lineHeight: 30, marginTop: -1 }}>+</Text>
-              </LinearGradient>
+            <TouchableOpacity key={route.key} onPress={onPress} style={styles.tabItem} activeOpacity={0.6}>
+              <View style={[styles.tabIconWrap, isFocused && styles.tabIconWrapActive]}>
+                <IconComponent 
+                  size={24} 
+                  color={isFocused ? Colors.primary : Colors.textDim} 
+                  strokeWidth={isFocused ? 2.5 : 2} 
+                />
+              </View>
+              <Text style={[
+                Typography.bodyXs,
+                { color: isFocused ? Colors.primary : Colors.textDim, marginTop: 4, fontWeight: isFocused ? '700' : '400', fontSize: 10 },
+              ]}>
+                {tab?.label}
+              </Text>
+              {isFocused && <View style={styles.activeDot} />}
             </TouchableOpacity>
           );
-        }
-
-        const icons: Record<string, string> = {
-          Home:     '⌂',
-          Projects: '⊟',
-          Market:   '⇄',
-          Profile:  '◉',
-        };
-        const icon = icons[tab?.key] || '●';
-
-        return (
-          <TouchableOpacity key={route.key} onPress={onPress} style={styles.tabItem}>
-            <View style={[styles.tabIconWrap, isFocused && styles.tabIconWrapActive]}>
-              <Text style={[
-                styles.tabIconText,
-                { color: isFocused ? Colors.primary : Colors.textDim },
-              ]}>
-                {icon}
-              </Text>
-            </View>
-            <Text style={[
-              Typography.bodyXs,
-              { color: isFocused ? Colors.primary : Colors.textDim, marginTop: 2, fontWeight: isFocused ? '600' : '400' },
-            ]}>
-              {tab?.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+        })}
+      </View>
     </View>
   );
 }
@@ -208,42 +206,57 @@ export function AppNavigator() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: Colors.bgCard,
+  tabBarContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingBottom: 28,
-    paddingTop: Spacing.sm,
-    paddingHorizontal: Spacing.xs,
+    borderTopColor: 'rgba(34, 197, 94, 0.2)',
+    overflow: 'hidden',
+  },
+  tabBarInner: {
+    flexDirection: 'row',
+    paddingBottom: Platform.OS === 'ios' ? 24 : 16,
+    paddingTop: 12,
+    paddingHorizontal: Spacing.md,
     alignItems: 'center',
+    backgroundColor: 'rgba(5, 12, 8, 0.6)',
   },
   tabItem: {
-    flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 4,
+    flex: 1, alignItems: 'center', justifyContent: 'center', position: 'relative'
   },
   tabIconWrap: {
-    width: 36, height: 28, alignItems: 'center', justifyContent: 'center',
-    borderRadius: 8,
+    width: 48, height: 32, alignItems: 'center', justifyContent: 'center',
+    borderRadius: 16,
+    marginBottom: 2,
   },
   tabIconWrapActive: {
-    backgroundColor: Colors.primaryDim,
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  tabIconText: {
-    fontSize: 18,
-    lineHeight: 22,
+  activeDot: {
+    width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.primary,
+    position: 'absolute', bottom: -8,
   },
   tabLabel:      { ...Typography.bodyXs, color: Colors.textDim, marginTop: 2 },
   tabLabelActive:{ ...Typography.bodyXs, color: Colors.primary, marginTop: 2 },
   centerBtn: {
-    flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: -24,
+    flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: -30,
   },
   centerBtnInner: {
-    width: 52, height: 52, borderRadius: 26,
+    width: 56, height: 56, borderRadius: 28,
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.5,
     shadowRadius: 12,
-    elevation: 8,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
 });

@@ -95,10 +95,17 @@ export function attachSentryToFastify(app: FastifyInstance): void {
 
   // Capture request context
   app.addHook('onRequest', async (request, reply) => {
-    const transaction = (Sentry as any).startTransaction({
-      name: `${request.method} ${request.url}`,
-      op: 'http.server',
-    });
+    const transaction = typeof Sentry.startInactiveSpan === 'function'
+      ? Sentry.startInactiveSpan({
+          name: `${request.method} ${request.url}`,
+          op: 'http.server',
+        })
+      : typeof (Sentry as any).startTransaction === 'function'
+        ? (Sentry as any).startTransaction({
+            name: `${request.method} ${request.url}`,
+            op: 'http.server',
+          })
+        : null;
 
     (request as any).sentryTransaction = transaction;
 
@@ -156,22 +163,38 @@ export function attachSentryToFastify(app: FastifyInstance): void {
  * Wrapper for AI verification jobs to track in Sentry
  */
 export function captureVerificationJob(projectId: string) {
-  return (Sentry as any).startTransaction({
-    name: `verification.${projectId}`,
-    op: 'job.verification',
-    data: { projectId },
-  });
+  return typeof Sentry.startInactiveSpan === 'function'
+    ? Sentry.startInactiveSpan({
+        name: `verification.${projectId}`,
+        op: 'job.verification',
+        attributes: { projectId },
+      })
+    : typeof (Sentry as any).startTransaction === 'function'
+      ? (Sentry as any).startTransaction({
+          name: `verification.${projectId}`,
+          op: 'job.verification',
+          data: { projectId },
+        })
+      : null;
 }
 
 /**
  * Wrapper for payments to track in Sentry
  */
 export function capturePaymentTransaction(paymentId: string, amount: number) {
-  return (Sentry as any).startTransaction({
-    name: `payment.${paymentId}`,
-    op: 'payment.process',
-    data: { paymentId, amount },
-  });
+  return typeof Sentry.startInactiveSpan === 'function'
+    ? Sentry.startInactiveSpan({
+        name: `payment.${paymentId}`,
+        op: 'payment.process',
+        attributes: { paymentId, amount },
+      })
+    : typeof (Sentry as any).startTransaction === 'function'
+      ? (Sentry as any).startTransaction({
+          name: `payment.${paymentId}`,
+          op: 'payment.process',
+          data: { paymentId, amount },
+        })
+      : null;
 }
 
 /**

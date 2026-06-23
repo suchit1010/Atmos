@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, Spacing, Radius, Shadow } from '../../theme';
 import { Button, Card, GradeBadge } from '../../components/common';
-import { ProjectsAPI, connectMRVWebSocket, TokenStore, MarketAPI } from '../../services/api';
+import { ProjectsAPI, connectMRVWebSocket, TokenStore, MarketAPI, HealthAPI } from '../../services/api';
 import { useMRVStore } from '../../store';
 
 const { width } = Dimensions.get('window');
@@ -132,11 +132,19 @@ export function VerificationScreen({ route, navigation }: any) {
   const [result, setResult] = useState<any>(null);
   const [error,  setError]  = useState('');
   const wsRef = useRef<WebSocket | null>(null);
+  const [isSui, setIsSui] = useState(false);
 
   // Polling fallback (when WebSocket not available in Expo Go)
   const pollTimer = useRef<any>(null);
 
   useEffect(() => {
+    HealthAPI.check()
+      .then((res: any) => {
+        if (res.data?.chain === 'sui') {
+          setIsSui(true);
+        }
+      })
+      .catch(() => {});
     startPipeline();
     return () => {
       wsRef.current?.close();
@@ -209,8 +217,20 @@ export function VerificationScreen({ route, navigation }: any) {
     } catch { /* silent */ }
   };
 
-  const handleMint = () => {
-    navigation.navigate('ZKProof', { projectId, result });
+  const [loading, setLoading] = useState(false);
+
+  const handleMint = async () => {
+    setLoading(true);
+    try {
+      const price = result?.price_min_inr || 1500;
+      await ProjectsAPI.mint(projectId, true, price);
+      navigation.navigate('Main', { screen: 'Market' });
+    } catch (err: any) {
+      console.error('Failed to mint and list on marketplace:', err);
+      navigation.navigate('Main', { screen: 'Market' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (error) return (
@@ -366,9 +386,9 @@ export function VerificationScreen({ route, navigation }: any) {
                       </Text>
                     </View>
                   </View>
-                  {result.solana_anchor_tx && result.solana_anchor_tx !== 'pending' && (
+                  {(result.sui_anchor_tx || result.solana_anchor_tx) && (result.sui_anchor_tx || result.solana_anchor_tx) !== 'pending' && (
                     <Text style={[Typography.bodyXs, { color: Colors.textDim, marginTop: Spacing.sm }]}>
-                      Anchored on Solana · {result.solana_anchor_tx.slice(0, 16)}...
+                      Anchored on {isSui ? 'Sui' : 'Solana'} · {(result.sui_anchor_tx || result.solana_anchor_tx).slice(0, 16)}...
                     </Text>
                   )}
                 </Card>
@@ -379,7 +399,11 @@ export function VerificationScreen({ route, navigation }: any) {
 
         {phase === 'result' && (
           <View style={styles.bottomBar}>
-            <Button label="Next: Create Carbon Asset →" onPress={handleMint} size="lg" />
+            <Button
+              label="Next: Create Carbon Asset →"
+              onPress={() => navigation.navigate('ZKProof', { projectId, result })}
+              size="lg"
+            />
           </View>
         )}
       </SafeAreaView>
@@ -393,12 +417,23 @@ export function ZKProofScreen({ route, navigation }: any) {
   const [step, setStep]   = useState(0); // 0-4 steps
   const [done,  setDone]  = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [isSui, setIsSui] = useState(false);
+
+  useEffect(() => {
+    HealthAPI.check()
+      .then((res: any) => {
+        if (res.data?.chain === 'sui') {
+          setIsSui(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const ZK_STEPS = [
     { icon: '🔒', label: 'Encrypting your data',     sub: 'Production volumes • Coordinates • Equipment logs' },
     { icon: '⚙️', label: 'Building ZK proof circuit', sub: 'Groth16 • bn128 curve • carbon_mrv_v1' },
     { icon: '✓',  label: 'Verifying proof',           sub: 'Local verification before anchoring' },
-    { icon: '⛓️', label: 'Anchoring to Solana',       sub: 'Memo program • Devnet' },
+    { icon: '⛓️', label: isSui ? 'Anchoring to Sui' : 'Anchoring to Solana', sub: isSui ? 'Sui Event • Testnet' : 'Memo program • Devnet' },
     { icon: '🎉', label: 'Proof complete',             sub: 'Privacy-preserving MRV verified' },
   ];
 
@@ -412,7 +447,7 @@ export function ZKProofScreen({ route, navigation }: any) {
       setTimeout(advance, current === ZK_STEPS.length ? 800 : 1400);
     };
     setTimeout(advance, 600);
-  }, []);
+  }, [isSui]);
 
   const proofHash = result?.proof_hash || 'zk_7f9a2b1c...';
 
@@ -482,13 +517,13 @@ export function ZKProofScreen({ route, navigation }: any) {
               <Text style={[Typography.monoMd, { color: Colors.primary }]} numberOfLines={1}>
                 {proofHash}
               </Text>
-              {result?.solana_anchor_tx && (
+              {(result?.sui_anchor_tx || result?.solana_anchor_tx) && (
                 <>
                   <Text style={[Typography.labelSm, { color: Colors.textMuted, marginTop: Spacing.sm, marginBottom: Spacing.xs }]}>
-                    Solana Anchor TX
+                    {isSui ? 'Sui Anchor TX' : 'Solana Anchor TX'}
                   </Text>
-                  <Text style={[Typography.monoSm, { color: Colors.solana }]} numberOfLines={1}>
-                    {result.solana_anchor_tx}
+                  <Text style={[Typography.monoSm, { color: isSui ? Colors.primary : Colors.solana }]} numberOfLines={1}>
+                    {result.sui_anchor_tx || result.solana_anchor_tx}
                   </Text>
                 </>
               )}
@@ -520,9 +555,23 @@ export function AssetCreatedScreen({ route, navigation }: any) {
   const [listingPrice, setListingPrice] = useState('');
   const [creating, setCreating] = useState(false);
   const scaleAnim = useRef(new Animated.Value(0)).current;
-  const explorerUrl = mintData?.mintAddress
-    ? `https://explorer.solana.com/address/${mintData.mintAddress}?cluster=devnet`
-    : null;
+  const [isSui, setIsSui] = useState(false);
+
+  useEffect(() => {
+    HealthAPI.check()
+      .then((res: any) => {
+        if (res.data?.chain === 'sui') {
+          setIsSui(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const explorerUrl = mintData?.explorer
+    ? mintData.explorer
+    : mintData?.mintAddress
+      ? `https://explorer.solana.com/address/${mintData.mintAddress}?cluster=devnet`
+      : null;
 
   const handleMint = async () => {
     setMinting(true);
@@ -624,13 +673,19 @@ export function AssetCreatedScreen({ route, navigation }: any) {
                 </View>
                 <View style={styles.assetMetaRow}>
                   <Text style={[Typography.labelSm, { color: Colors.textMuted }]}>On-chain</Text>
-                  <Text style={[Typography.monoSm, { color: Colors.solana }]}>Solana Devnet</Text>
+                  <Text style={[Typography.monoSm, { color: isSui ? Colors.primary : Colors.solana }]}>
+                    {isSui ? 'Sui Testnet' : 'Solana Devnet'}
+                  </Text>
                 </View>
                 {mintData?.mintAddress && (
                   <View style={[styles.assetMetaRow, { borderBottomWidth: 0 }]}>
-                    <Text style={[Typography.labelSm, { color: Colors.textMuted }]}>Mint Address</Text>
+                    <Text style={[Typography.labelSm, { color: Colors.textMuted }]}>
+                      {isSui ? 'Sui Object ID' : 'Mint Address'}
+                    </Text>
                     <Text style={[Typography.monoSm, { color: Colors.primary }]} numberOfLines={1}>
-                      {(result?.proof_hash || 'zk_79a2b1c...').slice(0, 18)}...
+                      {mintData.mintAddress.length > 20
+                        ? `${mintData.mintAddress.slice(0, 12)}...${mintData.mintAddress.slice(-6)}`
+                        : mintData.mintAddress}
                     </Text>
                   </View>
                 )}
@@ -644,7 +699,7 @@ export function AssetCreatedScreen({ route, navigation }: any) {
                   Ready to Mint
                 </Text>
                 <Text style={[Typography.bodyMd, { color: Colors.textMuted, marginTop: Spacing.sm, textAlign: 'center' }]}>
-                  Mint your verified carbon reduction as an SPL token on Solana
+                  {isSui ? 'Mint your verified carbon reduction as an Object on Sui' : 'Mint your verified carbon reduction as an SPL token on Solana'}
                 </Text>
               </View>
               <Card style={{ width: '100%', marginTop: Spacing.xl }}>
@@ -659,8 +714,12 @@ export function AssetCreatedScreen({ route, navigation }: any) {
                   <GradeBadge grade={result?.grade || 'A'} />
                 </View>
                 <View style={[styles.assetMetaRow, { borderBottomWidth: 0 }]}>
-                  <Text style={[Typography.labelSm, { color: Colors.textMuted }]}>Solana tx fee</Text>
-                  <Text style={[Typography.monoSm, { color: Colors.textDim }]}>~$0.0001</Text>
+                  <Text style={[Typography.labelSm, { color: Colors.textMuted }]}>
+                    {isSui ? 'Sui tx fee' : 'Solana tx fee'}
+                  </Text>
+                  <Text style={[Typography.monoSm, { color: Colors.textDim }]}>
+                    {isSui ? '~0.0002 SUI' : '~$0.0001'}
+                  </Text>
                 </View>
               </Card>
             </>
@@ -676,16 +735,9 @@ export function AssetCreatedScreen({ route, navigation }: any) {
                 size="lg" 
               />
               <Button label="Back to Home" variant="ghost" onPress={() => navigation.navigate('Main')} />
-              {explorerUrl && (
-                <Button
-                  label="Open Solana Explorer"
-                  variant="ghost"
-                  onPress={() => Linking.openURL(explorerUrl)}
-                />
-              )}
             </View>
           ) : (
-            <Button label="Mint on Solana 🪙" onPress={handleMint} loading={minting} size="lg" />
+            <Button label={isSui ? "Mint on Sui 🪙" : "Mint on Solana 🪙"} onPress={handleMint} loading={minting} size="lg" />
           )}
         </View>
 

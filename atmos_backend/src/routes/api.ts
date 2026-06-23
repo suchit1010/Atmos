@@ -134,13 +134,33 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       // DB unavailable — create an in-memory mock project so the flow continues
       logger.warn('DB unavailable, creating mock project for demo');
       const crypto = await import('crypto');
+      const projectId = crypto.randomUUID();
       project = {
-        id:          crypto.randomUUID(),
+        id:          projectId,
         entity_type: body.entityType,
         name:        body.name,
         status:      'analyzing',
         created_at:  new Date().toISOString(),
       };
+
+      const { mockProjects } = await import('../db/mockStore');
+      mockProjects.set(projectId, {
+        id: projectId,
+        user_id: userId,
+        entity_type: body.entityType,
+        name: body.name,
+        location: {
+          lat: body.location?.lat ?? 28.7041,
+          lng: body.location?.lng ?? 77.1025,
+        },
+        area_ha: typeof body.areaHa === 'number' ? body.areaHa : parseFloat(body.areaHa || '12.5'),
+        metadata: body.metadata || {},
+        status: 'analyzing',
+        created_at: project.created_at,
+        updated_at: project.created_at,
+        farmer_name: (body.metadata as any)?.farmerName || 'Demo Farmer',
+      });
+
     }
 
     // Trigger MRV pipeline asynchronously (best-effort)
@@ -161,22 +181,49 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const whereClause = status ? `AND p.status = '${status}'` : '';
 
-    const result = await safeQuery(
-      `SELECT p.id, p.entity_type, p.name, p.status, p.area_ha, p.created_at,
-              ST_Y(p.location::geometry) as lat, ST_X(p.location::geometry) as lng,
-              v.co2e_estimated, v.confidence_score, v.grade,
-              z.proof_hash
-       FROM projects p
-       LEFT JOIN ai_verifications v ON v.project_id = p.id
-       LEFT JOIN zk_proofs z ON z.project_id = p.id
-       WHERE p.user_id = $1 ${whereClause}
-       ORDER BY p.created_at DESC
-       LIMIT $2 OFFSET $3`,
-      [userId, parseInt(limit), offset],
-      []
-    );
+    let projects: any[] = [];
+    try {
+      const result = await query(
+        `SELECT p.id, p.entity_type, p.name, p.status, p.area_ha, p.created_at,
+                ST_Y(p.location::geometry) as lat, ST_X(p.location::geometry) as lng,
+                v.co2e_estimated, v.confidence_score, v.grade,
+                z.proof_hash
+         FROM projects p
+         LEFT JOIN ai_verifications v ON v.project_id = p.id
+         LEFT JOIN zk_proofs z ON z.project_id = p.id
+         WHERE p.user_id = $1 ${whereClause}
+         ORDER BY p.created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [userId, parseInt(limit), offset]
+      );
+      projects = result.rows;
+    } catch {
+      logger.warn('DB unavailable, fetching projects from mock store');
+      const { mockProjects, mockVerifications, mockProofs } = await import('../db/mockStore');
+      const allMock = Array.from(mockProjects.values())
+        .filter(p => p.user_id === userId && (!status || p.status === status));
+      
+      projects = allMock.map(p => {
+        const mockVer = mockVerifications.get(p.id);
+        const mockZk = mockProofs.get(p.id);
+        return {
+          id: p.id,
+          entity_type: p.entity_type,
+          name: p.name,
+          status: p.status,
+          area_ha: p.area_ha,
+          created_at: p.created_at,
+          lat: p.location.lat,
+          lng: p.location.lng,
+          co2e_estimated: mockVer ? mockVer.co2eEstimated : null,
+          confidence_score: mockVer ? mockVer.confidence.overall : null,
+          grade: mockVer ? mockVer.grade : null,
+          proof_hash: mockZk ? mockZk.proofHash : null,
+        };
+      });
+    }
 
-    return reply.send({ projects: result.rows, page: parseInt(page), limit: parseInt(limit) });
+    return reply.send({ projects, page: parseInt(page), limit: parseInt(limit) });
   });
 
   app.get('/api/v1/projects/:id', { preHandler: authMiddleware }, async (req, reply) => {
@@ -208,9 +255,52 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
 
       return reply.send(result.rows[0]);
     } catch {
-      // DB unavailable — return mock project data
-      logger.warn('DB unavailable, returning mock project data', { projectId: id });
+      // DB unavailable — check mock store first, then fallback to demo biochar
+      logger.warn('DB unavailable, looking for project in mock store', { projectId: id });
       
+      const { mockProjects, mockVerifications, mockProofs, mockCredits } = await import('../db/mockStore');
+      const mockProj = mockProjects.get(id);
+      if (mockProj) {
+        const mockVer = mockVerifications.get(id);
+        const mockZk = mockProofs.get(id);
+        const mockCc = mockCredits.get(id);
+
+        return reply.send({
+          id: mockProj.id,
+          user_id: mockProj.user_id,
+          entity_type: mockProj.entity_type,
+          name: mockProj.name,
+          status: mockProj.status,
+          area_ha: mockProj.area_ha,
+          lat: mockProj.location.lat,
+          lng: mockProj.location.lng,
+          farmer_name: mockProj.farmer_name,
+          co2e_estimated: mockVer ? mockVer.co2eEstimated : null,
+          co2e_lower_bound: mockVer ? mockVer.co2eLowerBound : null,
+          co2e_upper_bound: mockVer ? mockVer.co2eUpperBound : null,
+          confidence_score: mockVer ? mockVer.confidence.overall : null,
+          fraud_risk: mockVer ? mockVer.fraud.risk : null,
+          activity_detection: mockVer ? mockVer.confidence.activityDetection : null,
+          satellite_consistency: mockVer ? mockVer.confidence.satelliteConsistency : null,
+          data_quality: mockVer ? mockVer.confidence.dataQuality : null,
+          methodology_match: mockVer ? mockVer.methodology : null,
+          permanence_score: mockVer ? mockVer.confidence.permanenceScore : null,
+          grade: mockVer ? mockVer.grade : null,
+          price_min_inr: mockVer ? mockVer.priceMinInr : null,
+          price_max_inr: mockVer ? mockVer.priceMaxInr : null,
+          proof_hash: mockZk ? mockZk.proofHash : null,
+          solana_anchor_tx: mockZk ? mockZk.solanaAnchorTx : null,
+          public_signals: mockZk ? mockZk.publicSignals : null,
+          zk_status: mockZk ? mockZk.verificationStatus : null,
+          mint_address: mockCc ? mockCc.mint_address : null,
+          amount_co2e: mockCc ? mockCc.amount_co2e : null,
+          solana_mint_tx: mockCc ? mockCc.solana_mint_tx : null,
+          created_at: mockProj.created_at,
+          updated_at: mockProj.updated_at,
+          metadata: mockProj.metadata,
+        });
+      }
+
       return reply.send({
         id,
         user_id: req.user!.sub,
@@ -370,8 +460,11 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       []
     );
 
+    const { mockListings } = await import('../db/mockStore');
+    const customListings = Array.from(mockListings.values());
+
     return reply.send({
-      listings: result.rows,
+      listings: [...customListings, ...result.rows],
       page:     parseInt(page),
       limit:    parseInt(limit),
     });
@@ -733,19 +826,36 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     const userId = req.user!.sub;
     const body = req.body as { priority?: 'high' | 'normal' | 'low' };
 
-    // Verify project exists and belongs to user
-    const projectRes = await query(
-      `SELECT id, entity_type, metadata, area_ha,
-              ST_Y(location::geometry) as lat, ST_X(location::geometry) as lng
-       FROM projects WHERE id = $1 AND user_id = $2`,
-      [projectId, userId]
-    );
+    let project: any;
+    try {
+      // Verify project exists and belongs to user
+      const projectRes = await query(
+        `SELECT id, entity_type, metadata, area_ha,
+                ST_Y(location::geometry) as lat, ST_X(location::geometry) as lng
+         FROM projects WHERE id = $1 AND user_id = $2`,
+        [projectId, userId]
+      );
 
-    if (projectRes.rows.length === 0) {
-      return reply.status(404).send({ error: 'Project not found or not owned by you' });
+      if (projectRes.rows.length === 0) {
+        return reply.status(404).send({ error: 'Project not found or not owned by you' });
+      }
+      project = projectRes.rows[0];
+    } catch {
+      logger.warn('DB unavailable, fetching project details from mock store');
+      const { mockProjects } = await import('../db/mockStore');
+      const mockProj = mockProjects.get(projectId);
+      if (!mockProj || mockProj.user_id !== userId) {
+        return reply.status(404).send({ error: 'Project not found or not owned by you' });
+      }
+      project = {
+        id: mockProj.id,
+        entity_type: mockProj.entity_type,
+        metadata: mockProj.metadata,
+        area_ha: mockProj.area_ha,
+        lat: mockProj.location.lat,
+        lng: mockProj.location.lng,
+      };
     }
-
-    const project = projectRes.rows[0];
     const metadata = typeof project.metadata === 'string' ? JSON.parse(project.metadata) : project.metadata;
 
     try {
@@ -791,13 +901,22 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     const userId = req.user!.sub;
 
     try {
-      // Verify user owns the project
-      const projectRes = await query(
-        `SELECT id FROM projects WHERE id = $1 AND user_id = $2`,
-        [projectId, userId]
-      );
+      let projectExists = false;
+      try {
+        // Verify user owns the project
+        const projectRes = await query(
+          `SELECT id FROM projects WHERE id = $1 AND user_id = $2`,
+          [projectId, userId]
+        );
+        projectExists = projectRes.rows.length > 0;
+      } catch {
+        logger.warn('DB unavailable, verifying project ownership from mock store');
+        const { mockProjects } = await import('../db/mockStore');
+        const mockProj = mockProjects.get(projectId);
+        projectExists = !!(mockProj && mockProj.user_id === userId);
+      }
 
-      if (projectRes.rows.length === 0) {
+      if (!projectExists) {
         return reply.status(404).send({ error: 'Project not found' });
       }
 

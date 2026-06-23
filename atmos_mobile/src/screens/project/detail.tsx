@@ -88,7 +88,9 @@ export function ProjectDetailScreen({ route, navigation }: any) {
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 {project.grade && <GradeBadge grade={project.grade} size="lg" />}
-                <StatusBadge status={project.status} containerStyle={{ marginTop: Spacing.sm }} />
+                <View style={{ marginTop: Spacing.sm }}>
+                  <StatusBadge status={project.status} />
+                </View>
               </View>
             </View>
 
@@ -231,13 +233,6 @@ export function ProjectDetailScreen({ route, navigation }: any) {
               onPress={() => navigation.navigate('ZKProof', { projectId, result: project })}
             >
               <Text style={[Typography.labelMd, { color: Colors.textInverse }]}>💰 Mint Carbon Credits</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: Colors.border }]}
-              onPress={() => Linking.openURL(explorerUrl).catch(() => null)}
-            >
-              <Text style={[Typography.labelMd, { color: Colors.text }]}>📊 View on Explorer</Text>
             </TouchableOpacity>
           </View>
 

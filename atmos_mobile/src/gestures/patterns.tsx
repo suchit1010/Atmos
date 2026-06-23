@@ -3,7 +3,7 @@
  * Advanced gesture handling with react-native-gesture-handler
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,

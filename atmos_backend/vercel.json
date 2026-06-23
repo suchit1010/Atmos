@@ -11,6 +11,10 @@
     {
       "source": "/health",
       "destination": "/api/healthz"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/api/[...path]"
     }
   ]
 }

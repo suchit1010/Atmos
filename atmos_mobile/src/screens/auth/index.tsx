@@ -141,11 +141,11 @@ export function AuthScreen({ onSuccess }: { onSuccess: () => void }) {
     try {
       const fingerprint = `mobile-${Platform.OS}-${Date.now()}`;
       const { data }    = await AuthAPI.verifyOTP(phone, countryCode, otpStr, fingerprint);
-      console.log('[Auth] verifyOTP response:', data);
+      console.log('[Auth] verifyOTP response:', JSON.stringify(data));
       await login(data.user, data.accessToken, data.refreshToken);
       onSuccess();
     } catch (e: any) {
-      console.error('[Auth] verifyOTP error:', e);
+      console.error('[Auth] verifyOTP error:', e?.message || String(e));
       setOtpError(true);
       Alert.alert('Invalid OTP', e.response?.data?.message || e.message || 'Please check and retry');
     } finally { setLoading(false); }

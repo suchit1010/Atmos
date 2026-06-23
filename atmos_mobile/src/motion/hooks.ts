@@ -163,11 +163,7 @@ export const useRotate = () => {
   const rotation = useSharedValue(0);
 
   useEffect(() => {
-    rotation.value = withSpring(360, {
-      ...Spring.smooth,
-      restDisplacementThreshold: 0.01,
-      restSpeedThreshold: 0.01,
-    });
+    rotation.value = withSpring(360, Spring.smooth);
   }, []);
 
   const style = useAnimatedStyle(() => ({

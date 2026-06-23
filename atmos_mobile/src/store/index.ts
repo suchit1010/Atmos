@@ -31,7 +31,7 @@ export interface AuthState {
   user:           User | null;
   isLoggedIn:     boolean;
   isLoading:      boolean;
-  login:          (user: User, access: string, refresh: string) => Promise<void>;
+  login:          (user: any, access: string, refresh: string) => Promise<void>;
   logout:         () => Promise<void>;
   loadFromStorage: () => Promise<void>;
   updateUser:     (updates: Partial<User>) => void;
@@ -89,7 +89,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
       // Token exists, validate it
       const { data } = await AuthAPI.getMe();
-      console.log('[Auth] getMe response:', data);
+      console.log('[Auth] getMe response:', JSON.stringify(data));
       const mappedUser: User = {
         id: data.id,
         phone: data.phone || data.phone_number || '',
@@ -102,7 +102,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: mappedUser, isLoggedIn: true, isLoading: false });
     } catch (e) {
       // Token invalid, clear it
-      console.error('[Auth] loadFromStorage failed:', e);
+      console.error('[Auth] loadFromStorage failed:', e instanceof Error ? e.message : String(e));
       await TokenStore.clear();
       set({ user: null, isLoggedIn: false, isLoading: false });
     }

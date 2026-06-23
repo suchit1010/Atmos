@@ -19,6 +19,9 @@ import { runSatelliteAnalysis, type SatelliteResult } from './satellite';
 import { runAIVerification,    type AIVerificationResult } from './ai';
 import { generateZKProof,      type ZKProofOutput }  from './zk';
 import { mintCarbonCredit,     type MintCreditResult } from './solana';
+import {
+  mockProjects, mockVerifications, mockProofs, mockCredits, mockListings
+} from '../db/mockStore';
 
 // ─── Pipeline status emitter (for WebSocket) ─────────
 type StatusEmitter = (event: string, data: object) => void;
@@ -36,10 +39,19 @@ function emit(projectId: string, step: string, data: object): void {
 
 // ─── Helper: update project status ───────────────────
 async function updateStatus(projectId: string, status: string): Promise<void> {
-  await query(
-    `UPDATE projects SET status = $1, updated_at = NOW() WHERE id = $2`,
-    [status, projectId]
-  );
+  try {
+    await query(
+      `UPDATE projects SET status = $1, updated_at = NOW() WHERE id = $2`,
+      [status, projectId]
+    );
+  } catch {
+    const mockProj = mockProjects.get(projectId);
+    if (mockProj) {
+      mockProj.status = status as any;
+      mockProj.updated_at = new Date().toISOString();
+      logger.info('Updated mock project status in store', { projectId, status });
+    }
+  }
 }
 
 // ─── Helper: update metadata field ───────────────────
@@ -48,17 +60,26 @@ async function saveAnalysisRefs(
   verificationId: string,
   zkProofId: string
 ): Promise<void> {
-  // We store refs in the project metadata for easy lookup
-  await query(
-    `UPDATE projects
-     SET metadata = jsonb_set(
-       jsonb_set(metadata, '{verificationId}', $1::jsonb),
-       '{zkProofId}', $2::jsonb
-     ),
-     updated_at = NOW()
-     WHERE id = $3`,
-    [JSON.stringify(verificationId), JSON.stringify(zkProofId), projectId]
-  );
+  try {
+    // We store refs in the project metadata for easy lookup
+    await query(
+      `UPDATE projects
+       SET metadata = jsonb_set(
+         jsonb_set(metadata, '{verificationId}', $1::jsonb),
+         '{zkProofId}', $2::jsonb
+       ),
+       updated_at = NOW()
+       WHERE id = $3`,
+      [JSON.stringify(verificationId), JSON.stringify(zkProofId), projectId]
+    );
+  } catch {
+    const mockProj = mockProjects.get(projectId);
+    if (mockProj) {
+      mockProj.metadata.verificationId = verificationId;
+      mockProj.metadata.zkProofId = zkProofId;
+      mockProj.updated_at = new Date().toISOString();
+    }
+  }
 }
 
 // ─── FULL PIPELINE ────────────────────────────────────
@@ -77,27 +98,42 @@ export async function runMRVPipeline(projectId: string): Promise<PipelineResult>
   logger.info('Starting MRV pipeline', { projectId });
 
   // Load project
-  const projResult = await query(
-    `SELECT p.*, u.id as user_id, u.wallet_address
-     FROM projects p JOIN users u ON u.id = p.user_id
-     WHERE p.id = $1`,
-    [projectId]
-  );
+  let project: any;
+  let lat = 23.0;
+  let lng = 72.6;
+  let meta: any = {};
 
-  if (projResult.rows.length === 0) throw new Error(`Project not found: ${projectId}`);
+  try {
+    const projResult = await query(
+      `SELECT p.*, u.id as user_id, u.wallet_address
+       FROM projects p JOIN users u ON u.id = p.user_id
+       WHERE p.id = $1`,
+      [projectId]
+    );
 
-  const project = projResult.rows[0];
-  const meta    = typeof project.metadata === 'string'
-    ? JSON.parse(project.metadata)
-    : project.metadata;
+    if (projResult.rows.length === 0) throw new Error(`Project not found: ${projectId}`);
+    project = projResult.rows[0];
+    meta = typeof project.metadata === 'string'
+      ? JSON.parse(project.metadata)
+      : project.metadata;
 
-  // Extract lat/lng from PostGIS point
-  const geoResult = await query(
-    `SELECT ST_Y(location::geometry) as lat, ST_X(location::geometry) as lng
-     FROM projects WHERE id = $1`,
-    [projectId]
-  );
-  const { lat, lng } = geoResult.rows[0] || { lat: 23.0, lng: 72.6 }; // fallback Ahmedabad
+    const geoResult = await query(
+      `SELECT ST_Y(location::geometry) as lat, ST_X(location::geometry) as lng
+       FROM projects WHERE id = $1`,
+      [projectId]
+    );
+    const geo = geoResult.rows[0];
+    lat = geo.lat;
+    lng = geo.lng;
+  } catch (dbErr) {
+    logger.warn('DB unavailable, loading project from mock store', { projectId });
+    const mockProj = mockProjects.get(projectId);
+    if (!mockProj) throw new Error(`Project not found in mock store: ${projectId}`);
+    project = mockProj;
+    meta = mockProj.metadata;
+    lat = mockProj.location.lat;
+    lng = mockProj.location.lng;
+  }
 
   emit(projectId, 'started', { message: 'MRV pipeline started' });
 
@@ -177,11 +213,16 @@ export async function runMRVPipeline(projectId: string): Promise<PipelineResult>
   emit(projectId, 'zk.start', { message: 'Generating zero-knowledge proof...' });
 
   // Get verification ID from DB
-  const vResult = await query(
-    `SELECT id FROM ai_verifications WHERE project_id = $1 ORDER BY created_at DESC LIMIT 1`,
-    [projectId]
-  );
-  const verificationId = vResult.rows[0]?.id || '';
+  let verificationId = '';
+  try {
+    const vResult = await query(
+      `SELECT id FROM ai_verifications WHERE project_id = $1 ORDER BY created_at DESC LIMIT 1`,
+      [projectId]
+    );
+    verificationId = vResult.rows[0]?.id || '';
+  } catch {
+    verificationId = 'ver_' + Math.random().toString(36).substring(2, 10);
+  }
 
   let zkProof: ZKProofOutput;
   try {
@@ -215,11 +256,16 @@ export async function runMRVPipeline(projectId: string): Promise<PipelineResult>
   }
 
   // Get ZK proof ID
-  const zkResult = await query(
-    `SELECT id FROM zk_proofs WHERE project_id = $1 ORDER BY generated_at DESC LIMIT 1`,
-    [projectId]
-  );
-  const zkProofId = zkResult.rows[0]?.id || '';
+  let zkProofId = '';
+  try {
+    const zkResult = await query(
+      `SELECT id FROM zk_proofs WHERE project_id = $1 ORDER BY generated_at DESC LIMIT 1`,
+      [projectId]
+    );
+    zkProofId = zkResult.rows[0]?.id || '';
+  } catch {
+    zkProofId = 'zkp_' + Math.random().toString(36).substring(2, 10);
+  }
 
   await saveAnalysisRefs(projectId, verificationId, zkProofId);
   await updateStatus(projectId, 'verified');
@@ -248,69 +294,151 @@ export async function mintProjectCredit(
   listPriceInr?: number
 ): Promise<MintCreditResult> {
   // Load verified project + results
-  const projResult = await query(
-    `SELECT p.*, u.wallet_address,
-            v.id as ver_id, v.co2e_estimated, v.grade, v.methodology,
-            v.price_min_inr, v.price_max_inr,
-            z.proof_hash
-     FROM projects p
-     JOIN users u ON u.id = p.user_id
-     LEFT JOIN ai_verifications v ON v.project_id = p.id
-     LEFT JOIN zk_proofs z ON z.project_id = p.id
-     WHERE p.id = $1
-     ORDER BY v.created_at DESC, z.generated_at DESC`,
-    [projectId]
-  );
+  let row: any;
+  let wallet: string;
+  let co2e: number;
+  let grade: string;
+  let priceInr: number;
 
-  if (projResult.rows.length === 0) throw new Error('Project not found');
+  try {
+    const projResult = await query(
+      `SELECT p.*, u.wallet_address,
+              v.id as ver_id, v.co2e_estimated, v.grade, v.methodology,
+              v.price_min_inr, v.price_max_inr,
+              z.proof_hash
+       FROM projects p
+       JOIN users u ON u.id = p.user_id
+       LEFT JOIN ai_verifications v ON v.project_id = p.id
+       LEFT JOIN zk_proofs z ON z.project_id = p.id
+       WHERE p.id = $1
+       ORDER BY v.created_at DESC, z.generated_at DESC`,
+      [projectId]
+    );
 
-  const row     = projResult.rows[0];
-  const wallet  = row.wallet_address || getPayer_fallback();
-  const co2e    = parseFloat(row.co2e_estimated || '1.0');
-  const grade   = row.grade || 'B';
-  const priceInr = listPriceInr || parseFloat(row.price_min_inr || '700');
+    if (projResult.rows.length === 0) throw new Error('Project not found');
+    row = projResult.rows[0];
+    wallet = row.wallet_address || getPayer_fallback();
+    co2e = parseFloat(row.co2e_estimated || '1.0');
+    grade = row.grade || 'B';
+    priceInr = listPriceInr || parseFloat(row.price_min_inr || '700');
+  } catch (dbErr) {
+    logger.warn('DB unavailable, loading for mint from mock store', { projectId });
+    const mockProj = mockProjects.get(projectId);
+    if (!mockProj) throw new Error('Project not found in mock store');
+    const mockVer = mockVerifications.get(projectId);
+    const mockZk = mockProofs.get(projectId);
+
+    row = {
+      ...mockProj,
+      ver_id: mockVer?.projectId || 'ver_mock',
+      co2e_estimated: mockVer?.co2eEstimated || 2.46,
+      grade: mockVer?.grade || 'A',
+      methodology: mockVer?.methodology || 'VM0044',
+      price_min_inr: mockVer?.priceMinInr || 1500,
+      price_max_inr: mockVer?.priceMaxInr || 1850,
+      proof_hash: mockZk?.proofHash || 'zk_mock',
+      user_id: mockProj.user_id,
+    };
+    wallet = 'devnet_mock_wallet';
+    co2e = parseFloat(row.co2e_estimated);
+    grade = row.grade;
+    priceInr = listPriceInr || parseFloat(row.price_min_inr);
+  }
 
   emit(projectId, 'mint.start', { message: 'Minting carbon credit on Solana...' });
 
   const mintResult = await mintCarbonCredit(projectId, wallet, co2e, grade);
 
-  // Save to carbon_credits table
-  await transaction(async (client) => {
-    const creditResult = await client.query(
-      `INSERT INTO carbon_credits (
-        project_id, zk_proof_id, mint_address, amount_co2e,
-        grade, methodology, vintage_year, status, list_price_inr, solana_mint_tx
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-      RETURNING id`,
-      [
-        projectId,
-        row.zk_proof_id || null,
-        mintResult.mintAddress,
-        co2e,
-        grade,
-        row.methodology || 'VM0044',
-        new Date().getFullYear(),
-        listForSale ? 'listed' : 'minted',
-        priceInr,
-        mintResult.txHash,
-      ]
-    );
+  try {
+    // Save to carbon_credits table
+    await transaction(async (client) => {
+      const creditResult = await client.query(
+        `INSERT INTO carbon_credits (
+          project_id, zk_proof_id, mint_address, amount_co2e,
+          grade, methodology, vintage_year, status, list_price_inr, solana_mint_tx
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        RETURNING id`,
+        [
+          projectId,
+          row.zk_proof_id || null,
+          mintResult.mintAddress,
+          co2e,
+          grade,
+          row.methodology || 'VM0044',
+          new Date().getFullYear(),
+          listForSale ? 'listed' : 'minted',
+          priceInr,
+          mintResult.txHash,
+        ]
+      );
 
-    const creditId = creditResult.rows[0].id;
+      const creditId = creditResult.rows[0].id;
+
+      if (listForSale) {
+        await client.query(
+          `INSERT INTO marketplace_listings (seller_id, credit_id, quantity, unit_price_inr)
+           VALUES ($1,$2,$3,$4)`,
+          [row.user_id, creditId, co2e, priceInr]
+        );
+      }
+
+      await client.query(
+        `UPDATE projects SET status = 'listed', updated_at = NOW() WHERE id = $1`,
+        [projectId]
+      );
+    });
+  } catch {
+    logger.warn('DB unavailable, persisting credit to mock store', { projectId });
+    const creditId = 'credit_' + Math.random().toString(36).substring(2, 10);
+    const mockCredit = {
+      id: creditId,
+      project_id: projectId,
+      mint_address: mintResult.mintAddress,
+      amount_co2e: co2e,
+      grade,
+      methodology: row.methodology || 'VM0044',
+      vintage_year: new Date().getFullYear(),
+      status: listForSale ? 'listed' : 'minted',
+      list_price_inr: priceInr,
+      solana_mint_tx: mintResult.txHash,
+    };
+    mockCredits.set(projectId, mockCredit);
 
     if (listForSale) {
-      await client.query(
-        `INSERT INTO marketplace_listings (seller_id, credit_id, quantity, unit_price_inr)
-         VALUES ($1,$2,$3,$4)`,
-        [row.user_id, creditId, co2e, priceInr]
-      );
+      const listingId = 'listing_' + Math.random().toString(36).substring(2, 10);
+      const mockListing = {
+        id: listingId,
+        seller_id: row.user_id,
+        credit_id: creditId,
+        quantity: co2e,
+        unit_price_inr: priceInr,
+        status: 'active',
+        // Copy other fields for marketplace display
+        grade,
+        methodology: row.methodology || 'VM0044',
+        vintage_year: new Date().getFullYear(),
+        mint_address: mintResult.mintAddress,
+        amount_co2e: co2e,
+        project_id: projectId,
+        project_name: row.name,
+        area_ha: row.area_ha,
+        lat: row.lat,
+        lng: row.lng,
+        co2e_estimated: co2e,
+        confidence_score: row.confidence_score || 85,
+        proof_hash: row.proof_hash,
+        seller_name: row.farmer_name || 'Demo Farmer',
+        organisation: 'ATMOS Farmer',
+      };
+      mockListings.set(listingId, mockListing);
     }
 
-    await client.query(
-      `UPDATE projects SET status = 'listed', updated_at = NOW() WHERE id = $1`,
-      [projectId]
-    );
-  });
+    const mockProj = mockProjects.get(projectId);
+    if (mockProj) {
+      mockProj.status = listForSale ? 'listed' : 'verified';
+      mockProj.updated_at = new Date().toISOString();
+    }
+  }
 
   emit(projectId, 'mint.done', {
     mintAddress: mintResult.mintAddress,

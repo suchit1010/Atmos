@@ -59,18 +59,18 @@ export const Tokens = {
     draft: { bg: P.neutral[800], text: P.neutral[300], border: P.neutral[600] },
     pending: { bg: P.amber[900], text: P.amber[400], border: P.amber[600] },
     verified: { bg: P.green[950], text: P.green[400], border: P.green[700] },
-    rejected: { bg: P.red[900], text: P.red[400], border: P.red[700] },
-    minted: { bg: P.purple[900], text: P.purple[400], border: P.purple[700] },
-    retired: { bg: P.blue[900], text: P.blue[400], border: P.blue[700] },
+    rejected: { bg: P.red[900], text: P.red[400], border: P.red[600] },
+    minted: { bg: P.purple[900], text: P.purple[400], border: P.purple[600] },
+    retired: { bg: P.blue[900], text: P.blue[400], border: P.blue[600] },
   },
 
   // ── GRADES ────────────────────────────────────
   grade: {
     S: { bg: P.green[950], text: P.green[300], border: P.green[600] },
     A: { bg: P.green[950], text: P.green[400], border: P.green[700] },
-    B: { bg: P.amber[900], text: P.amber[400], border: P.amber[700] },
+    B: { bg: P.amber[900], text: P.amber[400], border: P.amber[600] },
     C: { bg: '#1A1006', text: '#F97316', border: '#C2410C' },
-    D: { bg: P.red[900], text: P.red[400], border: P.red[700] },
+    D: { bg: P.red[900], text: P.red[400], border: P.red[600] },
   },
 
   // ── SHADOW ────────────────────────────────────

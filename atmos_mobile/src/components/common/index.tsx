@@ -207,15 +207,33 @@ export function StatusBadge({ status }: { status: string }) {
 }
 
 // ─── Section Header ───────────────────────────────────
-export function SectionHeader({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
+interface SectionHeaderProps {
+  title: string;
+  subtitle?: string;
+  action?: string | { label: string; onPress: () => void };
+  onAction?: () => void;
+}
+
+export function SectionHeader({ title, subtitle, action, onAction }: SectionHeaderProps) {
+  // Handle both old string format and new object format
+  const actionLabel = typeof action === 'string' ? action : action?.label;
+  const actionHandler = typeof action === 'object' ? action.onPress : onAction;
+
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md }}>
-      <Text style={[Typography.labelMd, { color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8 }]}>
-        {title}
-      </Text>
-      {action && (
-        <TouchableOpacity onPress={onAction}>
-          <Text style={[Typography.labelSm, { color: Colors.primary }]}>{action} →</Text>
+      <View>
+        <Text style={[Typography.labelMd, { color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8 }]}>
+          {title}
+        </Text>
+        {subtitle && (
+          <Text style={[Typography.bodyXs, { color: Colors.textDim, marginTop: 2 }]}>
+            {subtitle}
+          </Text>
+        )}
+      </View>
+      {actionLabel && (
+        <TouchableOpacity onPress={actionHandler}>
+          <Text style={[Typography.labelSm, { color: Colors.primary }]}>{actionLabel} →</Text>
         </TouchableOpacity>
       )}
     </View>

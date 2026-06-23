@@ -107,7 +107,6 @@ api.interceptors.response.use(
       url: err.config?.url,
       method: err.config?.method,
       status,
-      data: err.response?.data,
       message: err.message,
     });
 
@@ -125,7 +124,7 @@ api.interceptors.response.use(
           }
         }
       } catch (refreshErr) {
-        console.error('[API] Token refresh failed:', refreshErr);
+        console.error('[API] Token refresh failed');
         await TokenStore.clear();
       } finally {
         refreshing = false;
