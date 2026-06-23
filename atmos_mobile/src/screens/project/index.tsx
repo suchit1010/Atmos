@@ -9,23 +9,24 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Colors, Typography, Spacing, Radius } from '../../theme';
 import { Button, Card, Input } from '../../components/common';
+import { Ionicons } from '@expo/vector-icons';
 import { ProjectsAPI } from '../../services/api';
 
 const { width } = Dimensions.get('window');
 
 // ─── Entity types ─────────────────────────────────────
 const ENTITIES = [
-  { id: 'biochar',      icon: '🌾', label: 'Biochar Production',  sub: 'Convert biomass to biochar' },
-  { id: 'agroforestry', icon: '🌳', label: 'Agroforestry',        sub: 'Tree planting on agricultural land' },
-  { id: 'soil_carbon',  icon: '🌍', label: 'Soil Carbon',         sub: 'Improve soil organic carbon' },
-  { id: 'crop_residue', icon: '🌾', label: 'Crop Residue',        sub: 'Manage crop residue' },
-  { id: 'solar_energy', icon: '☀️', label: 'Solar Energy',        sub: 'Renewable energy generation' },
-  { id: 'ev_fleet',     icon: '⚡', label: 'EV Fleet',            sub: 'Electric vehicle transport' },
-  { id: 'building',     icon: '🏢', label: 'Building Retrofit',   sub: 'Energy efficiency upgrade' },
-  { id: 'shipping',     icon: '🚢', label: 'Shipping',            sub: 'Maritime emissions reduction' },
-  { id: 'aviation',     icon: '✈️', label: 'Aviation',            sub: 'Air travel offsets' },
-  { id: 'city',         icon: '🌆', label: 'City Initiative',     sub: 'Urban infrastructure' },
-  { id: 'individual',   icon: '👤', label: 'Individual Action',   sub: 'Personal climate actions' },
+  { id: 'biochar',      icon: 'leaf',       label: 'Biochar Production',  sub: 'Convert biomass to biochar', color: '#22C55E' },
+  { id: 'agroforestry', icon: 'options',    label: 'Agroforestry',        sub: 'Tree planting on agricultural land', color: '#22C55E' },
+  { id: 'soil_carbon',  icon: 'earth',      label: 'Soil Carbon',         sub: 'Improve soil organic carbon', color: '#3B82F6' },
+  { id: 'crop_residue', icon: 'flower',     label: 'Crop Residue',        sub: 'Manage crop residue', color: '#EAB308' },
+  { id: 'solar_energy', icon: 'sunny',      label: 'Solar Energy',        sub: 'Renewable energy generation', color: '#EAB308' },
+  { id: 'ev_fleet',     icon: 'flash',      label: 'EV Fleet',            sub: 'Electric vehicle transport', color: '#3B82F6' },
+  { id: 'building',     icon: 'business',   label: 'Building Retrofit',   sub: 'Energy efficiency upgrade', color: '#8B5CF6' },
+  { id: 'shipping',     icon: 'boat',       label: 'Shipping',            sub: 'Maritime emissions reduction', color: '#EC4899' },
+  { id: 'aviation',     icon: 'airplane',   label: 'Aviation',            sub: 'Air travel offsets', color: '#3B82F6' },
+  { id: 'city',         icon: 'business',   label: 'City Initiative',     sub: 'Urban infrastructure', color: '#A855F7' },
+  { id: 'individual',   icon: 'person',     label: 'Individual Action',   sub: 'Personal climate actions', color: '#F97316' },
 ];
 
 // ─── Dynamic form fields per entity ──────────────────
@@ -124,11 +125,11 @@ export function SelectProjectTypeScreen({ navigation }: any) {
                   onPress={() => setSelected(e.id)}
                   style={[styles.entityCard, isSelected ? styles.entityCardSelected : {}]}
                 >
-                  <Text style={{ fontSize: 28, marginBottom: Spacing.sm }}>{e.icon}</Text>
-                  <Text style={[Typography.labelMd, { color: isSelected ? Colors.primary : Colors.text }]}>
+                  <Ionicons name={e.icon as any} size={32} color={e.color} style={{ marginBottom: Spacing.sm }} />
+                  <Text style={[Typography.labelMd, { color: isSelected ? Colors.primary : Colors.text, textAlign: 'center' }]}>
                     {e.label}
                   </Text>
-                  <Text style={[Typography.bodyXs, { color: Colors.textMuted, marginTop: 2, textAlign: 'center' }]}>
+                  <Text style={[Typography.bodyXs, { color: Colors.textMuted, marginTop: 4, textAlign: 'center' }]}>
                     {e.sub}
                   </Text>
                   {isSelected && (
