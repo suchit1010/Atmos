@@ -1,0 +1,271 @@
+
+<style>
+*{box-sizing:border-box;}
+body{margin:0;}
+.r{padding:1.5rem 0;font-family:var(--font-sans);}
+h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+.sec-label{font-size:11px;font-weight:500;letter-spacing:.08em;color:var(--color-text-tertiary);text-transform:uppercase;margin:0 0 4px;}
+.sec-title{font-size:18px;font-weight:500;color:var(--color-text-primary);margin:0 0 1.25rem;}
+.divider{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:2rem 0;}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.5rem;}
+.metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px;}
+.metric p:first-child{font-size:12px;color:var(--color-text-secondary);margin:0 0 4px;}
+.metric p:last-child{font-size:22px;font-weight:500;margin:0;}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:16px 18px;margin-bottom:12px;}
+.card-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.card-icon{width:34px;height:34px;border-radius:var(--border-radius-md);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.icon-teal{background:#E1F5EE;color:#0F6E56;}
+.icon-amber{background:#FAEEDA;color:#854F0B;}
+.icon-red{background:#FCEBEB;color:#A32D2D;}
+.icon-blue{background:#E6F1FB;color:#185FA5;}
+.icon-purple{background:#EEEDFE;color:#534AB7;}
+.card-title{font-size:15px;font-weight:500;color:var(--color-text-primary);margin:0;}
+.card-sub{font-size:12px;color:var(--color-text-secondary);margin:0;}
+.row-item{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.dot{width:7px;height:7px;border-radius:50%;margin-top:6px;flex-shrink:0;}
+.dot-g{background:#1D9E75;}
+.dot-a{background:#BA7517;}
+.dot-r{background:#E24B4A;}
+.dot-b{background:#378ADD;}
+.row-text{font-size:13px;color:var(--color-text-primary);line-height:1.55;}
+.row-text strong{font-weight:500;}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:middle;}
+.bg{background:#E1F5EE;color:#0F6E56;}
+.ba{background:#FAEEDA;color:#854F0B;}
+.br{background:#FCEBEB;color:#A32D2D;}
+.score-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.score-label{font-size:13px;color:var(--color-text-primary);width:180px;flex-shrink:0;}
+.score-bar-bg{flex:1;height:6px;background:var(--color-background-secondary);border-radius:3px;overflow:hidden;}
+.score-bar-fill{height:6px;border-radius:3px;}
+.score-val{font-size:13px;font-weight:500;color:var(--color-text-primary);width:36px;text-align:right;}
+.verdict-box{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:16px 18px;}
+.verdict-box p{font-size:14px;color:var(--color-text-primary);line-height:1.65;margin:0;}
+.cta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:1.5rem;}
+.cta-btn{font-size:13px;padding:8px 14px;}
+.two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
+.priority-item{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);}
+.p-num{font-size:20px;font-weight:500;color:var(--color-text-tertiary);flex-shrink:0;line-height:1.2;}
+.p-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin:0 0 2px;}
+.p-desc{font-size:12px;color:var(--color-text-secondary);margin:0;line-height:1.45;}
+.p-tag{font-size:11px;padding:2px 7px;border-radius:99px;margin-top:5px;display:inline-block;}
+.tag-r{background:#FCEBEB;color:#A32D2D;}
+.tag-a{background:#FAEEDA;color:#854F0B;}
+.tag-g{background:#EAF3DE;color:#3B6D11;}
+table.comp{width:100%;font-size:13px;border-collapse:collapse;}
+table.comp th{font-weight:500;color:var(--color-text-secondary);text-align:left;padding:6px 8px;border-bottom:0.5px solid var(--color-border-tertiary);}
+table.comp td{padding:7px 8px;color:var(--color-text-primary);border-bottom:0.5px solid var(--color-border-tertiary);}
+table.comp tr:last-child td{border-bottom:none;}
+.w{color:#1D9E75;font-weight:500;}
+.x{color:#E24B4A;font-weight:500;}
+.o{color:#BA7517;font-weight:500;}
+</style>
+
+<div class="r">
+<h2 class="sr-only">Detailed hackathon evaluation report for Atmos on Colosseum Solana hackathon</h2>
+
+<p class="sec-label">Atmos — github.com/suchit1010/Atmos</p>
+<p class="sec-title">Full evaluation report · Colosseum Solana hackathon</p>
+
+<div class="metrics">
+  <div class="metric"><p>Overall score</p><p style="color:#BA7517;">58 / 100</p></div>
+  <div class="metric"><p>Category fit</p><p style="color:#1D9E75;">RWA / DePIN</p></div>
+  <div class="metric"><p>Solana completeness</p><p style="color:#E24B4A;">35%</p></div>
+  <div class="metric"><p>Win probability</p><p style="color:#BA7517;">~20%</p></div>
+  <div class="metric"><p>Accelerator potential</p><p style="color:#1D9E75;">High</p></div>
+</div>
+
+<hr class="divider">
+
+<p class="sec-label">Section 1</p>
+<p class="sec-title">Dimension-by-dimension scoring</p>
+
+<div class="score-row"><span class="score-label">Innovation & originality</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:80%;background:#1D9E75;"></div></div><span class="score-val">8/10</span></div>
+<div class="score-row"><span class="score-label">Technical ambition</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:80%;background:#1D9E75;"></div></div><span class="score-val">8/10</span></div>
+<div class="score-row"><span class="score-label">Technical execution</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:60%;background:#BA7517;"></div></div><span class="score-val">6/10</span></div>
+<div class="score-row"><span class="score-label">Solana integration</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:35%;background:#E24B4A;"></div></div><span class="score-val">3.5/10</span></div>
+<div class="score-row"><span class="score-label">Product completeness</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:50%;background:#BA7517;"></div></div><span class="score-val">5/10</span></div>
+<div class="score-row"><span class="score-label">Market & business case</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:80%;background:#1D9E75;"></div></div><span class="score-val">8/10</span></div>
+<div class="score-row"><span class="score-label">User traction</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:25%;background:#E24B4A;"></div></div><span class="score-val">2.5/10</span></div>
+<div class="score-row"><span class="score-label">Code quality</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:65%;background:#378ADD;"></div></div><span class="score-val">6.5/10</span></div>
+<div class="score-row"><span class="score-label">Pitch & presentation</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:40%;background:#BA7517;"></div></div><span class="score-val">4/10</span></div>
+
+<hr class="divider">
+
+<p class="sec-label">Section 2</p>
+<p class="sec-title">Deep dive: what works</p>
+
+<div class="card">
+  <div class="card-head"><div class="card-icon icon-teal"><i class="ti ti-bulb" aria-hidden="true"></i></div><div><p class="card-title">Problem-market fit is exceptional</p><p class="card-sub">Score driver: +8 pts</p></div></div>
+  <div class="row-item"><div class="dot dot-g"></div><p class="row-text">The voluntary carbon market is worth ~$2B today and is projected to reach $50B+ by 2030. The central problem — that carbon credits can't be trusted because MRV is done manually — is real and costing institutional buyers billions in greenwashing risk.</p></div>
+  <div class="row-item"><div class="dot dot-g"></div><p class="row-text">Atmos targets infrastructure, not a marketplace. That's the smarter angle. Every carbon project needs MRV; Atmos becomes a settlement layer, not a competitor to existing platforms.</p></div>
+  <div class="row-item"><div class="dot dot-g"></div><p class="row-text">9 entity types (biochar, agroforestry, solar, EV, aviation, shipping...) with proper methodology coverage (IPCC, VCS, VM0047, CORSIA) signals domain expertise that most hackathon teams can't fake.</p></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><div class="card-icon icon-blue"><i class="ti ti-stack" aria-hidden="true"></i></div><div><p class="card-title">Tech stack ambition is top-tier</p><p class="card-sub">Score driver: +8 pts</p></div></div>
+  <div class="row-item"><div class="dot dot-g"></div><p class="row-text"><strong>Sentinel-2 satellite data</strong> — real ESA imagery source for NDVI vegetation index, land-use classification, and NASA FIRMS fire detection. Not mocked.</p></div>
+  <div class="row-item"><div class="dot dot-g"></div><p class="row-text"><strong>Anthropic Claude AI engine</strong> — entity-specific prompts for 8-dimensional fraud detection and CO₂e estimation using IPCC/VCS methodologies. Confidence scoring is multi-factor (0–100 pts across 4 axes).</p></div>
+  <div class="row-item"><div class="dot dot-g"></div><p class="row-text"><strong>Groth16 ZK proofs</strong> — privacy-preserving verification anchored on-chain. This is a genuine differentiator; most carbon projects expose sensitive land-boundary data publicly.</p></div>
+  <div class="row-item"><div class="dot dot-g"></div><p class="row-text"><strong>Dodo Payments + Svix webhooks</strong> — INR/UPI → USDC → Solana settlement pipeline built, HMAC-SHA256 webhook verification implemented correctly.</p></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><div class="card-icon icon-purple"><i class="ti ti-code" aria-hidden="true"></i></div><div><p class="card-title">Codebase is production-minded</p><p class="card-sub">Score driver: +6.5 pts</p></div></div>
+  <div class="row-item"><div class="dot dot-g"></div><p class="row-text">Monorepo with pnpm workspaces, TypeScript end-to-end, esbuild for production bundling — not a toy project structure.</p></div>
+  <div class="row-item"><div class="dot dot-g"></div><p class="row-text">Vitest + Supertest test coverage for the API server, Docker + docker-compose for infra, CI/CD via GitHub Actions workflows in place.</p></div>
+  <div class="row-item"><div class="dot dot-g"></div><p class="row-text">OpenAPI spec with Orval codegen — shows API contract thinking. Pino structured logging.</p></div>
+  <div class="row-item"><div class="dot dot-a"></div><p class="row-text">48 commits across 3 contributors is reasonable but low; some senior judges will check commit history to verify build depth.</p></div>
+</div>
+
+<hr class="divider">
+
+<p class="sec-label">Section 3</p>
+<p class="sec-title">Deep dive: critical gaps</p>
+
+<div class="card">
+  <div class="card-head"><div class="card-icon icon-red"><i class="ti ti-link-off" aria-hidden="true"></i></div><div><p class="card-title">Solana integration is incomplete — disqualifying risk</p><p class="card-sub">Score killer: −6.5 pts</p></div></div>
+  <div class="row-item"><div class="dot dot-r"></div><p class="row-text">The README status table explicitly lists "Full Solana minting integration" as <strong>⏳ planned</strong>. The hackathon requirement is Solana integration. Judges will check the repo and find no working SPL token minting.</p></div>
+  <div class="row-item"><div class="dot dot-r"></div><p class="row-text">Architecture diagram shows Solana Devnet as a target but the code path from settlement → SPL mint is unimplemented. The `lib/integrations` folder likely has stubs, not working code.</p></div>
+  <div class="row-item"><div class="dot dot-r"></div><p class="row-text">Without on-chain minting, Atmos is a carbon verification API — a solid API, but not a Solana project. This alone can move a project from shortlisted to eliminated.</p></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><div class="card-icon icon-red"><i class="ti ti-users" aria-hidden="true"></i></div><div><p class="card-title">Zero user traction — the biggest Colosseum weakness</p><p class="card-sub">Score killer: −7.5 pts</p></div></div>
+  <div class="row-item"><div class="dot dot-r"></div><p class="row-text">0 GitHub stars, 0 forks. No demo users. No Twitter/Telegram community evidence. No testimonials. Colosseum's own workshop explicitly states judges look for early traction proof — Twitter feedback, Telegram conversations with potential users, usage data.</p></div>
+  <div class="row-item"><div class="dot dot-r"></div><p class="row-text">This is a solvable problem before submission. Even 3–5 carbon project operators testing the MRV pipeline and giving a quote is enough to demonstrate product-market validation.</p></div>
+  <div class="row-item"><div class="dot dot-a"></div><p class="row-text">India has a thriving carbon project ecosystem (biochar, solar, agroforestry). The team should be able to find pilot users quickly given their location in Gujarat.</p></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><div class="card-icon icon-amber"><i class="ti ti-database-off" aria-hidden="true"></i></div><div><p class="card-title">Infrastructure fragility undermines the "settlement layer" pitch</p><p class="card-sub">Score drag: −4 pts</p></div></div>
+  <div class="row-item"><div class="dot dot-a"></div><p class="row-text">Settlement records use an in-memory store — explicitly noted in the repo as `settlement-store.ts`. Data is lost on server restart. For a product pitching itself as "immutable financial infrastructure," this is a credibility gap.</p></div>
+  <div class="row-item"><div class="dot dot-a"></div><p class="row-text">PostgreSQL + PostGIS is in the architecture diagram and `lib/db` folder exists, but migrations are not wired into the running app. The gap between architecture diagram and actual implementation will be spotted.</p></div>
+  <div class="row-item"><div class="dot dot-a"></div><p class="row-text">The `vercel-deploy.log` committed to root is a minor unprofessional signal — judges notice repo hygiene.</p></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><div class="card-icon icon-amber"><i class="ti ti-video-off" aria-hidden="true"></i></div><div><p class="card-title">Pitch video quality is unknown — and it's the #1 judging input</p><p class="card-sub">Score risk: unknown</p></div></div>
+  <div class="row-item"><div class="dot dot-a"></div><p class="row-text">Colosseum's co-founders have stated: "The pitch video is the most important element. It is usually the first item judges review and can determine whether a project is shortlisted for deeper evaluation."</p></div>
+  <div class="row-item"><div class="dot dot-a"></div><p class="row-text">A strong video needs: hook (the problem in 20 seconds), live product demo, market size claim, team credibility. A weak or absent video means judges may never see the technical depth underneath.</p></div>
+</div>
+
+<hr class="divider">
+
+<p class="sec-label">Section 4</p>
+<p class="sec-title">Competitive landscape — RWA / DePIN track</p>
+
+<div style="overflow-x:auto;">
+<table class="comp">
+  <thead><tr><th>Dimension</th><th>Atmos</th><th>Autonom (Cypherpunk winner)</th><th>Typical strong RWA entry</th></tr></thead>
+  <tbody>
+    <tr><td>Solana integration</td><td class="x">Incomplete (devnet pending)</td><td class="w">Live on-chain</td><td class="w">Devnet at minimum</td></tr>
+    <tr><td>Problem novelty</td><td class="w">High — climate MRV untapped</td><td class="o">Medium — RWA tracking</td><td class="o">Medium</td></tr>
+    <tr><td>Tech sophistication</td><td class="w">Very high (ZK + satellite + AI)</td><td class="o">Medium</td><td class="o">Medium</td></tr>
+    <tr><td>User traction</td><td class="x">None visible</td><td class="w">Had early adopters</td><td class="w">1–5 pilot users</td></tr>
+    <tr><td>Market size clarity</td><td class="w">$50B+ carbon market cited</td><td class="o">Reasonable</td><td class="o">Reasonable</td></tr>
+    <tr><td>Revenue model</td><td class="w">Clear (API fees + token fees)</td><td class="w">Clear</td><td class="o">Often vague</td></tr>
+    <tr><td>Team signals</td><td class="o">3 contributors, India</td><td class="w">Known ecosystem presence</td><td class="o">Varies</td></tr>
+  </tbody>
+</table>
+</div>
+
+<hr class="divider">
+
+<p class="sec-label">Section 5</p>
+<p class="sec-title">Priority action plan (before submission)</p>
+
+<div class="two-col">
+  <div class="priority-item"><span class="p-num">01</span><div><p class="p-title">Ship SPL minting to devnet</p><p class="p-desc">Wire up the Solana minting path from verified project → SPL token. Even a basic `mint_carbon_token` instruction on devnet makes this a real Solana project.</p><span class="p-tag tag-r">Critical · do first</span></div></div>
+  <div class="priority-item"><span class="p-num">02</span><div><p class="p-title">Get 3 real pilot users</p><p class="p-desc">Reach out to biochar or solar project operators in Gujarat. Have them run a verification, screenshot the result, quote them in the README and video.</p><span class="p-tag tag-r">Critical · do second</span></div></div>
+  <div class="priority-item"><span class="p-num">03</span><div><p class="p-title">Record a killer pitch video</p><p class="p-desc">3 min max: 20s problem hook → 60s live demo of the full pipeline → 30s market claim → 30s team. Show the satellite imagery loading, the AI verdict, the ZK proof, the token minting.</p><span class="p-tag tag-r">Critical · highest leverage</span></div></div>
+  <div class="priority-item"><span class="p-num">04</span><div><p class="p-title">Wire in PostgreSQL persistence</p><p class="p-desc">The DB schema is already in lib/db. Connect the settlement store to postgres so the "immutable records" claim isn't contradicted by in-memory state.</p><span class="p-tag tag-a">Important</span></div></div>
+  <div class="priority-item"><span class="p-num">05</span><div><p class="p-title">Clean repo hygiene</p><p class="p-desc">Remove vercel-deploy.log from root. Add a working live demo URL in the README. Ensure `pnpm install && pnpm dev` actually works from a clean clone.</p><span class="p-tag tag-a">Important</span></div></div>
+  <div class="priority-item"><span class="p-num">06</span><div><p class="p-title">Build community signal</p><p class="p-desc">Post a thread on X/Twitter showing the MRV pipeline working on a real project. Tag Solana, Colosseum, climate Twitter. Stars and engagement matter to judges.</p><span class="p-tag tag-g">Nice to have</span></div></div>
+</div>
+
+<hr class="divider">
+
+<p class="sec-label">Section 6</p>
+<p class="sec-title">Prize track recommendation</p>
+
+<div class="card">
+  <div class="card-head"><div class="card-icon icon-teal"><i class="ti ti-trophy" aria-hidden="true"></i></div><div><p class="card-title">Primary: RWA / DePIN track</p><p class="card-sub">Best fit for carbon tokenisation infrastructure</p></div></div>
+  <div class="row-item"><div class="dot dot-g"></div><p class="row-text">Real-world asset tokenisation with verifiable provenance is exactly what this track rewards. Atmos's MRV → ZK proof → SPL token flow is a textbook RWA infrastructure play.</p></div>
+  <div class="row-item"><div class="dot dot-g"></div><p class="row-text">Fewer teams target climate infrastructure vs DeFi, so competition density is lower.</p></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><div class="card-icon icon-blue"><i class="ti ti-world" aria-hidden="true"></i></div><div><p class="card-title">Secondary: Public Goods award ($10K)</p><p class="card-sub">Open MRV API benefits the whole ecosystem</p></div></div>
+  <div class="row-item"><div class="dot dot-b"></div><p class="row-text">If the MRV API is open-source and documented as a developer tool, it qualifies for the Public Goods track. This is a separate prize — a project can win both.</p></div>
+  <div class="row-item"><div class="dot dot-b"></div><p class="row-text">The OpenAPI spec (already in lib/api-spec/openapi.yaml) is the foundation. Add clear usage docs and an open developer portal.</p></div>
+</div>
+
+<hr class="divider">
+
+<div class="verdict-box">
+  <p style="font-weight:500;font-size:15px;margin:0 0 8px;">Final verdict</p>
+  <p>Atmos has the strongest problem-market fit and most sophisticated technology of any climate project likely to enter a Colosseum hackathon. The idea is fundable. But as of today it is a compelling prototype with a missing core deliverable — working Solana integration. Fix that, get 3 real users, and make a great video, and this project has a genuine shot at the RWA track prize and high probability of accelerator consideration. Without those three things, it will be eliminated early despite its technical depth.</p>
+</div>
+
+<div class="cta-row">
+  <button class="cta-btn" onclick="sendPrompt('How do I implement SPL token minting for the Atmos carbon token on Solana devnet?')">How to ship SPL minting ↗</button>
+  <button class="cta-btn" onclick="sendPrompt('Write a 3-minute pitch video script for Atmos for the Colosseum hackathon')">Write pitch video script ↗</button>
+  <button class="cta-btn" onclick="sendPrompt('How do I find early pilot users for a carbon MRV product in India?')">Find pilot users strategy ↗</button>
+</div>
+
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const radar = document.createElement('div');
+radar.style.cssText = 'position:relative;width:100%;height:320px;margin:1.5rem 0;';
+const canvas = document.createElement('canvas');
+canvas.id = 'radarChart';
+canvas.setAttribute('role','img');
+canvas.setAttribute('aria-label','Radar chart showing Atmos scores across 6 dimensions: innovation 8, technical depth 7, market fit 8, product completeness 5, Solana integration 3.5, traction 2.5');
+canvas.textContent = 'Radar: Innovation 8, Technical depth 7, Market fit 8, Product completeness 5, Solana 3.5, Traction 2.5';
+radar.appendChild(canvas);
+document.querySelector('.r').insertBefore(radar, document.querySelector('.divider'));
+new Chart(canvas, {
+  type: 'radar',
+  data: {
+    labels: ['Innovation','Technical depth','Market fit','Product completeness','Solana integration','User traction'],
+    datasets: [{
+      label: 'Atmos (current)',
+      data: [8, 7, 8, 5, 3.5, 2.5],
+      borderColor: '#378ADD',
+      backgroundColor: 'rgba(55,138,221,0.12)',
+      pointBackgroundColor: '#378ADD',
+      pointRadius: 4,
+      borderWidth: 1.5
+    },{
+      label: 'Winning threshold',
+      data: [7, 7, 7, 7, 7, 6],
+      borderColor: '#1D9E75',
+      backgroundColor: 'rgba(29,158,117,0.07)',
+      pointBackgroundColor: '#1D9E75',
+      pointRadius: 4,
+      borderWidth: 1.5,
+      borderDash: [4,4]
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      r: {
+        min: 0, max: 10,
+        ticks: { stepSize: 2, font: { size: 11 }, color: '#888780', backdropColor: 'transparent' },
+        grid: { color: 'rgba(136,135,128,0.2)' },
+        pointLabels: { font: { size: 12 }, color: '#5F5E5A' }
+      }
+    }
+  }
+});
+const legendDiv = document.createElement('div');
+legendDiv.style.cssText = 'display:flex;gap:20px;font-size:12px;color:var(--color-text-secondary);margin-bottom:1.5rem;';
+legendDiv.innerHTML = '<span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:3px;background:#378ADD;display:inline-block;border-radius:2px;"></span>Atmos current</span><span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:3px;background:#1D9E75;display:inline-block;border-radius:2px;border-top:1.5px dashed #1D9E75;"></span>Winning threshold</span>';
+radar.after(legendDiv);
+</script>

@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --brand-primary: #E2F2DF;
+    --brand-primary-hover: #d3ebd0;
+    --brand-secondary: #0C150A;
+    --brand-tertiary: #3F463E;
+    --brand-quaternary: #F1F1F1;
+    --brand-lightBg: #F7F9F6;
+    --brand-accentGreen: #45A849;
+    --brand-mintSoft: #ECF7EA;
+  }
+
+  body {
+    background-color: #F7F9F6;
+    color: #0C150A;
+    font-family: -apple-system, BlinkMacSystemFont, "Plus Jakarta Sans", "SF Pro Display", system-ui, sans-serif;
+    letter-spacing: -0.015em;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Custom Stitch Aesthetics */
+.tracking-tight-custom {
+  letter-spacing: -0.035em;
+}
+
+@keyframes subtle-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.8; }
+}
+
+.animate-sensor-pulse {
+  animation: subtle-pulse 3s infinite ease-in-out;
+}
+
+@keyframes orbit-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-orbit {
+  animation: orbit-spin 25s linear infinite;
+}
+
+.gauge-dots {
+  stroke-dasharray: 4 9;
+  stroke-linecap: round;
+}
+
+.gauge-progress-circle {
+  stroke-dasharray: 660;
+  stroke-dashoffset: 240;
+  transform: rotate(-130deg);
+  transform-origin: 50% 50%;
+}
+
+.gauge-dotted-track {
+  stroke-dasharray: 4 14;
+  transform: rotate(0deg);
+  transform-origin: 50% 50%;
+}
+
+/* iOS Phone Frame Simulation */
+.mobile-device-frame {
+  width: 100%;
+  max-width: 390px;
+  height: 844px;
+  background-color: #F8F9FA;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 60px -15px rgba(12, 21, 10, 0.15), 0 0 0 8px #FFFFFF, 0 0 0 10px rgba(0,0,0,0.06);
+  border-radius: 46px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

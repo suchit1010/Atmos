@@ -1,0 +1,23 @@
+[package]
+name = "atmos-carbon-encrypt"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+encrypt = ["encrypt-types", "encrypt-dsl", "encrypt-anchor"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = "0.32"
+anchor-spl = "0.32"
+# Encrypt pre-alpha packages are optional until the real graphs are wired.
+encrypt-types = { git = "https://github.com/dwallet-labs/encrypt-pre-alpha", optional = true }
+encrypt-dsl = { package = "encrypt-solana-dsl", git = "https://github.com/dwallet-labs/encrypt-pre-alpha", optional = true }
+encrypt-anchor = { git = "https://github.com/dwallet-labs/encrypt-pre-alpha", optional = true }
+
+[dev-dependencies]
+
