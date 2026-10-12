@@ -136,6 +136,64 @@ export function AtmosMobileExperience() {
   const [satelliteActiveLayer, setSatelliteActiveLayer] = useState<"optical" | "thermal" | "ndvi" | "sar">("optical");
   const [satelliteScanActive, setSatelliteScanActive] = useState(false);
 
+  // Screen 6: Dual-Verifier Consensus & Calculation States
+  const [verifier2Approved, setVerifier2Approved] = useState(false);
+  const [showCalculationModal, setShowCalculationModal] = useState(false);
+  const [showLabReportModal, setShowLabReportModal] = useState(false);
+
+  // Screen 7: Zero-Knowledge Prover States
+  const [zkStep, setZkStep] = useState<1 | 2 | 3>(3);
+  const [zkWitnessLogOpen, setZkWitnessLogOpen] = useState(false);
+  const [zkGenerating, setZkGenerating] = useState(false);
+
+  // Screen 9 & 10: Marketplace & Payment States
+  const [marketSearch, setMarketSearch] = useState("");
+  const [marketFilter, setMarketFilter] = useState<"all" | "biochar" | "agroforestry">("all");
+  const [showListCreditsModal, setShowListCreditsModal] = useState(false);
+  const [listPrice, setListPrice] = useState(11100);
+  const [listTonnes, setListTonnes] = useState(5.796);
+  const [purchaseTonnes, setPurchaseTonnes] = useState(5.0);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [marketListings, setMarketListings] = useState([
+    {
+      id: "kalol-batch-3",
+      title: "Biochar · Kalol, Gujarat",
+      batch: "Batch #3 · 6.439 tCO₂e · Vintage 2026",
+      pricePerTonne: 11100,
+      availableTonnes: 5.796,
+      score: "92/100",
+      verifiers: 2,
+      badge: "Pilot · unrecognised",
+      location: "Kalol",
+      type: "biochar",
+    },
+    {
+      id: "jaipur-batch-7",
+      title: "Biochar · Jaipur, Rajasthan",
+      batch: "Batch #7 · 3.100 tCO₂e · Vintage 2026",
+      pricePerTonne: 12400,
+      availableTonnes: 2.790,
+      score: "88/100",
+      verifiers: 2,
+      badge: "Pilot · unrecognised",
+      location: "Jaipur",
+      type: "biochar",
+    },
+    {
+      id: "wardha-batch-1",
+      title: "Agroforestry · Wardha, Maharashtra",
+      batch: "Batch #1 · 14.200 tCO₂e · Vintage 2026",
+      pricePerTonne: 13800,
+      availableTonnes: 12.000,
+      score: "95/100",
+      verifiers: 2,
+      badge: "Early Access",
+      location: "Wardha",
+      type: "agroforestry",
+    },
+  ]);
+
   // Modals & sub-sheets
   const [showScreenDropdown, setShowScreenDropdown] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
@@ -146,7 +204,6 @@ export function AtmosMobileExperience() {
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [showDodoModal, setShowDodoModal] = useState(false);
   const [activeProfileSheet, setActiveProfileSheet] = useState<string | null>(null);
-
 
   // Play subtle Apple tactile click sound
   const playHapticSound = (type: "tap" | "success" | "shutter" = "tap") => {
@@ -186,14 +243,14 @@ export function AtmosMobileExperience() {
     setActiveScreen(screen);
   };
 
-  // Celebration on certificate settlement
+  // Celebration on certificate settlement and credit issuance
   useEffect(() => {
-    if (activeScreen === "11_certificate") {
+    if (activeScreen === "11_certificate" || activeScreen === "08_credits_issued") {
       playHapticSound("success");
       confetti({
-        particleCount: 75,
-        spread: 60,
-        origin: { y: 0.65 },
+        particleCount: 85,
+        spread: 70,
+        origin: { y: 0.6 },
         colors: ["#35C46A", "#E2F2DF", "#0C150A", "#FFD700"],
       });
     }
@@ -1266,24 +1323,41 @@ export function AtmosMobileExperience() {
                   {activeScreen === "06_verification" && (
                     <div className="flex-1 flex flex-col justify-between p-5 bg-[#F7F9F6] overflow-y-auto">
                       <div className="flex flex-col gap-3 pt-1">
-                        <div>
-                          <h1 className="text-2xl font-extrabold text-[#0C150A]">Verification</h1>
-                          <p className="text-xs text-[#3F463E] mt-0.5 leading-relaxed">
-                            Your evidence is being reviewed by people, not just software.
-                          </p>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h1 className="text-2xl font-extrabold text-[#0C150A]">Verification</h1>
+                            <p className="text-xs text-[#3F463E] mt-0.5 leading-relaxed">
+                              Dual-verifier independent consensus & automated dMRV
+                            </p>
+                          </div>
+                          <span className="text-[9px] bg-[#E2F2DF] text-[#0C150A] px-2.5 py-1 rounded-full font-bold">
+                            Batch #3
+                          </span>
                         </div>
 
                         {/* Phase Status Card */}
                         <div className="bg-white border border-black/5 rounded-3xl p-4 flex flex-col gap-3 shadow-xs">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-extrabold text-[#0C150A]">Phase 2 of 3 · Verifier review</span>
-                            <span className="text-[#276A3C] font-bold">Batch #3</span>
+                            <span className="font-extrabold text-[#0C150A]">
+                              {verifier2Approved ? "Phase 3 of 3 · Consensus Achieved ✓" : "Phase 2 of 3 · Verifier Review"}
+                            </span>
+                            <span className="text-[#276A3C] font-bold">
+                              {verifier2Approved ? "100% Ready" : "66% Complete"}
+                            </span>
                           </div>
-                          <div className="w-full h-1.5 rounded-full bg-black/10 overflow-hidden">
-                            <div className="w-[66%] h-full bg-[#0C150A] rounded-full" />
+                          <div className="w-full h-2 rounded-full bg-black/10 overflow-hidden">
+                            <motion.div
+                              initial={{ width: "66%" }}
+                              animate={{ width: verifier2Approved ? "100%" : "66%" }}
+                              transition={{ duration: 0.5 }}
+                              className={`h-full rounded-full transition-all ${
+                                verifier2Approved ? "bg-[#35C46A]" : "bg-[#0C150A]"
+                              }`}
+                            />
                           </div>
 
-                          <div className="space-y-2.5 pt-1">
+                          <div className="space-y-3 pt-1">
+                            {/* 1. Evidence Checks */}
                             <div className="flex items-start gap-2.5">
                               <span className="w-6 h-6 rounded-full bg-[#E2F2DF] text-[#0C150A] flex items-center justify-center font-bold text-xs shrink-0">
                                 ✓
@@ -1293,7 +1367,7 @@ export function AtmosMobileExperience() {
                                   <p className="text-xs font-extrabold text-[#0C150A]">Evidence checks</p>
                                   <span className="text-[9px] font-bold text-[#276A3C]">AI + Satellite</span>
                                 </div>
-                                <p className="text-[10px] text-[#3F463E]">Automated · 92/100 · no problems found</p>
+                                <p className="text-[10px] text-[#3F463E]">Automated · 92/100 · Gemini Vision + God's Eye</p>
                                 <button
                                   onClick={() => {
                                     playHapticSound("tap");
@@ -1307,23 +1381,119 @@ export function AtmosMobileExperience() {
                               </div>
                             </div>
 
+                            {/* 2. Verifier Consensus Quorum */}
                             <div className="flex items-start gap-2.5">
-                              <span className="w-6 h-6 rounded-full bg-[#0C150A] text-[#35C46A] flex items-center justify-center shrink-0">
-                                <span className="w-2 h-2 rounded-full bg-[#35C46A] animate-pulse" />
+                              <span
+                                className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                                  verifier2Approved
+                                    ? "bg-[#E2F2DF] text-[#0C150A] font-bold text-xs"
+                                    : "bg-[#0C150A] text-[#35C46A]"
+                                }`}
+                              >
+                                {verifier2Approved ? (
+                                  "✓"
+                                ) : (
+                                  <span className="w-2 h-2 rounded-full bg-[#35C46A] animate-pulse" />
+                                )}
                               </span>
-                              <div>
-                                <p className="text-xs font-extrabold text-[#0C150A]">Verifier review</p>
-                                <p className="text-[10px] text-[#3F463E]">
-                                  1 of 2 approved · waiting for the second organisation
-                                </p>
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-xs font-extrabold text-[#0C150A]">Verifier Quorum (2 of 2)</p>
+                                  <span
+                                    className={`text-[9px] font-bold ${
+                                      verifier2Approved ? "text-[#276A3C]" : "text-[#D97706]"
+                                    }`}
+                                  >
+                                    {verifier2Approved ? "Consensus 2/2 ✓" : "1/2 Approved"}
+                                  </span>
+                                </div>
+
+                                {/* Verifier 1: Gujarat Carbon Audit Council */}
+                                <div className="mt-1.5 p-2 rounded-xl bg-[#F7F9F6] border border-black/5 flex items-center justify-between text-[10px]">
+                                  <div>
+                                    <b className="text-[#0C150A]">1. Gujarat Carbon Audit Council</b>
+                                    <p className="text-[#3F463E]">Dr. K. Mehta · Ed25519 Signed (14:32 UTC)</p>
+                                  </div>
+                                  <span className="text-[9px] bg-[#E2F2DF] text-[#276A3C] font-bold px-1.5 py-0.5 rounded-full">
+                                    Approved ✓
+                                  </span>
+                                </div>
+
+                                {/* Verifier 2: Global South MRV Consortium */}
+                                <div className="mt-1 p-2 rounded-xl bg-[#F7F9F6] border border-black/5 flex flex-col gap-1.5 text-[10px]">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <b className="text-[#0C150A]">2. Global South MRV Consortium</b>
+                                      <p className="text-[#3F463E]">
+                                        {verifier2Approved
+                                          ? "Dr. Sunita Rao · Ed25519 Signed (18:40 UTC)"
+                                          : "Audit review queued · Pending signature"}
+                                      </p>
+                                    </div>
+                                    <span
+                                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                                        verifier2Approved
+                                          ? "bg-[#E2F2DF] text-[#276A3C]"
+                                          : "bg-[#FEF3C7] text-[#92400E]"
+                                      }`}
+                                    >
+                                      {verifier2Approved ? "Approved ✓" : "Pending Sign-off"}
+                                    </span>
+                                  </div>
+
+                                  {!verifier2Approved && (
+                                    <button
+                                      onClick={() => {
+                                        playHapticSound("success");
+                                        setVerifier2Approved(true);
+                                        setAuthToast("Verifier 2 Quorum Signed! Calculation Engine Unlocked ✓");
+                                        setTimeout(() => setAuthToast(null), 3500);
+                                      }}
+                                      className="w-full py-1.5 rounded-lg bg-[#0C150A] text-white font-bold text-[10px] hover:bg-black transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                                    >
+                                      <CheckCircle2 size={11} className="text-[#35C46A]" />
+                                      <span>Authorize Verifier 2 Sign-off (Simulate Consensus)</span>
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
 
-                            <div className="flex items-start gap-2.5 opacity-60">
-                              <span className="w-6 h-6 rounded-full border border-black/30 flex items-center justify-center shrink-0" />
-                              <div>
-                                <p className="text-xs font-bold text-[#0C150A]">Calculation</p>
-                                <p className="text-[10px] text-[#3F463E]">Runs after both verifiers approve</p>
+                            {/* 3. Calculation Engine */}
+                            <div className={`flex items-start gap-2.5 ${verifier2Approved ? "" : "opacity-60"}`}>
+                              <span
+                                className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                                  verifier2Approved
+                                    ? "bg-[#E2F2DF] text-[#0C150A]"
+                                    : "border border-black/30 text-black/40"
+                                }`}
+                              >
+                                {verifier2Approved ? "✓" : "3"}
+                              </span>
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-xs font-extrabold text-[#0C150A]">Calculation engine</p>
+                                  {verifier2Approved && (
+                                    <span className="text-[9px] font-bold text-[#276A3C]">Matched 6.439 tCO₂e</span>
+                                  )}
+                                </div>
+                                <p className="text-[10px] text-[#3F463E]">
+                                  {verifier2Approved
+                                    ? "Executed: 3,200 kg biochar × 78.4% C × 3.67 × 0.74"
+                                    : "Runs automatically once both verifiers approve"}
+                                </p>
+                                {verifier2Approved && (
+                                  <button
+                                    onClick={() => {
+                                      playHapticSound("tap");
+                                      setShowCalculationModal(true);
+                                    }}
+                                    className="mt-1 text-[9px] font-bold text-[#276A3C] hover:underline flex items-center gap-1"
+                                  >
+                                    <Activity size={10} />
+                                    <span>View Full dMRV Calculation Breakdown Formula →</span>
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1332,9 +1502,11 @@ export function AtmosMobileExperience() {
                         {/* Estimated CO2 Counter */}
                         <div className="bg-[#E2F2DF] rounded-3xl p-4 flex items-center justify-between border border-[#276A3C]/20 shadow-xs">
                           <div>
-                            <span className="text-[10px] text-[#3F463E] font-medium">Estimated CO₂ (pending approval)</span>
+                            <span className="text-[10px] text-[#3F463E] font-medium">
+                              Certified Net CO₂ Removal
+                            </span>
                             <p className="text-2xl font-black text-[#0C150A] mt-0.5">6.439 tCO₂e</p>
-                            <p className="text-[10px] text-[#3F463E]">Pilot methodology v1 · Sample data</p>
+                            <p className="text-[10px] text-[#3F463E]">Pilot methodology v1 · 100-yr Permanence</p>
                           </div>
 
                           {/* Score Ring */}
@@ -1358,28 +1530,55 @@ export function AtmosMobileExperience() {
                           </div>
                         </div>
 
-                        {/* Reviewers Check Box */}
-                        <div className="bg-white border border-black/5 rounded-2xl p-3.5 shadow-xs">
-                          <p className="text-xs font-bold text-[#0C150A] mb-1">What reviewers check</p>
-                          <p className="text-[10px] text-[#3F463E] leading-relaxed">
-                            Photos at your site, steps in order, lab report, reactor temperature log, and no duplicate evidence across projects.
-                          </p>
+                        {/* Lab Report Quick Card */}
+                        <div className="bg-white border border-black/5 rounded-2xl p-3 shadow-xs flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-[#0C150A] text-white flex items-center justify-center">
+                              <Flame size={15} className="text-[#35C46A]" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-xs font-extrabold text-[#0C150A]">NIARSS Lab Analysis</p>
+                                <span className="text-[8px] bg-[#E2F2DF] text-[#276A3C] px-1.5 py-0.2 rounded-full font-bold">
+                                  H:C = 0.34
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-[#3F463E]">78.4% Fixed Carbon · Ash 4.2%</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              playHapticSound("tap");
+                              setShowLabReportModal(true);
+                            }}
+                            className="text-xs font-bold text-[#276A3C] hover:underline"
+                          >
+                            Inspect →
+                          </button>
                         </div>
                       </div>
 
                       <div className="pt-3 pb-2 flex flex-col gap-1.5">
                         <button
-                          onClick={() => setShowEvidenceModal(true)}
-                          className="w-full h-13 rounded-full bg-[#0C150A] text-white font-extrabold text-base shadow-md hover:bg-black transition-colors"
+                          onClick={() => {
+                            playHapticSound("tap");
+                            setShowEvidenceModal(true);
+                          }}
+                          className="w-full h-11 rounded-full bg-white border border-black/10 text-[#0C150A] font-extrabold text-xs shadow-xs hover:bg-black/5 transition-colors"
                         >
-                          View evidence
+                          View evidence archive
                         </button>
-                        <button
-                          onClick={() => navigateTo("07_zk_proof")}
-                          className="w-full py-1 text-center text-xs text-[#276A3C] font-bold hover:underline"
+                        <motion.button
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            playHapticSound("tap");
+                            navigateTo("07_zk_proof");
+                          }}
+                          className="w-full h-13 rounded-full bg-[#0C150A] text-white font-extrabold text-base shadow-md hover:bg-black transition-colors flex items-center justify-center gap-2"
                         >
-                          Proceed to ZK proof →
-                        </button>
+                          <span>Proceed to ZK Proof on Solana</span>
+                          <ChevronRight size={18} />
+                        </motion.button>
                       </div>
                     </div>
                   )}
@@ -1390,76 +1589,164 @@ export function AtmosMobileExperience() {
                   {activeScreen === "07_zk_proof" && (
                     <div className="flex-1 flex flex-col justify-between p-5 bg-[#F7F9F6] overflow-y-auto">
                       <div className="flex flex-col gap-3 pt-1">
-                        <div>
-                          <h1 className="text-2xl font-extrabold text-[#0C150A]">Zero-knowledge proof</h1>
-                          <p className="text-xs text-[#3F463E] mt-0.5">
-                            Checking the calculation while keeping your numbers private.
-                          </p>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h1 className="text-2xl font-extrabold text-[#0C150A]">Zero-knowledge proof</h1>
+                            <p className="text-xs text-[#3F463E] mt-0.5">
+                              Groth16 SNARK prover · Client-side privacy execution
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setZkGenerating(true);
+                              playHapticSound("tap");
+                              setTimeout(() => {
+                                setZkGenerating(false);
+                                playHapticSound("success");
+                                setAuthToast("Groth16 Proof Synthesized in 1,180ms (4,892 Constraints satisfied) ✓");
+                                setTimeout(() => setAuthToast(null), 3000);
+                              }, 1200);
+                            }}
+                            className="text-[10px] font-bold text-[#276A3C] bg-[#E2F2DF] px-2.5 py-1 rounded-full hover:bg-[#d4edd0] transition-colors flex items-center gap-1"
+                          >
+                            <RefreshCw size={10} className={zkGenerating ? "animate-spin" : ""} />
+                            <span>{zkGenerating ? "Proving..." : "Re-test"}</span>
+                          </button>
                         </div>
 
+                        {/* Interactive Prover Pipeline Steps */}
                         <div className="space-y-2">
-                          <div className="bg-white border border-black/5 rounded-2xl p-3 flex items-center gap-2.5 shadow-xs">
-                            <span className="w-6 h-6 rounded-full bg-[#E2F2DF] text-[#0C150A] flex items-center justify-center font-bold text-xs">
-                              ✓
-                            </span>
-                            <span className="text-xs font-extrabold text-[#0C150A]">Committing your numbers</span>
+                          <div className="bg-white border border-black/5 rounded-2xl p-3 flex items-center justify-between shadow-xs">
+                            <div className="flex items-center gap-2.5">
+                              <span className="w-6 h-6 rounded-full bg-[#E2F2DF] text-[#0C150A] flex items-center justify-center font-bold text-xs">
+                                ✓
+                              </span>
+                              <div>
+                                <span className="text-xs font-extrabold text-[#0C150A] block">1. Computing Witness</span>
+                                <span className="text-[10px] text-[#3F463E]">Cotton feedstock mass & kiln temp polynomial</span>
+                              </div>
+                            </div>
+                            <span className="text-[9px] font-mono font-bold text-[#276A3C]">0.12s</span>
                           </div>
 
-                          <div className="bg-white border border-black/5 rounded-2xl p-3 flex items-center gap-2.5 shadow-xs">
-                            <span className="w-6 h-6 rounded-full bg-[#E2F2DF] text-[#0C150A] flex items-center justify-center font-bold text-xs">
-                              ✓
-                            </span>
-                            <span className="text-xs font-extrabold text-[#0C150A]">Generating the proof</span>
+                          <div className="bg-white border border-black/5 rounded-2xl p-3 flex items-center justify-between shadow-xs">
+                            <div className="flex items-center gap-2.5">
+                              <span className="w-6 h-6 rounded-full bg-[#E2F2DF] text-[#0C150A] flex items-center justify-center font-bold text-xs">
+                                ✓
+                              </span>
+                              <div>
+                                <span className="text-xs font-extrabold text-[#0C150A] block">2. Groth16 Prover</span>
+                                <span className="text-[10px] text-[#3F463E]">4,892 R1CS constraints satisfied</span>
+                              </div>
+                            </div>
+                            <span className="text-[9px] font-mono font-bold text-[#276A3C]">0.84s</span>
                           </div>
 
-                          <div className="bg-white border border-black/5 rounded-2xl p-3 flex items-center gap-2.5 shadow-xs">
-                            <span className="w-6 h-6 rounded-full bg-[#0C150A] text-[#35C46A] flex items-center justify-center">
-                              <span className="w-2 h-2 rounded-full bg-[#35C46A] animate-ping" />
-                            </span>
-                            <span className="text-xs font-extrabold text-[#0C150A]">Verifying on Solana</span>
+                          <div className="bg-white border border-black/5 rounded-2xl p-3 flex items-center justify-between shadow-xs">
+                            <div className="flex items-center gap-2.5">
+                              <span className="w-6 h-6 rounded-full bg-[#0C150A] text-[#35C46A] flex items-center justify-center">
+                                <span className="w-2 h-2 rounded-full bg-[#35C46A] animate-ping" />
+                              </span>
+                              <div>
+                                <span className="text-xs font-extrabold text-[#0C150A] block">3. Verifying on Solana</span>
+                                <span className="text-[10px] text-[#3F463E]">Alt-bn128 curve program on Devnet</span>
+                              </div>
+                            </div>
+                            <span className="text-[9px] font-mono font-bold text-[#35C46A]">Ready</span>
                           </div>
                         </div>
 
-                        <div className="bg-white border border-black/5 rounded-2xl p-3.5 shadow-xs">
-                          <p className="text-xs font-extrabold text-[#0C150A] mb-0.5">Stays private</p>
-                          <p className="text-[10px] text-[#3F463E] leading-relaxed">
-                            Production volumes · Lab values · Equipment logs · Exact site coordinates
-                          </p>
+                        {/* Interactive Circuit & Signals Inspector Accordion */}
+                        <div className="bg-white border border-black/5 rounded-2xl p-3 shadow-xs">
+                          <button
+                            onClick={() => {
+                              playHapticSound("tap");
+                              setZkWitnessLogOpen(!zkWitnessLogOpen);
+                            }}
+                            className="w-full flex items-center justify-between text-left"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Cpu size={14} className="text-[#276A3C]" />
+                              <span className="text-xs font-extrabold text-[#0C150A]">
+                                Circom Circuit & Witness Inspector
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-[#276A3C] font-bold">
+                              {zkWitnessLogOpen ? "Hide" : "Inspect"}
+                            </span>
+                          </button>
+
+                          {zkWitnessLogOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              className="mt-2.5 pt-2 border-t border-black/5 font-mono text-[9px] text-[#0C150A] space-y-1 bg-[#F7F9F6] p-2 rounded-xl"
+                            >
+                              <div className="text-[#3F463E]">circuit: BiocharSequestration.circom (v2.1)</div>
+                              <div className="text-[#3F463E]">curve: BN254 / Alt-bn128 (SnarkJS WASM)</div>
+                              <div className="text-[#276A3C] font-bold">public_signals: [6439, 20261012, 0x7m4...9kL]</div>
+                              <div className="text-black/50">private_witness: [mass: 3200kg, c_frac: 784, t_max: 582C]</div>
+                              <div className="text-black/50">proof.pi_a: 0x1f89e4c...e92a</div>
+                              <div className="text-[#276A3C] font-bold">status: PROOF_VALIDATED_ON_CHAIN</div>
+                            </motion.div>
+                          )}
                         </div>
 
-                        <div className="bg-white border border-black/5 rounded-2xl p-3.5 shadow-xs">
-                          <p className="text-xs font-extrabold text-[#0C150A] mb-0.5">Gets verified</p>
-                          <p className="text-[10px] text-[#3F463E] leading-relaxed">
-                            6.439 tCO₂e matches the methodology formula · Tied to this batch and project · Your evidence set
-                          </p>
-                        </div>
-
-                        <div className="bg-white border border-black/5 rounded-2xl p-3.5 shadow-xs">
-                          <p className="text-xs font-extrabold text-[#0C150A] mb-0.5">Good to know</p>
-                          <p className="text-[10px] text-[#3F463E] leading-relaxed">
-                            A proof checks the arithmetic. Verifiers check the facts.
-                          </p>
+                        {/* Private vs Verified Cards */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-white border border-black/5 rounded-2xl p-3 shadow-xs">
+                            <span className="text-[9px] bg-black/5 text-[#3F463E] px-1.5 py-0.5 rounded-full font-bold block w-fit mb-1">
+                              Shielded Private
+                            </span>
+                            <p className="text-[10px] text-[#3F463E] leading-relaxed">
+                              Farmer phone numbers, commercial pricing, precise site boundaries.
+                            </p>
+                          </div>
+                          <div className="bg-white border border-black/5 rounded-2xl p-3 shadow-xs">
+                            <span className="text-[9px] bg-[#E2F2DF] text-[#276A3C] px-1.5 py-0.5 rounded-full font-bold block w-fit mb-1">
+                              Public Auditable
+                            </span>
+                            <p className="text-[10px] text-[#3F463E] leading-relaxed">
+                              6.439 tCO₂e formula adherence, verifier quorum sigs, vintage timestamp.
+                            </p>
+                          </div>
                         </div>
 
                         {/* Hash Card */}
                         <div className="bg-[#E2F2DF] border border-[#276A3C]/20 rounded-2xl p-3 flex items-center justify-between">
                           <div>
                             <span className="text-[9px] text-[#3F463E] block">Proof commitment</span>
-                            <span className="font-mono text-xs font-bold text-[#0C150A]">zk_79a2b1c…</span>
+                            <span className="font-mono text-xs font-bold text-[#0C150A]">
+                              zk_79a2b1c8e904df62e831...
+                            </span>
                           </div>
-                          <button onClick={() => alert("Copied ZK Proof hash")} className="p-1 text-[#0C150A]">
-                            <Copy size={15} />
+                          <button
+                            onClick={() => {
+                              navigator.clipboard?.writeText("zk_79a2b1c8e904df62e8310c3b88a44917ed9276fa83");
+                              playHapticSound("tap");
+                              setAuthToast("Copied ZK Proof hash to clipboard ✓");
+                              setTimeout(() => setAuthToast(null), 2500);
+                            }}
+                            className="p-1.5 rounded-lg bg-white/60 hover:bg-white text-[#0C150A] transition-colors"
+                          >
+                            <Copy size={14} />
                           </button>
                         </div>
                       </div>
 
                       <div className="pt-3 pb-2">
-                        <button
-                          onClick={() => navigateTo("08_credits_issued")}
-                          className="w-full h-13 rounded-full bg-[#0C150A] text-white font-extrabold text-base shadow-md hover:bg-black transition-colors"
+                        <motion.button
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            playHapticSound("success");
+                            confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+                            navigateTo("08_credits_issued");
+                          }}
+                          className="w-full h-13 rounded-full bg-[#0C150A] text-white font-extrabold text-base shadow-md hover:bg-black transition-colors flex items-center justify-center gap-2"
                         >
-                          Next: issue credits
-                        </button>
+                          <span>Mint Credits on Solana Devnet</span>
+                          <ChevronRight size={18} />
+                        </motion.button>
                       </div>
                     </div>
                   )}
@@ -1470,24 +1757,26 @@ export function AtmosMobileExperience() {
                   {activeScreen === "08_credits_issued" && (
                     <div className="flex-1 flex flex-col justify-between p-5 bg-[#F7F9F6] overflow-y-auto">
                       <div className="flex flex-col items-center text-center gap-2.5 pt-1">
-                        <div className="w-14 h-14 rounded-full bg-[#E2F2DF] text-[#0C150A] flex items-center justify-center font-bold text-2xl shadow-md border border-black/5">
+                        <div className="w-14 h-14 rounded-full bg-[#E2F2DF] text-[#0C150A] flex items-center justify-center font-bold text-2xl shadow-md border border-[#276A3C]/20">
                           ✓
                         </div>
-                        <h1 className="text-2xl font-extrabold text-[#0C150A]">Credits issued</h1>
-                        <p className="text-xs text-[#3F463E]">Pilot units for Batch #3</p>
+                        <div>
+                          <h1 className="text-2xl font-extrabold text-[#0C150A]">Credits Issued</h1>
+                          <p className="text-xs text-[#3F463E]">SPL Token Mint on Solana Devnet</p>
+                        </div>
 
                         {/* Metadata Card */}
                         <div className="w-full bg-white text-[#0C150A] rounded-3xl p-4 text-xs flex flex-col gap-2 text-left shadow-xs border border-black/5">
                           <div className="flex justify-between py-0.5 border-b border-black/5">
                             <span className="text-[#3F463E]">Name</span>
-                            <b className="text-[#0C150A]">Biochar Batch #3</b>
+                            <b className="text-[#0C150A]">Biochar Batch #3 · Kalol</b>
                           </div>
                           <div className="flex justify-between py-0.5 border-b border-black/5">
-                            <span className="text-[#3F463E]">Issued to you</span>
-                            <b className="text-[#0C150A]">5.796 tCO₂e</b>
+                            <span className="text-[#3F463E]">Issued to you (90%)</span>
+                            <b className="text-[#276A3C] font-black">5.796 tCO₂e</b>
                           </div>
                           <div className="flex justify-between py-0.5 border-b border-black/5">
-                            <span className="text-[#3F463E]">Reserve pool</span>
+                            <span className="text-[#3F463E]">Shared reserve pool (10%)</span>
                             <b className="text-[#0C150A]">0.643 tCO₂e</b>
                           </div>
                           <div className="flex justify-between py-0.5 border-b border-black/5">
@@ -1495,12 +1784,12 @@ export function AtmosMobileExperience() {
                             <b className="font-mono text-[9px] text-[#0C150A]">ATMOS-BIOCHAR-PILOT-v1</b>
                           </div>
                           <div className="flex justify-between py-0.5 border-b border-black/5">
-                            <span className="text-[#3F463E]">Vintage</span>
-                            <b className="text-[#0C150A]">2026</b>
+                            <span className="text-[#3F463E]">Token Mint Program</span>
+                            <b className="font-mono text-[9px] text-[#276A3C]">AtmoSTkn_Biochar_Batch003</b>
                           </div>
                           <div className="flex justify-between py-0.5 border-b border-black/5">
-                            <span className="text-[#3F463E]">Network</span>
-                            <b className="text-[#0C150A]">Solana Devnet</b>
+                            <span className="text-[#3F463E]">Network & Block</span>
+                            <b className="text-[#0C150A]">Solana Devnet · #250,231</b>
                           </div>
                           <div className="flex justify-between py-0.5 border-b border-black/5">
                             <span className="text-[#3F463E]">Proof commitment</span>
@@ -1508,30 +1797,47 @@ export function AtmosMobileExperience() {
                           </div>
                           <div className="flex justify-between items-center pt-0.5">
                             <span className="text-[#3F463E]">Status</span>
-                            <span className="text-[9px] bg-[#FEF3C7] text-[#92400E] font-bold px-2 py-0.5 rounded-full">
-                              Pilot · not registry-recognised
+                            <span className="text-[9px] bg-[#E2F2DF] text-[#276A3C] font-bold px-2 py-0.5 rounded-full">
+                              Audited · Minted on Devnet
                             </span>
                           </div>
                         </div>
 
                         <p className="text-[10px] text-[#3F463E] leading-relaxed px-1">
-                          10% of every batch stays in a shared reserve pool that protects buyers if a batch is later revoked.
+                          10% (0.643 t) automatically deposited in Atmos Reserve Pool to protect buyers against future audit variance.
                         </p>
                       </div>
 
                       <div className="flex flex-col gap-2 pt-2 pb-2">
                         <button
-                          onClick={() => navigateTo("09_marketplace")}
-                          className="w-full h-13 rounded-full bg-[#0C150A] text-white font-extrabold text-base shadow-md hover:bg-black transition-colors"
+                          onClick={() => {
+                            playHapticSound("tap");
+                            setShowListCreditsModal(true);
+                          }}
+                          className="w-full h-13 rounded-full bg-[#0C150A] text-white font-extrabold text-base shadow-md hover:bg-black transition-colors flex items-center justify-center gap-2"
                         >
-                          List for sale
+                          <span>+ List for sale on Market</span>
                         </button>
-                        <button
-                          onClick={() => setShowCertificateModal(true)}
-                          className="w-full h-11 rounded-full border border-black/10 text-[#0C150A] font-extrabold text-xs hover:bg-black/5 transition-colors"
-                        >
-                          View certificate
-                        </button>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => {
+                              playHapticSound("tap");
+                              navigateTo("11_certificate");
+                            }}
+                            className="h-11 rounded-2xl border border-black/10 bg-white text-[#0C150A] font-extrabold text-xs hover:bg-black/5 transition-colors"
+                          >
+                            View certificate
+                          </button>
+                          <button
+                            onClick={() => {
+                              playHapticSound("tap");
+                              setShowSolanaTxModal(true);
+                            }}
+                            className="h-11 rounded-2xl border border-black/10 bg-white text-[#0C150A] font-extrabold text-xs hover:bg-black/5 transition-colors"
+                          >
+                            Inspect Solana Tx
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1547,86 +1853,139 @@ export function AtmosMobileExperience() {
                           <Search size={15} className="text-black/50" />
                           <input
                             type="text"
-                            placeholder="Search carbon units…"
+                            value={marketSearch}
+                            onChange={(e) => setMarketSearch(e.target.value)}
+                            placeholder="Search location, batch or project…"
                             className="bg-transparent text-xs text-[#0C150A] placeholder-black/40 outline-none flex-1 font-medium"
                           />
+                          {marketSearch && (
+                            <button onClick={() => setMarketSearch("")} className="text-black/40 hover:text-black">
+                              <X size={14} />
+                            </button>
+                          )}
                           <span className="text-[9px] bg-[#E2F2DF] text-[#0C150A] px-2 py-0.5 rounded-full font-bold">
-                            Sample data
+                            Devnet
                           </span>
                         </div>
 
-                        {/* Filter Pills */}
-                        <div className="flex items-center gap-1.5">
-                          <button className="px-3 py-1 rounded-full bg-[#0C150A] text-white font-extrabold text-xs">
-                            All
-                          </button>
-                          <button className="px-3 py-1 rounded-full bg-white border border-black/5 text-[#3F463E] font-bold text-xs hover:bg-black/5">
-                            Biochar
-                          </button>
-                          <button className="px-3 py-1 rounded-full bg-white border border-black/5 text-[#3F463E]/60 font-medium text-xs">
-                            Agroforestry · Soon
+                        {/* Filter Pills & List Button */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            {(["all", "biochar", "agroforestry"] as const).map((filter) => (
+                              <button
+                                key={filter}
+                                onClick={() => {
+                                  playHapticSound("tap");
+                                  setMarketFilter(filter);
+                                }}
+                                className={`px-3 py-1 rounded-full text-xs font-bold capitalize transition-colors ${
+                                  marketFilter === filter
+                                    ? "bg-[#0C150A] text-white"
+                                    : "bg-white border border-black/5 text-[#3F463E] hover:bg-black/5"
+                                }`}
+                              >
+                                {filter === "agroforestry" ? "Agroforestry" : filter}
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            onClick={() => {
+                              playHapticSound("tap");
+                              setShowListCreditsModal(true);
+                            }}
+                            className="text-[10px] font-bold text-[#276A3C] bg-[#E2F2DF] px-2.5 py-1 rounded-full hover:bg-[#d4edd0] transition-colors"
+                          >
+                            + List Batch
                           </button>
                         </div>
 
-                        <p className="text-[11px] text-[#3F463E] leading-snug">
-                          Pilot units from human-verified batches. Prices are set by sellers.
-                        </p>
+                        {/* Market Spot Ticker Bar */}
+                        <div className="bg-white border border-black/5 rounded-2xl p-3 flex items-center justify-between shadow-xs text-xs">
+                          <div>
+                            <span className="text-[10px] text-[#3F463E] block">Market Spot Average</span>
+                            <b className="text-sm text-[#0C150A]">₹11,100 / tonne</b>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[10px] text-[#3F463E] block">24h Devnet Volume</span>
+                            <b className="text-xs text-[#276A3C] font-mono">142.5 tCO₂e (+4.2%)</b>
+                          </div>
+                        </div>
 
-                        {/* Listings */}
+                        {/* Listings Feed */}
                         <div className="flex flex-col gap-2.5 mt-0.5">
-                          {/* Card 1: Kalol */}
-                          <div className="bg-white border border-black/5 rounded-3xl p-4 flex flex-col gap-2 shadow-xs">
-                            <div className="flex items-center gap-2 text-[9px]">
-                              <span className="bg-[#FEF3C7] text-[#92400E] px-2 py-0.5 rounded-full font-bold">
-                                Pilot · unrecognised
-                              </span>
-                              <span className="text-[#3F463E]">Evidence 92/100 · 2 verifiers</span>
-                            </div>
-                            <div>
-                              <h2 className="text-sm font-extrabold text-[#0C150A]">Biochar · Kalol, Gujarat</h2>
-                              <p className="text-[11px] text-[#3F463E]">Batch #3 · 6.439 tCO₂e · Vintage 2026</p>
-                            </div>
-                            <div className="flex items-center justify-between pt-1 border-t border-black/5">
-                              <div>
-                                <span className="text-base font-black text-[#0C150A]">₹11,100</span>
-                                <span className="text-xs text-[#3F463E]"> / tonne</span>
-                                <p className="text-[9px] text-[#276A3C] font-bold">Available: 5.796 t</p>
-                              </div>
-                              <button
-                                onClick={() => navigateTo("10_payment")}
-                                className="w-9 h-9 rounded-full bg-[#0C150A] text-white flex items-center justify-center hover:scale-105 transition-transform shadow-xs"
+                          {marketListings
+                            .filter((item) => {
+                              const matchesFilter = marketFilter === "all" || item.type === marketFilter;
+                              const matchesSearch =
+                                item.title.toLowerCase().includes(marketSearch.toLowerCase()) ||
+                                item.location.toLowerCase().includes(marketSearch.toLowerCase()) ||
+                                item.batch.toLowerCase().includes(marketSearch.toLowerCase());
+                              return matchesFilter && matchesSearch;
+                            })
+                            .map((listing) => (
+                              <div
+                                key={listing.id}
+                                className="bg-white border border-black/5 rounded-3xl p-4 flex flex-col gap-2 shadow-xs hover:border-black/20 transition-all"
                               >
-                                <ArrowUpRight size={18} />
-                              </button>
-                            </div>
-                          </div>
+                                <div className="flex items-center justify-between text-[9px]">
+                                  <span className="bg-[#E2F2DF] text-[#276A3C] px-2 py-0.5 rounded-full font-bold">
+                                    {listing.badge}
+                                  </span>
+                                  <span className="text-[#3F463E]">
+                                    Score {listing.score} · {listing.verifiers} verifiers
+                                  </span>
+                                </div>
+                                <div>
+                                  <h2 className="text-sm font-extrabold text-[#0C150A]">{listing.title}</h2>
+                                  <p className="text-[11px] text-[#3F463E]">{listing.batch}</p>
+                                </div>
+                                <div className="flex items-center justify-between pt-1 border-t border-black/5">
+                                  <div>
+                                    <span className="text-base font-black text-[#0C150A]">
+                                      ₹{listing.pricePerTonne.toLocaleString("en-IN")}
+                                    </span>
+                                    <span className="text-xs text-[#3F463E]"> / tonne</span>
+                                    <p className="text-[9px] text-[#276A3C] font-bold">
+                                      Available: {listing.availableTonnes} t
+                                    </p>
+                                  </div>
+                                  <motion.button
+                                    whileTap={{ scale: 0.92 }}
+                                    onClick={() => {
+                                      playHapticSound("tap");
+                                      setPurchaseTonnes(Math.min(5.0, listing.availableTonnes));
+                                      navigateTo("10_payment");
+                                    }}
+                                    className="w-9 h-9 rounded-full bg-[#0C150A] text-white flex items-center justify-center hover:scale-105 transition-transform shadow-xs"
+                                  >
+                                    <ArrowUpRight size={18} />
+                                  </motion.button>
+                                </div>
+                              </div>
+                            ))}
 
-                          {/* Card 2: Jaipur */}
-                          <div className="bg-white border border-black/5 rounded-3xl p-4 flex flex-col gap-2 shadow-xs">
-                            <div className="flex items-center gap-2 text-[9px]">
-                              <span className="bg-[#FEF3C7] text-[#92400E] px-2 py-0.5 rounded-full font-bold">
-                                Pilot · unrecognised
-                              </span>
-                              <span className="text-[#3F463E]">Evidence 88/100 · 2 verifiers</span>
-                            </div>
-                            <div>
-                              <h2 className="text-sm font-extrabold text-[#0C150A]">Biochar · Jaipur, Rajasthan</h2>
-                              <p className="text-[11px] text-[#3F463E]">Batch #7 · 3.100 tCO₂e · Vintage 2026</p>
-                            </div>
-                            <div className="flex items-center justify-between pt-1 border-t border-black/5">
-                              <div>
-                                <span className="text-base font-black text-[#0C150A]">₹12,400</span>
-                                <span className="text-xs text-[#3F463E]"> / tonne</span>
-                                <p className="text-[9px] text-[#276A3C] font-bold">Available: 2.790 t</p>
-                              </div>
+                          {marketListings.filter((item) => {
+                            const matchesFilter = marketFilter === "all" || item.type === marketFilter;
+                            const matchesSearch =
+                              item.title.toLowerCase().includes(marketSearch.toLowerCase()) ||
+                              item.location.toLowerCase().includes(marketSearch.toLowerCase()) ||
+                              item.batch.toLowerCase().includes(marketSearch.toLowerCase());
+                            return matchesFilter && matchesSearch;
+                          }).length === 0 && (
+                            <div className="p-6 text-center bg-white rounded-3xl border border-black/5 text-xs text-[#3F463E]">
+                              <p className="font-bold text-[#0C150A]">No units match '{marketSearch}'</p>
+                              <p className="text-[10px] mt-1">Try resetting the filter or search term</p>
                               <button
-                                onClick={() => navigateTo("10_payment")}
-                                className="w-9 h-9 rounded-full bg-[#0C150A] text-white flex items-center justify-center hover:scale-105 transition-transform shadow-xs"
+                                onClick={() => {
+                                  setMarketSearch("");
+                                  setMarketFilter("all");
+                                }}
+                                className="mt-2 text-[10px] font-bold text-[#276A3C] underline"
                               >
-                                <ArrowUpRight size={18} />
+                                Reset filters
                               </button>
                             </div>
-                          </div>
+                          )}
                         </div>
                       </div>
 
@@ -1641,37 +2000,104 @@ export function AtmosMobileExperience() {
                     <div className="flex-1 flex flex-col justify-between p-5 bg-[#F7F9F6] overflow-y-auto">
                       <div className="flex flex-col gap-3 pt-1">
                         <div className="flex items-center justify-between">
-                          <button onClick={() => navigateTo("09_marketplace")} className="p-1">
+                          <button
+                            onClick={() => {
+                              playHapticSound("tap");
+                              navigateTo("09_marketplace");
+                            }}
+                            className="p-1 hover:bg-black/5 rounded-full"
+                          >
                             <ChevronLeft size={20} />
                           </button>
-                          <h1 className="text-xl font-extrabold text-[#0C150A]">Payment</h1>
+                          <h1 className="text-xl font-extrabold text-[#0C150A]">Payment & Escrow</h1>
                           <span className="text-[9px] bg-[#E2F2DF] text-[#0C150A] px-2 py-0.5 rounded-full font-bold">
-                            Sample data
+                            Devnet
                           </span>
                         </div>
                         <p className="text-xs text-[#3F463E] text-center">
-                          You are buying Biochar · Kalol, Gujarat
+                          Buying Biochar · Kalol, Gujarat (Batch #3)
                         </p>
 
-                        {/* Amount Card */}
+                        {/* Interactive Quantity Selector */}
+                        <div className="bg-white rounded-3xl p-4 border border-black/5 shadow-xs flex flex-col gap-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#0C150A]">Quantity to Retire</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  playHapticSound("tap");
+                                  setPurchaseTonnes((t) => Math.max(0.5, Math.round((t - 0.5) * 10) / 10));
+                                }}
+                                className="w-7 h-7 rounded-full bg-[#F7F9F6] border border-black/10 font-bold text-sm flex items-center justify-center hover:bg-black/5"
+                              >
+                                -
+                              </button>
+                              <span className="font-extrabold text-sm text-[#0C150A] min-w-14 text-center">
+                                {purchaseTonnes.toFixed(1)} t
+                              </span>
+                              <button
+                                onClick={() => {
+                                  playHapticSound("tap");
+                                  setPurchaseTonnes((t) => Math.min(5.796, Math.round((t + 0.5) * 10) / 10));
+                                }}
+                                className="w-7 h-7 rounded-full bg-[#F7F9F6] border border-black/10 font-bold text-sm flex items-center justify-center hover:bg-black/5"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-1.5">
+                            {[1.0, 2.5, 5.0, 5.796].map((qty) => (
+                              <button
+                                key={qty}
+                                onClick={() => {
+                                  playHapticSound("tap");
+                                  setPurchaseTonnes(qty);
+                                }}
+                                className={`py-1 rounded-xl text-[10px] font-bold border transition-colors ${
+                                  purchaseTonnes === qty
+                                    ? "bg-[#0C150A] text-white border-[#0C150A]"
+                                    : "bg-[#F7F9F6] border-black/10 text-[#3F463E]"
+                                }`}
+                              >
+                                {qty === 5.796 ? "All" : `${qty} t`}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Amount & Transparent Settlement Split Card */}
                         <div className="bg-white rounded-3xl p-5 border border-black/5 shadow-xs flex flex-col gap-3">
                           <div>
-                            <span className="text-xs text-[#3F463E] font-medium">Amount to pay</span>
-                            <p className="text-3xl font-black text-[#0C150A] leading-tight">₹55,500</p>
+                            <span className="text-xs text-[#3F463E] font-medium">Total Settlement Amount</span>
+                            <p className="text-3xl font-black text-[#0C150A] leading-tight">
+                              ₹{Math.round(purchaseTonnes * 11100).toLocaleString("en-IN")}
+                            </p>
                           </div>
 
                           <div className="border-y border-black/5 py-2.5 space-y-1 text-xs">
                             <div className="flex justify-between">
-                              <span className="text-[#3F463E]">5.000 tCO₂e × ₹11,100</span>
-                              <b>₹55,500</b>
+                              <span className="text-[#3F463E]">{purchaseTonnes.toFixed(2)} tCO₂e × ₹11,100</span>
+                              <b>₹{Math.round(purchaseTonnes * 11100).toLocaleString("en-IN")}</b>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-[#3F463E]">Payment processing</span>
-                              <b className="text-[#276A3C]">Included</b>
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-[#3F463E]">↳ Ramesh Patel UPI (95%)</span>
+                              <b className="text-[#276A3C]">
+                                ₹{Math.round(purchaseTonnes * 11100 * 0.95).toLocaleString("en-IN")}
+                              </b>
+                            </div>
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-[#3F463E]">↳ Verifier & MRV Escrow (5%)</span>
+                              <b>₹{Math.round(purchaseTonnes * 11100 * 0.05).toLocaleString("en-IN")}</b>
+                            </div>
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-[#3F463E]">↳ Dodo Payments Processing</span>
+                              <b className="text-[#276A3C]">Sponsored</b>
                             </div>
                             <div className="flex justify-between font-extrabold text-sm pt-1 border-t border-black/5">
-                              <span>Total</span>
-                              <span>₹55,500</span>
+                              <span>Total to Pay</span>
+                              <span>₹{Math.round(purchaseTonnes * 11100).toLocaleString("en-IN")}</span>
                             </div>
                           </div>
 
@@ -1679,14 +2105,17 @@ export function AtmosMobileExperience() {
                             <p className="text-xs font-bold text-[#3F463E] mb-1.5">Payment method</p>
                             <div className="space-y-1.5">
                               <div
-                                onClick={() => setPaymentMethod("upi")}
+                                onClick={() => {
+                                  playHapticSound("tap");
+                                  setPaymentMethod("upi");
+                                }}
                                 className={`cursor-pointer p-3 rounded-2xl border-2 flex items-center justify-between transition-all ${
                                   paymentMethod === "upi" ? "border-[#0C150A] bg-[#E2F2DF]" : "border-black/10 bg-[#F7F9F6]"
                                 }`}
                               >
                                 <div>
-                                  <p className="text-xs font-extrabold text-[#0C150A]">UPI / Bank transfer</p>
-                                  <p className="text-[10px] text-[#3F463E]">Instant, in India</p>
+                                  <p className="text-xs font-extrabold text-[#0C150A]">UPI / Instant Indian Bank Transfer</p>
+                                  <p className="text-[10px] text-[#3F463E]">Instant settlement via GPay, PhonePe, BHIM</p>
                                 </div>
                                 {paymentMethod === "upi" && (
                                   <span className="w-5 h-5 rounded-full bg-[#0C150A] text-white flex items-center justify-center text-[10px]">
@@ -1696,14 +2125,17 @@ export function AtmosMobileExperience() {
                               </div>
 
                               <div
-                                onClick={() => setPaymentMethod("card")}
+                                onClick={() => {
+                                  playHapticSound("tap");
+                                  setPaymentMethod("card");
+                                }}
                                 className={`cursor-pointer p-3 rounded-2xl border-2 flex items-center justify-between transition-all ${
                                   paymentMethod === "card" ? "border-[#0C150A] bg-[#E2F2DF]" : "border-black/10 bg-[#F7F9F6]"
                                 }`}
                               >
                                 <div>
-                                  <p className="text-xs font-extrabold text-[#0C150A]">International card</p>
-                                  <p className="text-[10px] text-[#3F463E]">For buyers outside India</p>
+                                  <p className="text-xs font-extrabold text-[#0C150A]">International Card (Dodo Escrow)</p>
+                                  <p className="text-[10px] text-[#3F463E]">Visa, Mastercard, Amex for Global Buyers</p>
                                 </div>
                                 {paymentMethod === "card" && (
                                   <span className="w-5 h-5 rounded-full bg-[#0C150A] text-white flex items-center justify-center text-[10px]">
@@ -1714,22 +2146,45 @@ export function AtmosMobileExperience() {
                             </div>
                           </div>
 
-                          <div className="bg-[#FEF3C7]/60 border border-[#FEF3C7] rounded-xl p-2.5">
-                            <p className="text-[10px] text-[#92400E] leading-relaxed">
-                              Pilot unit. Not recognised by a carbon registry. Your retirement certificate will say so.
+                          <div className="bg-[#E2F2DF]/70 border border-[#276A3C]/20 rounded-xl p-2.5">
+                            <p className="text-[10px] text-[#276A3C] leading-relaxed font-medium">
+                              Funds held in Dodo Smart Escrow until the retirement transaction commits to the Solana blockchain.
                             </p>
                           </div>
                         </div>
                       </div>
 
                       <div className="pt-2 pb-2 flex flex-col gap-1 text-center">
-                        <button
-                          onClick={() => setShowDodoModal(true)}
-                          className="w-full h-13 rounded-full bg-[#0C150A] text-white font-extrabold text-base shadow-md hover:bg-black transition-colors"
+                        <motion.button
+                          whileTap={{ scale: 0.98 }}
+                          disabled={isProcessingPayment}
+                          onClick={() => {
+                            setIsProcessingPayment(true);
+                            playHapticSound("tap");
+                            setTimeout(() => {
+                              setIsProcessingPayment(false);
+                              playHapticSound("success");
+                              confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+                              setAuthToast("Payment Settled! Certificate Minted on Solana Devnet ✓");
+                              setTimeout(() => setAuthToast(null), 3000);
+                              navigateTo("11_certificate");
+                            }, 1100);
+                          }}
+                          className="w-full h-13 rounded-full bg-[#0C150A] text-white font-extrabold text-base shadow-md hover:bg-black transition-colors flex items-center justify-center gap-2"
                         >
-                          Pay with Dodo
-                        </button>
-                        <p className="text-[10px] text-[#3F463E]">Secured by Dodo Payments</p>
+                          {isProcessingPayment ? (
+                            <>
+                              <RefreshCw size={16} className="animate-spin text-[#35C46A]" />
+                              <span>Settling via Dodo Escrow...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Pay ₹{Math.round(purchaseTonnes * 11100).toLocaleString("en-IN")} via Dodo</span>
+                              <ChevronRight size={18} />
+                            </>
+                          )}
+                        </motion.button>
+                        <p className="text-[10px] text-[#3F463E]">Secured by Dodo Payments & Solana SPL Token Program</p>
                       </div>
                     </div>
                   )}
@@ -1742,58 +2197,69 @@ export function AtmosMobileExperience() {
                       <div className="flex flex-col gap-3 pt-1">
                         <div className="flex items-center justify-between">
                           <div>
-                            <h1 className="text-xl font-extrabold text-[#0C150A]">Recording on Solana</h1>
-                            <p className="text-[11px] text-[#3F463E]">Settlement complete (sample)</p>
+                            <h1 className="text-xl font-extrabold text-[#0C150A]">Retirement Certificate</h1>
+                            <p className="text-[11px] text-[#3F463E]">Recorded on Solana Devnet</p>
                           </div>
                           <span className="text-[9px] bg-[#E2F2DF] text-[#0C150A] px-2 py-0.5 rounded-full font-bold">
-                            Sample data
+                            Devnet Verified
                           </span>
                         </div>
 
-                        <p className="text-[11px] font-mono text-[#276A3C] font-bold">
-                          Tx 5ayYk…2z21 · Block 250,231
-                        </p>
+                        <div className="flex items-center justify-between text-[11px] font-mono text-[#276A3C] font-bold bg-white px-3 py-1.5 rounded-2xl border border-black/5">
+                          <span>Tx: 5ayYk…2z21</span>
+                          <span>Block #250,231</span>
+                        </div>
                         <div className="grid grid-cols-3 gap-1">
-                          <div className="h-1 rounded-full bg-[#0C150A]" />
-                          <div className="h-1 rounded-full bg-[#0C150A]" />
-                          <div className="h-1 rounded-full bg-[#0C150A]" />
+                          <div className="h-1 rounded-full bg-[#35C46A]" />
+                          <div className="h-1 rounded-full bg-[#35C46A]" />
+                          <div className="h-1 rounded-full bg-[#35C46A]" />
                         </div>
 
                         {/* Certificate Card */}
                         <div className="bg-white text-[#0C150A] rounded-3xl p-4 border border-black/10 shadow-xs flex flex-col gap-2.5">
-                          <h2 className="text-center text-xs font-black tracking-widest text-[#0C150A] border-b border-black/10 pb-1.5">
-                            RETIREMENT CERTIFICATE
-                          </h2>
+                          <div className="text-center border-b border-black/10 pb-2">
+                            <span className="text-[9px] font-mono text-[#276A3C] uppercase tracking-wider block font-bold">
+                              Permanent Climate Deed
+                            </span>
+                            <h2 className="text-sm font-black tracking-widest text-[#0C150A] mt-0.5">
+                              CERTIFICATE OF CARBON RETIREMENT
+                            </h2>
+                            <span className="text-[8px] font-mono text-[#3F463E]">ATMOS-REC-2026-KL-00918</span>
+                          </div>
 
                           <div className="space-y-1.5 text-xs">
                             <div className="flex justify-between">
-                              <span className="text-[#3F463E]">Buyer</span>
-                              <b>Sample buyer</b>
+                              <span className="text-[#3F463E]">Beneficiary</span>
+                              <b>Sample buyer (ESG)</b>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-[#3F463E]">Asset</span>
-                              <b>Biochar Batch #3</b>
+                              <span className="text-[#3F463E]">Producer</span>
+                              <b>Ramesh Patel (Solar Kiln #1)</b>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-[#3F463E]">Amount</span>
-                              <b>5.000 tCO₂e</b>
+                              <span className="text-[#3F463E]">Asset & Batch</span>
+                              <b>Biochar Batch #3 · Kalol</b>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-[#3F463E]">Price</span>
-                              <b>₹55,500</b>
+                              <span className="text-[#3F463E]">Volume Retired</span>
+                              <b className="text-[#276A3C]">{purchaseTonnes.toFixed(3)} tCO₂e</b>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-[#3F463E]">Settled Value</span>
+                              <b>₹{Math.round(purchaseTonnes * 11100).toLocaleString("en-IN")}</b>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-[#3F463E]">Date</span>
-                              <b>12 Oct 2026</b>
+                              <b>12 Oct 2026 · 18:30 UTC</b>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-[#3F463E]">Blockchain</span>
-                              <b>Solana · Devnet</b>
+                              <span className="text-[#3F463E]">Solana Program</span>
+                              <b>SPL Token Burn / Devnet</b>
                             </div>
                             <div className="flex justify-between items-center pt-1 border-t border-black/5">
                               <span className="text-[#3F463E]">Status</span>
-                              <span className="text-[9px] bg-[#FEF3C7] text-[#92400E] font-bold px-2 py-0.5 rounded-full">
-                                Pilot · not registry-recognised
+                              <span className="text-[9px] bg-[#E2F2DF] text-[#276A3C] font-bold px-2 py-0.5 rounded-full">
+                                Permanently Retired ✓
                               </span>
                             </div>
                           </div>
@@ -1813,34 +2279,56 @@ export function AtmosMobileExperience() {
                               </div>
                             </div>
                             <div>
-                              <p className="text-xs font-bold text-[#0C150A]">Verify certificate</p>
-                              <p className="text-[9px] text-[#3F463E] font-mono">[your-domain]/verify/…</p>
+                              <p className="text-xs font-bold text-[#0C150A]">Verify Certificate Deed</p>
+                              <p className="text-[9px] text-[#3F463E] font-mono">atmos.network/verify/00918</p>
                             </div>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                           <button
-                            onClick={() => setShowCertificateModal(true)}
-                            className="h-10 rounded-2xl bg-white border border-black/10 text-[#0C150A] font-bold text-xs hover:bg-black/5 transition-colors"
+                            onClick={() => {
+                              playHapticSound("tap");
+                              setAuthToast("Downloading Deed: ATMOS-REC-2026-KL-00918.pdf ✓");
+                              setTimeout(() => setAuthToast(null), 3000);
+                            }}
+                            className="h-10 rounded-2xl bg-white border border-black/10 text-[#0C150A] font-bold text-xs hover:bg-black/5 transition-colors flex items-center justify-center gap-1"
                           >
-                            View certificate
+                            <Download size={12} />
+                            <span>PDF</span>
                           </button>
                           <button
-                            onClick={() => setShowSolanaTxModal(true)}
-                            className="h-10 rounded-2xl bg-white border border-black/10 text-[#0C150A] font-bold text-xs hover:bg-black/5 transition-colors"
+                            onClick={() => {
+                              playHapticSound("tap");
+                              setShowShareModal(true);
+                            }}
+                            className="h-10 rounded-2xl bg-white border border-black/10 text-[#0C150A] font-bold text-xs hover:bg-black/5 transition-colors flex items-center justify-center gap-1"
                           >
-                            View on explorer
+                            <Share2 size={12} />
+                            <span>Share</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              playHapticSound("tap");
+                              setShowSolanaTxModal(true);
+                            }}
+                            className="h-10 rounded-2xl bg-white border border-black/10 text-[#0C150A] font-bold text-xs hover:bg-black/5 transition-colors flex items-center justify-center gap-1"
+                          >
+                            <ExternalLink size={12} />
+                            <span>Explorer</span>
                           </button>
                         </div>
                       </div>
 
                       <div className="pt-2 pb-2">
                         <button
-                          onClick={() => navigateTo("12_portfolio")}
+                          onClick={() => {
+                            playHapticSound("tap");
+                            navigateTo("12_portfolio");
+                          }}
                           className="w-full h-13 rounded-full bg-[#0C150A] text-white font-extrabold text-base shadow-md hover:bg-black transition-colors"
                         >
-                          Done
+                          Done (View Portfolio)
                         </button>
                       </div>
                     </div>
@@ -1855,7 +2343,7 @@ export function AtmosMobileExperience() {
                         <div className="flex items-center justify-between">
                           <h1 className="text-2xl font-extrabold text-[#0C150A]">Portfolio</h1>
                           <span className="text-[9px] bg-[#E2F2DF] text-[#0C150A] px-2 py-0.5 rounded-full font-bold">
-                            Sample data
+                            Devnet Ledger
                           </span>
                         </div>
 
@@ -1864,11 +2352,14 @@ export function AtmosMobileExperience() {
                           {(["holdings", "history", "impact"] as const).map((tab) => (
                             <button
                               key={tab}
-                              onClick={() => setPortfolioTab(tab)}
+                              onClick={() => {
+                                playHapticSound("tap");
+                                setPortfolioTab(tab);
+                              }}
                               className={`px-3 py-1 rounded-full text-xs font-bold capitalize transition-colors ${
                                 portfolioTab === tab
-                                  ? "bg-[#0C150A] text-white"
-                                  : "bg-white border border-black/5 text-[#3F463E] hover:bg-black/5"
+                                    ? "bg-[#0C150A] text-white"
+                                    : "bg-white border border-black/5 text-[#3F463E] hover:bg-black/5"
                               }`}
                             >
                               {tab}
@@ -1877,40 +2368,46 @@ export function AtmosMobileExperience() {
                         </div>
 
                         <div>
-                          <span className="text-[11px] text-[#3F463E]">Total units</span>
+                          <span className="text-[11px] text-[#3F463E]">Total Atmospheric Units</span>
                           <p className="text-3xl font-black text-[#0C150A] leading-tight">8.000 tCO₂e</p>
-                          <p className="text-xs text-[#3F463E]">5.000 retired · 3.000 held · pilot units</p>
+                          <p className="text-xs text-[#3F463E]">5.000 retired · 3.000 held · ₹92,700 valuation</p>
                         </div>
 
                         {/* TAB 1: HOLDINGS */}
                         {portfolioTab === "holdings" && (
                           <div className="space-y-2 mt-1">
-                            <h2 className="text-xs font-extrabold text-[#0C150A]">Holdings</h2>
+                            <h2 className="text-xs font-extrabold text-[#0C150A]">Carbon Holdings</h2>
 
                             <div
-                              onClick={() => setShowCertificateModal(true)}
-                              className="cursor-pointer p-3 rounded-2xl bg-white border border-black/5 flex items-center justify-between shadow-xs hover:border-black/20"
+                              onClick={() => {
+                                playHapticSound("tap");
+                                setShowCertificateModal(true);
+                              }}
+                              className="cursor-pointer p-3 rounded-2xl bg-white border border-black/5 flex items-center justify-between shadow-xs hover:border-black/20 transition-all"
                             >
                               <div className="flex items-center gap-2.5">
                                 <div className="w-8 h-8 rounded-xl bg-[#0C150A] flex items-center justify-center text-white">
-                                  <Leaf size={16} />
+                                  <Leaf size={16} className="text-[#35C46A]" />
                                 </div>
                                 <div>
                                   <p className="text-xs font-extrabold text-[#0C150A]">Biochar · Kalol, Gujarat</p>
-                                  <p className="text-[10px] text-[#3F463E]">Batch #3 · bought ₹55,500</p>
+                                  <p className="text-[10px] text-[#3F463E]">Batch #3 · retired deed available</p>
                                 </div>
                               </div>
                               <div className="text-right">
                                 <p className="text-xs font-black text-[#0C150A]">5.000 t</p>
                                 <span className="text-[9px] bg-[#E2F2DF] text-[#276A3C] font-bold px-2 py-0.5 rounded-full">
-                                  Retired
+                                  Retired ✓
                                 </span>
                               </div>
                             </div>
 
                             <div
-                              onClick={() => navigateTo("09_marketplace")}
-                              className="cursor-pointer p-3 rounded-2xl bg-white border border-black/5 flex items-center justify-between shadow-xs hover:border-black/20"
+                              onClick={() => {
+                                playHapticSound("tap");
+                                navigateTo("09_marketplace");
+                              }}
+                              className="cursor-pointer p-3 rounded-2xl bg-white border border-black/5 flex items-center justify-between shadow-xs hover:border-black/20 transition-all"
                             >
                               <div className="flex items-center gap-2.5">
                                 <div className="w-8 h-8 rounded-xl bg-[#0C150A] flex items-center justify-center text-white">
@@ -1918,13 +2415,13 @@ export function AtmosMobileExperience() {
                                 </div>
                                 <div>
                                   <p className="text-xs font-extrabold text-[#0C150A]">Biochar · Jaipur, Rajasthan</p>
-                                  <p className="text-[10px] text-[#3F463E]">Batch #7 · bought ₹37,200</p>
+                                  <p className="text-[10px] text-[#3F463E]">Batch #7 · tradeable in orderbook</p>
                                 </div>
                               </div>
                               <div className="text-right">
                                 <p className="text-xs font-black text-[#0C150A]">3.000 t</p>
                                 <span className="text-[9px] bg-black/5 text-[#3F463E] font-bold px-2 py-0.5 rounded-full">
-                                  Held
+                                  Held (Tradeable)
                                 </span>
                               </div>
                             </div>
@@ -1935,14 +2432,20 @@ export function AtmosMobileExperience() {
                                 <p className="text-sm font-black text-[#0C150A]">8.000 tCO₂e</p>
                               </div>
                               <div>
-                                <span className="text-[10px] text-[#3F463E]">Total spent</span>
+                                <span className="text-[10px] text-[#3F463E]">Total value</span>
                                 <p className="text-sm font-black text-[#0C150A]">₹92,700</p>
                               </div>
                             </div>
 
-                            <p className="text-[10px] text-[#3F463E] leading-relaxed">
-                              Pilot units are not registry-recognised and have no market price.
-                            </p>
+                            <button
+                              onClick={() => {
+                                playHapticSound("tap");
+                                navigateTo("09_marketplace");
+                              }}
+                              className="w-full h-11 rounded-2xl bg-[#0C150A] text-white font-extrabold text-xs shadow-xs hover:bg-black transition-colors flex items-center justify-center gap-1.5"
+                            >
+                              <span>+ Browse More Units on Marketplace</span>
+                            </button>
                           </div>
                         )}
 
@@ -1951,12 +2454,43 @@ export function AtmosMobileExperience() {
                           <div className="space-y-2 mt-1">
                             <h2 className="text-xs font-extrabold text-[#0C150A]">Solana Devnet History</h2>
                             {[
-                              { title: "Retired 5.000 tCO₂e", batch: "Batch #3 · Kalol", date: "12 Oct 2026", hash: "5ayYk...2z21", status: "Settled" },
-                              { title: "Purchased 5.000 tCO₂e", batch: "Dodo Payments ₹55,500", date: "12 Oct 2026", hash: "9xVq...78bL", status: "Paid" },
-                              { title: "Purchased 3.000 tCO₂e", batch: "Batch #7 · Jaipur", date: "09 Oct 2026", hash: "3mnP...49wZ", status: "Held" },
-                              { title: "Producer Payout Received", batch: "Batch #2 (₹22,000)", date: "04 Oct 2026", hash: "UPI-4921-992", status: "Credited" },
+                              {
+                                title: "Retired 5.000 tCO₂e",
+                                batch: "Batch #3 · Kalol",
+                                date: "12 Oct 2026",
+                                hash: "5ayYk...2z21",
+                                status: "Settled",
+                              },
+                              {
+                                title: "Purchased 5.000 tCO₂e",
+                                batch: "Dodo Payments ₹55,500",
+                                date: "12 Oct 2026",
+                                hash: "9xVq...78bL",
+                                status: "Paid",
+                              },
+                              {
+                                title: "Purchased 3.000 tCO₂e",
+                                batch: "Batch #7 · Jaipur",
+                                date: "09 Oct 2026",
+                                hash: "3mnP...49wZ",
+                                status: "Held",
+                              },
+                              {
+                                title: "Producer Payout Received",
+                                batch: "Batch #2 (₹22,000 via UPI)",
+                                date: "04 Oct 2026",
+                                hash: "UPI-4921-992",
+                                status: "Credited",
+                              },
                             ].map((item, idx) => (
-                              <div key={idx} className="p-3 rounded-2xl bg-white border border-black/5 flex items-center justify-between text-xs shadow-xs">
+                              <div
+                                key={idx}
+                                onClick={() => {
+                                  playHapticSound("tap");
+                                  setShowSolanaTxModal(true);
+                                }}
+                                className="cursor-pointer p-3 rounded-2xl bg-white border border-black/5 flex items-center justify-between text-xs shadow-xs hover:border-black/20 transition-all"
+                              >
                                 <div>
                                   <p className="font-extrabold text-[#0C150A]">{item.title}</p>
                                   <p className="text-[10px] text-[#3F463E]">{item.batch}</p>
@@ -1976,24 +2510,30 @@ export function AtmosMobileExperience() {
                         {/* TAB 3: IMPACT */}
                         {portfolioTab === "impact" && (
                           <div className="space-y-2 mt-1">
-                            <h2 className="text-xs font-extrabold text-[#0C150A]">Ecological Impact</h2>
+                            <h2 className="text-xs font-extrabold text-[#0C150A]">Verified Ecological Impact</h2>
                             <div className="grid grid-cols-2 gap-2">
-                              <div className="p-3 rounded-2xl bg-[#E2F2DF] border border-[#276A3C]/20 flex flex-col justify-between">
-                                <span className="text-xl font-black text-[#276A3C]">8.0 t</span>
-                                <span className="text-[10px] font-bold text-[#0C150A]">CO₂ Sequestered</span>
+                              <div className="p-3.5 rounded-2xl bg-[#E2F2DF] border border-[#276A3C]/20 flex flex-col justify-between">
+                                <span className="text-2xl font-black text-[#276A3C]">8.0 t</span>
+                                <span className="text-[10px] font-bold text-[#0C150A]">CO₂ Sequestered 100y+</span>
                               </div>
-                              <div className="p-3 rounded-2xl bg-white border border-black/5 flex flex-col justify-between">
-                                <span className="text-xl font-black text-[#0C150A]">34,400</span>
-                                <span className="text-[10px] font-medium text-[#3F463E]">Km Car Offset</span>
+                              <div className="p-3.5 rounded-2xl bg-white border border-black/5 flex flex-col justify-between shadow-xs">
+                                <span className="text-2xl font-black text-[#0C150A]">34,400</span>
+                                <span className="text-[10px] font-medium text-[#3F463E]">Km Car Travel Offset</span>
                               </div>
-                              <div className="p-3 rounded-2xl bg-white border border-black/5 flex flex-col justify-between">
-                                <span className="text-xl font-black text-[#0C150A]">2,400 kg</span>
-                                <span className="text-[10px] font-medium text-[#3F463E]">Biochar in Soil</span>
+                              <div className="p-3.5 rounded-2xl bg-white border border-black/5 flex flex-col justify-between shadow-xs">
+                                <span className="text-2xl font-black text-[#0C150A]">2,400 kg</span>
+                                <span className="text-[10px] font-medium text-[#3F463E]">Pure Biochar in Soil</span>
                               </div>
-                              <div className="p-3 rounded-2xl bg-[#E2F2DF] border border-[#276A3C]/20 flex flex-col justify-between">
-                                <span className="text-xl font-black text-[#276A3C]">+18%</span>
-                                <span className="text-[10px] font-bold text-[#0C150A]">Water Retention</span>
+                              <div className="p-3.5 rounded-2xl bg-[#E2F2DF] border border-[#276A3C]/20 flex flex-col justify-between">
+                                <span className="text-2xl font-black text-[#276A3C]">+18%</span>
+                                <span className="text-[10px] font-bold text-[#0C150A]">Water Retention Boost</span>
                               </div>
+                            </div>
+                            <div className="bg-white border border-black/5 rounded-2xl p-3 shadow-xs">
+                              <p className="text-xs font-bold text-[#0C150A]">Rural Farmer Co-Benefit</p>
+                              <p className="text-[10px] text-[#3F463E] mt-0.5 leading-relaxed">
+                                14 cotton farmers in Kalol cluster benefited from biomass residue aggregation, eliminating crop burning pollution.
+                              </p>
                             </div>
                           </div>
                         )}
@@ -2010,39 +2550,77 @@ export function AtmosMobileExperience() {
                     <div className="flex-1 flex flex-col justify-between bg-[#F7F9F6] pb-20 overflow-y-auto">
                       <div className="p-5 pt-3 flex flex-col gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-full bg-[#0C150A] text-[#E2F2DF] flex items-center justify-center font-black text-base shadow-xs">
-                            RP
+                          {currentUser?.photoURL ? (
+                            <img
+                              src={currentUser.photoURL}
+                              alt={currentUser.displayName}
+                              className="w-12 h-12 rounded-full border-2 border-[#0C150A] shadow-xs object-cover"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-[#0C150A] text-[#E2F2DF] flex items-center justify-center font-black text-base shadow-xs">
+                              {currentUser?.displayName ? currentUser.displayName.slice(0, 2).toUpperCase() : "RP"}
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <h1 className="text-lg font-extrabold text-[#0C150A]">
+                              {currentUser?.displayName || "Ramesh Patel"}
+                            </h1>
+                            <p className="text-xs text-[#3F463E]">
+                              {currentUser?.email || "+91 98765 43210"}
+                            </p>
                           </div>
-                          <div>
-                            <h1 className="text-lg font-extrabold text-[#0C150A]">Ramesh Patel</h1>
-                            <p className="text-xs text-[#3F463E]">+91 98765 43210</p>
-                          </div>
+                          <span className="text-[9px] bg-[#E2F2DF] text-[#276A3C] px-2 py-0.5 rounded-full font-bold">
+                            Tier 1
+                          </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5">
+                        {/* Verified Credentials Bar */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-[10px] bg-[#E2F2DF] text-[#0C150A] px-2.5 py-0.5 rounded-full font-bold">
-                            Phone verified
+                            Phone verified ✓
                           </span>
                           <span className="text-[10px] bg-[#E2F2DF] text-[#0C150A] px-2.5 py-0.5 rounded-full font-bold">
-                            ID check complete
+                            Aadhaar verified ✓
                           </span>
+                          <span className="text-[10px] bg-black/5 text-[#0C150A] px-2.5 py-0.5 rounded-full font-bold">
+                            Trust 98/100
+                          </span>
+                        </div>
+
+                        {/* Producer Summary Matrix */}
+                        <div className="grid grid-cols-3 gap-2 bg-white border border-black/5 rounded-2xl p-3 shadow-xs text-center">
+                          <div>
+                            <span className="text-[9px] text-[#3F463E] block">Batches</span>
+                            <b className="text-sm text-[#0C150A]">3 Minted</b>
+                          </div>
+                          <div className="border-x border-black/5">
+                            <span className="text-[9px] text-[#3F463E] block">Earnings</span>
+                            <b className="text-sm text-[#276A3C]">₹1,12,000</b>
+                          </div>
+                          <div>
+                            <span className="text-[9px] text-[#3F463E] block">CO₂ Net</span>
+                            <b className="text-sm text-[#0C150A]">15.6 t</b>
+                          </div>
                         </div>
 
                         {/* Menu Items */}
                         <div className="space-y-1.5 mt-1">
                           {[
-                            { id: "account", icon: User, title: "Account settings" },
+                            { id: "account", icon: User, title: "Account settings", sub: "Kalol, Gujarat Facility" },
                             { id: "payouts", icon: Briefcase, title: "Payouts and payments", sub: "UPI · rameshp@upi" },
-                            { id: "privacy", icon: Lock, title: "Privacy and security" },
+                            { id: "privacy", icon: Lock, title: "Privacy and security", sub: "Ed25519 Keystore Active" },
                             { id: "language", icon: Globe, title: "Language", sub: `Current: ${lang.toUpperCase()}` },
                             { id: "offline_queue", icon: RefreshCw, title: "Offline queue", sub: "0 photos waiting to upload" },
-                            { id: "support", icon: HelpCircle, title: "Support" },
+                            { id: "support", icon: HelpCircle, title: "Support & Helpline", sub: "Direct MRV Assistance" },
                           ].map((item, idx) => {
                             const IconComp = item.icon;
                             return (
                               <div
                                 key={idx}
-                                onClick={() => setActiveProfileSheet(item.id)}
+                                onClick={() => {
+                                  playHapticSound("tap");
+                                  setActiveProfileSheet(item.id);
+                                }}
                                 className="cursor-pointer p-3 rounded-2xl bg-white border border-black/5 hover:border-black/20 flex items-center justify-between transition-all shadow-xs"
                               >
                                 <div className="flex items-center gap-2.5">
@@ -2058,6 +2636,25 @@ export function AtmosMobileExperience() {
                               </div>
                             );
                           })}
+                        </div>
+
+                        {/* Sign Out / Account Switcher Button */}
+                        <div className="pt-2">
+                          <button
+                            onClick={() => {
+                              playHapticSound("tap");
+                              if (currentUser) {
+                                FirebaseAuthService.signOut();
+                                setCurrentUser(sampleGoogleAccounts[0]);
+                                setAuthToast("Switched user profile");
+                              } else {
+                                navigateTo("02_auth");
+                              }
+                            }}
+                            className="w-full py-2.5 rounded-2xl border border-black/10 bg-white text-xs font-bold text-[#0C150A] hover:bg-black/5 transition-colors"
+                          >
+                            {currentUser ? `Switch User (${currentUser.email})` : "Sign In with Google / Phone"}
+                          </button>
                         </div>
                       </div>
 
@@ -3358,6 +3955,397 @@ export function AtmosMobileExperience() {
                   Confirm Orbit Match
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 17. Biochar dMRV Calculation Breakdown Formula Modal */}
+      <AnimatePresence>
+        {showCalculationModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs font-['Inter',sans-serif]">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white text-[#0C150A] rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-3.5 border border-black/10 max-h-[620px] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between border-b border-black/10 pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-[#E2F2DF] text-[#276A3C] flex items-center justify-center">
+                    <Activity size={15} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-[#0C150A]">dMRV Calculation Engine</h3>
+                    <p className="text-[9px] text-[#3F463E]">ATMOS-BIOCHAR-PILOT-v1 (IPCC Tier 3)</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCalculationModal(false)}
+                  className="p-1 text-black/60 hover:text-black"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Master Formula Card */}
+              <div className="bg-[#0C150A] text-white p-3.5 rounded-2xl space-y-1">
+                <span className="text-[9px] text-[#A6E3B8] font-mono uppercase block font-bold">
+                  Certified Sequestration Formula
+                </span>
+                <p className="font-mono text-xs font-bold text-white leading-relaxed">
+                  CO₂e = (M_char × C_org × F_perm × 3.667) - E_logistics
+                </p>
+                <p className="text-[9px] text-white/70 font-mono">
+                  = (3,200 × 0.784 × 0.74 × 3.667) / 1000 - 0.370 = 6.439 tCO₂e
+                </p>
+              </div>
+
+              {/* Step-by-Step Breakdown */}
+              <div className="space-y-2 text-xs">
+                <div className="p-2.5 rounded-2xl bg-[#F7F9F6] border border-black/5 flex justify-between items-center">
+                  <div>
+                    <b className="text-[#0C150A] block">1. Raw Cotton Residue Diverted</b>
+                    <span className="text-[10px] text-[#3F463E]">13,200 kg field agricultural waste</span>
+                  </div>
+                  <span className="font-mono font-bold text-xs text-[#0C150A]">13,200 kg</span>
+                </div>
+
+                <div className="p-2.5 rounded-2xl bg-[#F7F9F6] border border-black/5 flex justify-between items-center">
+                  <div>
+                    <b className="text-[#0C150A] block">2. Pyrolysis Biochar Yield (M_char)</b>
+                    <span className="text-[10px] text-[#3F463E]">582°C oxygen-depleted retort</span>
+                  </div>
+                  <span className="font-mono font-bold text-xs text-[#276A3C]">3,200 kg (24.2%)</span>
+                </div>
+
+                <div className="p-2.5 rounded-2xl bg-[#F7F9F6] border border-black/5 flex justify-between items-center">
+                  <div>
+                    <b className="text-[#0C150A] block">3. Fixed Organic Carbon (C_org)</b>
+                    <span className="text-[10px] text-[#3F463E]">NIARSS elemental lab test</span>
+                  </div>
+                  <span className="font-mono font-bold text-xs text-[#0C150A]">78.4% C</span>
+                </div>
+
+                <div className="p-2.5 rounded-2xl bg-[#F7F9F6] border border-black/5 flex justify-between items-center">
+                  <div>
+                    <b className="text-[#0C150A] block">4. Permanence Factor (F_perm)</b>
+                    <span className="text-[10px] text-[#3F463E]">H:C ratio 0.34 &gt; 100yr permanence</span>
+                  </div>
+                  <span className="font-mono font-bold text-xs text-[#276A3C]">0.74 (74%)</span>
+                </div>
+
+                <div className="p-2.5 rounded-2xl bg-[#F7F9F6] border border-black/5 flex justify-between items-center">
+                  <div>
+                    <b className="text-[#0C150A] block">5. Stoichiometric Ratio</b>
+                    <span className="text-[10px] text-[#3F463E]">Molecular mass 44/12 (CO₂/C)</span>
+                  </div>
+                  <span className="font-mono font-bold text-xs text-[#0C150A]">3.667</span>
+                </div>
+
+                <div className="p-2.5 rounded-2xl bg-[#F7F9F6] border border-black/5 flex justify-between items-center">
+                  <div>
+                    <b className="text-[#0C150A] block">6. Logistics Deduction (E_logistics)</b>
+                    <span className="text-[10px] text-[#3F463E]">Tractor transport + auxiliary</span>
+                  </div>
+                  <span className="font-mono font-bold text-xs text-red-600">-0.370 tCO₂e</span>
+                </div>
+              </div>
+
+              <div className="bg-[#E2F2DF] p-3 rounded-2xl border border-[#276A3C]/20 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-[#3F463E] block font-bold">Net Certified Sequestration</span>
+                  <span className="text-xl font-black text-[#0C150A]">6.439 tCO₂e</span>
+                </div>
+                <span className="text-[9px] bg-[#276A3C] text-white px-2 py-0.5 rounded-full font-bold">
+                  Audited Quorum ✓
+                </span>
+              </div>
+
+              <button
+                onClick={() => setShowCalculationModal(false)}
+                className="w-full h-11 rounded-full bg-[#0C150A] text-white font-extrabold text-xs shadow-md hover:bg-black transition-colors"
+              >
+                Close Calculation Breakdown
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 18. NIARSS Official Elemental Lab Certificate Modal */}
+      <AnimatePresence>
+        {showLabReportModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs font-['Inter',sans-serif]">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white text-[#0C150A] rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-3.5 border border-black/10 max-h-[620px] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between border-b border-black/10 pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-[#0C150A] text-white flex items-center justify-center">
+                    <Flame size={15} className="text-[#35C46A]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-[#0C150A]">Elemental Analysis Certificate</h3>
+                    <p className="text-[9px] text-[#3F463E]">NIARSS Accreditation · ISO/IEC 17025</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowLabReportModal(false)}
+                  className="p-1 text-black/60 hover:text-black"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Lab Header Box */}
+              <div className="bg-[#F7F9F6] border border-black/10 rounded-2xl p-3 text-xs space-y-1">
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-[#3F463E]">Laboratory:</span>
+                  <b className="text-[#0C150A]">National Inst. of Agricultural Residue</b>
+                </div>
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-[#3F463E]">Sample ID:</span>
+                  <b className="font-mono text-[#0C150A]">BIO-KL-2026-B3</b>
+                </div>
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-[#3F463E]">Test Date:</span>
+                  <b>11 Oct 2026 · 14:15 IST</b>
+                </div>
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-[#3F463E]">Standard:</span>
+                  <b>ASTM D5373 / ISO 29541 Elemental</b>
+                </div>
+              </div>
+
+              {/* Chemical Matrix Table */}
+              <div className="space-y-1.5 text-xs">
+                <h4 className="font-extrabold text-[#0C150A] text-xs">Elemental Composition</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2.5 rounded-xl bg-white border border-black/5 shadow-xs">
+                    <span className="text-[9px] text-[#3F463E] block">Fixed Carbon (C_org)</span>
+                    <b className="text-base text-[#0C150A]">78.4%</b>
+                    <span className="text-[8px] text-[#276A3C] font-bold block">✓ Exceeds 60% standard</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#E2F2DF] border border-[#276A3C]/20 shadow-xs">
+                    <span className="text-[9px] text-[#3F463E] block">H:C Molar Ratio</span>
+                    <b className="text-base text-[#276A3C]">0.34</b>
+                    <span className="text-[8px] text-[#276A3C] font-bold block">✓ Pass (&lt;0.40 Permanence)</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white border border-black/5 shadow-xs">
+                    <span className="text-[9px] text-[#3F463E] block">Ash Content</span>
+                    <b className="text-sm text-[#0C150A]">4.2%</b>
+                    <span className="text-[8px] text-[#3F463E] block">Within 10% limit</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white border border-black/5 shadow-xs">
+                    <span className="text-[9px] text-[#3F463E] block">Moisture</span>
+                    <b className="text-sm text-[#0C150A]">3.8%</b>
+                    <span className="text-[8px] text-[#3F463E] block">Dry biochar standard</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-[#F7F9F6] border border-black/5 rounded-2xl p-2.5 text-[10px] text-[#3F463E] flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-[#0C150A] block">Lead Analyst Sign-off</span>
+                  <span>Dr. Rameshwar Varma, Chief Geochemist</span>
+                </div>
+                <span className="bg-[#E2F2DF] text-[#276A3C] font-mono text-[9px] font-bold px-2 py-0.5 rounded-md">
+                  SEALED ✓
+                </span>
+              </div>
+
+              <button
+                onClick={() => setShowLabReportModal(false)}
+                className="w-full h-11 rounded-full bg-[#0C150A] text-white font-extrabold text-xs shadow-md hover:bg-black transition-colors"
+              >
+                Close Lab Certificate
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 19. List Credits on Marketplace Modal */}
+      <AnimatePresence>
+        {showListCreditsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs font-['Inter',sans-serif]">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white text-[#0C150A] rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-3.5 border border-black/10"
+            >
+              <div className="flex items-center justify-between border-b border-black/10 pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-[#E2F2DF] text-[#276A3C] flex items-center justify-center">
+                    <Leaf size={15} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-[#0C150A]">List Batch on Marketplace</h3>
+                    <p className="text-[9px] text-[#3F463E]">Biochar Batch #3 · Kalol, Gujarat</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowListCreditsModal(false)}
+                  className="p-1 text-black/60 hover:text-black"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Volume to list */}
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-[#0C150A]">Volume to List (tCO₂e)</span>
+                  <span className="text-[10px] text-[#276A3C] font-bold">Available: 5.796 t</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="1"
+                    max="5.796"
+                    step="0.1"
+                    value={listTonnes}
+                    onChange={(e) => setListTonnes(parseFloat(e.target.value))}
+                    className="w-full accent-[#0C150A]"
+                  />
+                  <span className="font-black text-sm text-[#0C150A] min-w-14 text-right">
+                    {listTonnes.toFixed(1)} t
+                  </span>
+                </div>
+              </div>
+
+              {/* Asking Price */}
+              <div className="space-y-1.5 text-xs">
+                <span className="font-bold text-[#0C150A]">Asking Price per Tonne (₹)</span>
+                <div className="flex items-center gap-2 bg-[#F7F9F6] border border-black/10 px-3 py-2 rounded-2xl">
+                  <span className="text-[#3F463E] font-bold">₹</span>
+                  <input
+                    type="number"
+                    value={listPrice}
+                    onChange={(e) => setListPrice(Math.max(1000, parseInt(e.target.value) || 0))}
+                    className="bg-transparent text-sm font-black text-[#0C150A] outline-none flex-1"
+                  />
+                  <span className="text-[10px] text-[#3F463E]">Market: ₹11,100</span>
+                </div>
+              </div>
+
+              {/* Settlement Payout Preview */}
+              <div className="bg-[#E2F2DF] p-3 rounded-2xl border border-[#276A3C]/20 text-xs space-y-1">
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-[#3F463E]">Gross Listing Value:</span>
+                  <b>₹{Math.round(listTonnes * listPrice).toLocaleString("en-IN")}</b>
+                </div>
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-[#3F463E]">5% MRV Validator Escrow:</span>
+                  <span className="text-red-700">-₹{Math.round(listTonnes * listPrice * 0.05).toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex justify-between pt-1 border-t border-[#276A3C]/30 text-sm font-black text-[#0C150A]">
+                  <span>Your Net Payout (UPI):</span>
+                  <span className="text-[#276A3C]">
+                    ₹{Math.round(listTonnes * listPrice * 0.95).toLocaleString("en-IN")}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  playHapticSound("success");
+                  setShowListCreditsModal(false);
+                  setAuthToast(`Listed ${listTonnes.toFixed(1)} tCO₂e on market at ₹${listPrice.toLocaleString("en-IN")}/t ✓`);
+                  setTimeout(() => setAuthToast(null), 3000);
+                  navigateTo("09_marketplace");
+                }}
+                className="w-full h-12 rounded-full bg-[#0C150A] text-white font-extrabold text-xs shadow-md hover:bg-black transition-colors"
+              >
+                Submit Listing to Orderbook
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 20. Share Certificate Modal */}
+      <AnimatePresence>
+        {showShareModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs font-['Inter',sans-serif]">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white text-[#0C150A] rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-3.5 border border-black/10"
+            >
+              <div className="flex items-center justify-between border-b border-black/10 pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-[#E2F2DF] text-[#276A3C] flex items-center justify-center">
+                    <Share2 size={15} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-[#0C150A]">Share Retirement Deed</h3>
+                    <p className="text-[9px] text-[#3F463E]">ATMOS-REC-2026-KL-00918</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowShareModal(false)}
+                  className="p-1 text-black/60 hover:text-black"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <button
+                  onClick={() => {
+                    playHapticSound("tap");
+                    window.open(
+                      `https://wa.me/?text=Verified%20Carbon%20Retirement%20Deed%20ATMOS-REC-2026-KL-00918%20on%20Solana%20Devnet:%20https://atmos.network/verify/00918`,
+                      "_blank"
+                    );
+                  }}
+                  className="w-full p-3 rounded-2xl bg-[#E2F2DF] text-[#0C150A] font-bold flex items-center justify-between hover:bg-[#d4edd0] transition-colors"
+                >
+                  <span>Share on WhatsApp</span>
+                  <ChevronRight size={14} />
+                </button>
+
+                <button
+                  onClick={() => {
+                    playHapticSound("tap");
+                    window.open(
+                      `https://twitter.com/intent/tweet?text=Just%20retired%205.0%20tCO2e%20verified%20Biochar%20on%20@AtmosNetwork%20with%20zero-knowledge%20proofs%20on%20Solana!%20%23ClimateMRV`,
+                      "_blank"
+                    );
+                  }}
+                  className="w-full p-3 rounded-2xl bg-[#F7F9F6] border border-black/10 text-[#0C150A] font-bold flex items-center justify-between hover:bg-black/5 transition-colors"
+                >
+                  <span>Share on X / Twitter</span>
+                  <ChevronRight size={14} />
+                </button>
+
+                <button
+                  onClick={() => {
+                    playHapticSound("tap");
+                    navigator.clipboard?.writeText("https://atmos.network/verify/ATMOS-REC-2026-KL-00918");
+                    setAuthToast("Certificate verification link copied to clipboard ✓");
+                    setTimeout(() => setAuthToast(null), 3000);
+                  }}
+                  className="w-full p-3 rounded-2xl bg-[#F7F9F6] border border-black/10 text-[#0C150A] font-bold flex items-center justify-between hover:bg-black/5 transition-colors"
+                >
+                  <span>Copy Verification URL</span>
+                  <Copy size={14} />
+                </button>
+              </div>
+
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="w-full h-11 rounded-full bg-[#0C150A] text-white font-extrabold text-xs shadow-md hover:bg-black transition-colors"
+              >
+                Close
+              </button>
             </motion.div>
           </div>
         )}
