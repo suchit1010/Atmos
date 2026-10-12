@@ -13,6 +13,8 @@
     "build:vercel": "pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build",
     "build:frontend": "pnpm --filter @workspace/mockup-sandbox run build",
     "build:ci": "pnpm run build:libs && pnpm run build:vercel && pnpm run build:frontend",
+    "dev:next": "pnpm --filter greenstride-web run dev",
+    "build:next": "pnpm --filter greenstride-web run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
