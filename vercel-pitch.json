@@ -1,5 +1,4 @@
 {
   "buildCommand": "echo 'Static HTML, no build needed'",
-  "outputDirectory": ".",
-  "public": true
+  "outputDirectory": "."
 }
