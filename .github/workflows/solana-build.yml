@@ -1,0 +1,42 @@
+name: Solana Build
+
+on:
+  push:
+    paths:
+      - 'atmos_solana/**'
+      - '.github/workflows/solana-build.yml'
+  pull_request:
+    paths:
+      - 'atmos_solana/**'
+      - '.github/workflows/solana-build.yml'
+
+jobs:
+  build-program:
+    name: Build Anchor program in Docker
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: atmos_solana
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build container image
+        run: docker build -t atmos-solana-builder -f Dockerfile .
+
+      - name: Run anchor build in container
+        run: docker run --name atmos-solana-build atmos-solana-builder
+
+      - name: Copy generated artifacts
+        run: |
+          mkdir -p target
+          rm -rf target/idl
+          docker cp atmos-solana-build:/workspace/target/idl target/idl
+          docker rm atmos-solana-build
+
+      - name: Upload IDL artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: atmos-solana-idl
+          path: atmos_solana/target/idl

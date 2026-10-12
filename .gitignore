@@ -1,36 +1,23 @@
-﻿# Build outputs (except lib package dist which is needed for Vercel)
-dist
+**/node_modules/
+**/dist/
 !lib/*/dist
-build
-app/api-server/dist
-*.tsbuildinfo
-
-# Dependencies
-node_modules
-pnpm-store
-
-# Env
+**/target/
+**/coverage/
+**/.expo/
+**/.turbo/
+**/.next/
+**/.vercel/
+**/*.log
+**/*.tsbuildinfo
 .env
-.env.local
-.env.*.local
-
-# OS
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.local.example
+attached_assets/
+.kiro/
 .DS_Store
 *.swp
 *.swo
 *~
-
-# IDE
-.vscode/launch.json
-.vscode/settings.json
-.idea/
-
-# Testing
-.next
-out
-coverage
-
-# Logs
-npm-debug.log
-yarn-error.log
-pnpm-debug.log

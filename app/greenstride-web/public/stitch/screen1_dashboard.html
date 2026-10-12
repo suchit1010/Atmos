@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Atmos | GreenStride - Ecological Dashboard</title>
+<!-- Tailwind CSS CDN with forms and container queries plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Plus Jakarta Sans (Gilroy alternative) -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              primary: '#E2F2DF',
+              primaryHover: '#d3ebd0',
+              secondary: '#0C150A',
+              tertiary: '#3F463E',
+              quaternary: '#F1F1F1',
+              lightBg: '#F7F9F6',
+              accentGreen: '#45A849',
+              mintSoft: '#ECF7EA',
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+          },
+          borderRadius: {
+            '4xl': '2rem',
+            '5xl': '2.5rem',
+          },
+          boxShadow: {
+            'soft': '0 8px 30px rgba(12, 21, 10, 0.04)',
+            'float': '0 16px 36px rgba(12, 21, 10, 0.08)',
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: CustomStyles -->
+<style data-purpose="typography">
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      letter-spacing: -0.015em;
+    }
+    .tracking-tight-custom {
+      letter-spacing: -0.035em;
+    }
+  </style>
+<style data-purpose="custom-decorations">
+    /* Subtle pulse animation for active sensor status */
+    @keyframes subtle-pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.08); opacity: 0.8; }
+    }
+    .animate-sensor-pulse {
+      animation: subtle-pulse 3s infinite ease-in-out;
+    }
+    
+    /* Radial gauge custom dash array */
+    .gauge-dots {
+      stroke-dasharray: 4 9;
+      stroke-linecap: round;
+    }
+  </style>
+<!-- END: CustomStyles -->
+</head>
+<body class="bg-[#F7F9F6] text-[#0C150A] min-h-screen antialiased flex flex-col selection:bg-[#E2F2DF] selection:text-[#0C150A]">
+<!-- BEGIN: MainHeader -->
+<header class="sticky top-0 z-40 bg-[#F7F9F6]/90 backdrop-blur-md px-6 lg:px-12 py-4 border-b border-[#0C150A]/5 transition-all">
+<div class="max-w-[1440px] mx-auto flex items-center justify-between">
+<!-- Brand Logo -->
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-2xl bg-[#E2F2DF] flex items-center justify-center text-[#0C150A] shadow-sm">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+<path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+</svg>
+</div>
+<div>
+<span class="text-xl font-extrabold tracking-tight-custom text-[#0C150A] block leading-none">GreenStride</span>
+<span class="text-[11px] font-semibold text-[#3F463E]/70 uppercase tracking-widest">Atmos Network</span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav aria-label="Main Navigation" class="hidden md:flex items-center bg-white p-1.5 rounded-full border border-gray-100 shadow-sm">
+<a class="px-5 py-2 rounded-full text-xs font-semibold bg-[#0C150A] text-white transition-colors" href="#overview">Overview</a>
+<a class="px-5 py-2 rounded-full text-xs font-medium text-[#3F463E] hover:text-[#0C150A] transition-colors" href="#co2-statistics">CO2 Statistics</a>
+<a class="px-5 py-2 rounded-full text-xs font-medium text-[#3F463E] hover:text-[#0C150A] transition-colors" href="#trees">Tree Plantings</a>
+<a class="px-5 py-2 rounded-full text-xs font-medium text-[#3F463E] hover:text-[#0C150A] transition-colors" href="#biosphere">3D Biosphere</a>
+<a class="px-5 py-2 rounded-full text-xs font-medium text-[#3F463E] hover:text-[#0C150A] transition-colors" href="#verification">Verification</a>
+</nav>
+<!-- Right Header Controls: Date, Notifications & Profile -->
+<div class="flex items-center gap-3">
+<!-- Date pill -->
+<div class="hidden sm:flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-gray-100 text-xs font-medium text-[#3F463E] shadow-sm">
+<svg class="w-3.5 h-3.5 text-[#0C150A]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<rect height="18" rx="2" ry="2" stroke-width="2" width="18" x="3" y="4"></rect>
+<line stroke-width="2" x1="16" x2="16" y1="2" y2="6"></line>
+<line stroke-width="2" x1="8" x2="8" y1="2" y2="6"></line>
+<line stroke-width="2" x1="3" x2="21" y1="10" y2="10"></line>
+</svg>
+<span>June 20, 2025</span>
+</div>
+<!-- Notification Button -->
+<button aria-label="Notifications" class="relative w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-[#0C150A] hover:bg-gray-50 transition-colors shadow-sm">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute top-2 right-2.5 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+</button>
+<!-- User Profile Pill -->
+<div class="flex items-center gap-3 bg-white pl-1.5 pr-4 py-1.5 rounded-full border border-gray-100 shadow-sm cursor-pointer hover:border-gray-200 transition-colors">
+<div class="relative w-8 h-8 rounded-full overflow-hidden bg-[#E2F2DF] flex items-center justify-center">
+<!-- Avatar representation -->
+<svg class="w-6 h-6 text-[#3F463E] mt-1" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-bold leading-tight text-[#0C150A]">Ludmila</span>
+<!-- Progress / Level Indicator -->
+<div class="w-14 h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
+<div class="h-full bg-emerald-500 rounded-full w-3/4"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</header>
+<!-- END: MainHeader -->
+<!-- BEGIN: MainContent -->
+<main class="flex-1 max-w-[1440px] w-full mx-auto px-6 lg:px-12 py-8 space-y-8">
+<!-- Top Headline & Action Intro Banner -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2">
+<div>
+<h1 class="text-3xl md:text-4xl font-extrabold tracking-tight-custom text-[#0C150A]">
+          Planting Green, Growing Life
+        </h1>
+<p class="text-sm md:text-base text-[#3F463E] mt-1.5 font-normal max-w-xl">
+          Your environmental carbon mitigation and atmospheric sustainability portfolio live telemetry.
+        </p>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-5 py-2.5 rounded-full bg-[#E2F2DF] hover:bg-[#d5ebd2] text-[#0C150A] text-xs font-bold transition-all shadow-sm flex items-center gap-2">
+<span>Explore Field Actions</span>
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
+</button>
+</div>
+</div>
+<!-- BEGIN: TopMetricsGrid -->
+<!-- 4-Card Adaptive Row reflecting key metrics & micro-interactions -->
+<section aria-label="Key Performance Metrics" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Card 1: Trees Planted -->
+<div class="bg-white rounded-3xl p-6 shadow-soft border border-black/[0.03] flex flex-col justify-between hover:shadow-float transition-all group">
+<div class="flex items-center justify-between">
+<div class="w-11 h-11 rounded-2xl bg-[#F7F9F6] border border-gray-100 flex items-center justify-center text-[#0C150A] group-hover:scale-105 transition-transform">
+<!-- Tree Icon -->
+<svg class="w-5 h-5 text-emerald-800" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 2L6 11h3l-4 7h6v4h2v-4h6l-4-7h3L12 2z"></path>
+</svg>
+</div>
+<span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">+14.2%</span>
+</div>
+<div class="mt-6">
+<span class="text-xs font-semibold text-[#3F463E] uppercase tracking-wider block">Trees Planted</span>
+<span class="text-3xl lg:text-4xl font-extrabold text-[#0C150A] tracking-tight mt-1 block">11,234</span>
+<p class="text-[11px] text-[#3F463E]/70 mt-1">Verified on green ledger</p>
+</div>
+</div>
+<!-- Card 2: Total CO2 (Branded Pistachio Theme) -->
+<div class="bg-[#E2F2DF] rounded-3xl p-6 shadow-soft border border-emerald-100/60 flex flex-col justify-between hover:shadow-float transition-all group">
+<div class="flex items-center justify-between">
+<div class="w-11 h-11 rounded-2xl bg-white/90 backdrop-blur-sm flex items-center justify-center text-[#0C150A] shadow-xs group-hover:scale-105 transition-transform">
+<!-- CO2 Cloud Icon -->
+<svg class="w-5 h-5 text-[#0C150A]" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
+</svg>
+</div>
+<span class="text-xs font-bold text-[#0C150A] bg-white/80 px-2.5 py-1 rounded-full">Atmosphere</span>
+</div>
+<div class="mt-6">
+<span class="text-xs font-bold text-[#3F463E] uppercase tracking-wider block">Total CO2 Level</span>
+<span class="text-3xl lg:text-4xl font-extrabold text-[#0C150A] tracking-tight mt-1 block">0,04 <span class="text-lg font-bold text-[#3F463E]">mg/m³</span></span>
+<p class="text-[11px] text-[#3F463E] mt-1 font-medium">Optimal atmospheric balance</p>
+</div>
+</div>
+<!-- Card 3: Planting Distribution Radial Grid -->
+<div class="bg-white rounded-3xl p-6 shadow-soft border border-black/[0.03] flex flex-col justify-between hover:shadow-float transition-all">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="text-xs font-semibold text-[#3F463E]">Planted:</span>
+<span class="text-xs font-bold text-emerald-600">34%</span>
+</div>
+<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+</div>
+<!-- Radar Radial Planting Graphic mimicking reference -->
+<div class="py-2 flex items-center justify-center">
+<svg class="w-28 h-28 transform transition-transform hover:rotate-45 duration-700" viewbox="0 0 120 120">
+<!-- Concentric Guide Rings -->
+<circle cx="60" cy="60" fill="none" r="14" stroke="#E2F2DF" stroke-dasharray="2 3" stroke-width="1.5"></circle>
+<circle cx="60" cy="60" fill="none" r="28" stroke="#E2F2DF" stroke-dasharray="3 4" stroke-width="1.5"></circle>
+<circle cx="60" cy="60" fill="none" r="44" stroke="#E2F2DF" stroke-dasharray="3 5" stroke-width="1.5"></circle>
+<!-- Center Core Hub -->
+<circle cx="60" cy="60" fill="#0C150A" r="5"></circle>
+<circle cx="60" cy="60" fill="white" r="2"></circle>
+<!-- Radial Tree Glyphs Array -->
+<!-- Top / North Axis -->
+<path d="M60 20 L57 27 L63 27 Z" fill="#0C150A"></path>
+<path d="M60 34 L58 40 L62 40 Z" fill="#0C150A"></path>
+<path d="M60 48 L58.5 52 L61.5 52 Z" fill="#3F463E"></path>
+<!-- Top-Right Axis -->
+<path d="M88 32 L83 37 L88 41 Z" fill="#93C891"></path>
+<path d="M78 42 L74 46 L78 49 Z" fill="#A8D5A6"></path>
+<path d="M69 51 L66 54 L69 56 Z" fill="#C4E7C3"></path>
+<!-- Right Axis -->
+<path d="M100 60 L93 57 L93 63 Z" fill="#93C891"></path>
+<path d="M86 60 L80 58 L80 62 Z" fill="#B0DCAD"></path>
+<path d="M72 60 L68 58.5 L68 61.5 Z" fill="#C4E7C3"></path>
+<!-- Bottom-Right Axis -->
+<path d="M88 88 L88 83 L83 88 Z" fill="#93C891"></path>
+<path d="M78 78 L78 74 L74 78 Z" fill="#B0DCAD"></path>
+<!-- Bottom Axis -->
+<path d="M60 100 L57 93 L63 93 Z" fill="#A8D5A6"></path>
+<path d="M60 86 L58 80 L62 80 Z" fill="#C4E7C3"></path>
+<!-- Top-Left Axis -->
+<path d="M32 32 L37 32 L32 37 Z" fill="#0C150A"></path>
+<path d="M42 42 L46 42 L42 46 Z" fill="#3F463E"></path>
+<!-- Left Axis -->
+<path d="M20 60 L27 57 L27 63 Z" fill="#3F463E"></path>
+<path d="M34 60 L40 58 L40 62 Z" fill="#6B796A"></path>
+<!-- Bottom-Left Axis -->
+<path d="M32 88 L37 88 L32 83 Z" fill="#A8D5A6"></path>
+<path d="M42 78 L46 78 L42 74 Z" fill="#C4E7C3"></path>
+</svg>
+</div>
+<div class="flex items-center justify-between text-xs text-[#3F463E] border-t border-gray-50 pt-3">
+<span>Density Map</span>
+<span class="font-bold text-[#0C150A]">Radial Grid 0.4</span>
+</div>
+</div>
+<!-- Card 4: Switch to 3D Biosphere Mode -->
+<div class="bg-white rounded-3xl p-6 shadow-soft border border-black/[0.03] flex flex-col justify-between hover:shadow-float transition-all relative overflow-hidden group cursor-pointer">
+<div class="flex items-center justify-between relative z-10">
+<span class="text-xs font-bold text-[#0C150A]">Switch to 3D mode</span>
+<div class="w-7 h-7 rounded-full bg-[#F7F9F6] flex items-center justify-center text-[#0C150A] group-hover:bg-[#0C150A] group-hover:text-white transition-colors">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7V17"></path></svg>
+</div>
+</div>
+<!-- 3D Globe / Biosphere Miniature graphic matching reference -->
+<div class="py-2 flex items-center justify-center relative z-10">
+<div class="relative w-24 h-24 rounded-full bg-[#E2F2DF] p-1 shadow-inner flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+<!-- Simulated 3D Planet Island -->
+<svg class="w-20 h-20" viewbox="0 0 80 80">
+<defs>
+<radialgradient cx="35%" cy="35%" id="biosphereGrad" r="65%">
+<stop offset="0%" stop-color="#EBF8E8"></stop>
+<stop offset="50%" stop-color="#A5DAA1"></stop>
+<stop offset="85%" stop-color="#4B7746"></stop>
+<stop offset="100%" stop-color="#2D4D29"></stop>
+</radialgradient>
+</defs>
+<circle cx="40" cy="40" fill="url(#biosphereGrad)" r="38"></circle>
+<!-- Curving river ribbon -->
+<path d="M 22 12 Q 35 30, 42 42 T 68 58" fill="none" stroke="#EBF8FE" stroke-linecap="round" stroke-width="3.5"></path>
+<path d="M 22 12 Q 35 30, 42 42 T 68 58" fill="none" stroke="#A7D5F2" stroke-linecap="round" stroke-width="2"></path>
+<!-- Cluster of canopy trees -->
+<circle cx="28" cy="24" fill="#20401E" r="5"></circle>
+<circle cx="35" cy="20" fill="#315E2E" r="4"></circle>
+<circle cx="24" cy="32" fill="#1C381A" r="4.5"></circle>
+<circle cx="56" cy="28" fill="#1C381A" r="6"></circle>
+<circle cx="62" cy="36" fill="#294F26" r="5"></circle>
+<circle cx="28" cy="58" fill="#1C381A" r="7"></circle>
+<circle cx="38" cy="62" fill="#2D542A" r="5"></circle>
+<circle cx="48" cy="66" fill="#183317" r="6"></circle>
+<!-- White fluffy atmosphere clouds -->
+<ellipse cx="58" cy="18" fill="white" opacity="0.85" rx="8" ry="3.5"></ellipse>
+<ellipse cx="20" cy="46" fill="white" opacity="0.8" rx="6" ry="2.5"></ellipse>
+</svg>
+<!-- Orbit ring -->
+<div class="absolute inset-0 rounded-full border border-emerald-400/30 animate-spin" style="animation-duration: 20s;"></div>
+</div>
+</div>
+<div class="text-center relative z-10">
+<span class="text-[11px] font-semibold text-[#3F463E] bg-[#F7F9F6] px-3 py-1 rounded-full border border-gray-100">
+            Interactive Orbit View
+          </span>
+</div>
+</div>
+</section>
+<!-- END: TopMetricsGrid -->
+<!-- BEGIN: DetailedDashboardGrid -->
+<!-- Two Column Main Analysis Section mirroring mobile UI logic into spacious desktop layout -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Left Column: CO2 Risk Statistic & Gauge (7 Cols) -->
+<div class="lg:col-span-7 bg-white rounded-4xl p-8 sm:p-10 shadow-soft border border-black/[0.03] space-y-8">
+<!-- Header & Time Filter Toggle -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h2 class="text-xl sm:text-2xl font-bold tracking-tight text-[#0C150A]">CO2 risk statistic</h2>
+<p class="text-xs text-[#3F463E] mt-0.5 font-normal">Real-time localized greenhouse gas air density</p>
+</div>
+<!-- Period Toggle (D, W, M, Y) -->
+<div class="inline-flex items-center bg-[#F7F9F6] p-1 rounded-full border border-gray-100 self-start sm:self-auto">
+<button class="w-8 h-8 rounded-full bg-[#0C150A] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center">D</button>
+<button class="w-8 h-8 rounded-full text-[#3F463E] hover:text-[#0C150A] text-xs font-semibold transition-all flex items-center justify-center">W</button>
+<button class="w-8 h-8 rounded-full text-[#3F463E] hover:text-[#0C150A] text-xs font-semibold transition-all flex items-center justify-center">M</button>
+<button class="w-8 h-8 rounded-full text-[#3F463E] hover:text-[#0C150A] text-xs font-semibold transition-all flex items-center justify-center">Y</button>
+</div>
+</div>
+<!-- Central Circular Meter / Radial Gauge -->
+<div class="flex flex-col items-center justify-center py-6">
+<div class="relative w-72 h-72 sm:w-80 sm:h-80 flex items-center justify-center">
+<!-- SVG Gauge Component -->
+<svg class="w-full h-full -rotate-90" viewbox="0 0 260 260">
+<!-- Outermost faint guide -->
+<circle cx="130" cy="130" fill="none" r="118" stroke="#F1F1F1" stroke-width="1.5"></circle>
+<!-- Outer Dotted Perimeter Ring (from mobile design) -->
+<circle class="gauge-dots" cx="130" cy="130" fill="none" opacity="0.8" r="102" stroke="#B8DDB4" stroke-width="4.5"></circle>
+<!-- Soft Green Track Ring -->
+<circle cx="130" cy="130" fill="none" r="86" stroke="#E2F2DF" stroke-width="10"></circle>
+<!-- Active Gauge Arc (Green indicator) -->
+<circle cx="130" cy="130" fill="none" r="86" stroke="#52B74C" stroke-dasharray="540" stroke-dashoffset="360" stroke-linecap="round" stroke-width="10"></circle>
+<!-- Glowing Indicator Dot on Arc -->
+<circle class="animate-sensor-pulse" cx="216" cy="130" fill="#52B74C" r="6"></circle>
+<circle cx="216" cy="130" fill="#52B74C" opacity="0.2" r="10"></circle>
+</svg>
+<!-- Inner Central Content Card -->
+<div class="absolute inset-0 m-auto w-48 h-48 rounded-full flex flex-col items-center justify-center text-center p-4">
+<!-- Dark Circle Icon Pill -->
+<div class="w-12 h-12 rounded-full bg-[#0C150A] flex items-center justify-center text-white mb-2 shadow-sm">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
+</svg>
+</div>
+<span class="text-xs font-semibold text-[#3F463E]/80">Today's CO2 level</span>
+<span class="text-2xl sm:text-3xl font-extrabold text-[#0C150A] tracking-tight mt-1">
+                0,0409 <span class="text-sm font-semibold text-[#3F463E] block -mt-1">mg/m³</span>
+</span>
+</div>
+</div>
+</div>
+<!-- Gauge Footer: Risk status pill & All statistics action -->
+<div class="flex flex-col sm:flex-row items-center justify-between pt-4 border-t border-gray-100 gap-4">
+<div class="flex items-center gap-2">
+<span class="text-sm text-[#3F463E] font-medium">Risk percentage:</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200/50">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              Low
+            </span>
+</div>
+<a class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#F7F9F6] hover:bg-gray-100 text-[#0C150A] text-xs font-bold transition-all border border-gray-200" href="#full-stats">
+<span>All statistic</span>
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7V17"></path></svg>
+</a>
+</div>
+</div>
+<!-- Right Column: Performance Trajectory & Ecosystem Impact (5 Cols) -->
+<div class="lg:col-span-5 bg-white rounded-4xl p-8 sm:p-10 shadow-soft border border-black/[0.03] space-y-6 flex flex-col justify-between">
+<!-- Header -->
+<div>
+<div class="flex items-center justify-between">
+<h2 class="text-xl sm:text-2xl font-bold tracking-tight text-[#0C150A]">Your performance</h2>
+<span class="text-xs font-semibold px-2.5 py-1 bg-[#E2F2DF] text-[#0C150A] rounded-full">Annualized</span>
+</div>
+<p class="text-xs text-[#3F463E] mt-2 font-normal leading-relaxed">
+            Your investment is susceptible to greater vulnerability from external influences without active biological re-balancing.
+          </p>
+</div>
+<!-- Organic Trajectory Line Chart Graphic (Faithful to mobile reference screen 3) -->
+<div class="relative w-full pt-4 pb-2">
+<div class="w-full h-44 rounded-2xl bg-gradient-to-b from-[#F7F9F6] to-transparent p-2 relative flex items-end overflow-hidden">
+<svg class="w-full h-36 overflow-visible" preserveaspectratio="none" viewbox="0 0 340 130">
+<defs>
+<lineargradient id="hillFill" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#E2F2DF" stop-opacity="0.9"></stop>
+<stop offset="60%" stop-color="#E2F2DF" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.0"></stop>
+</lineargradient>
+</defs>
+<!-- Hill shaded area -->
+<path d="M 0 130 
+                       L 0 95 
+                       C 80 90, 140 75, 200 60 
+                       C 260 45, 290 32, 330 25 
+                       L 340 24 
+                       L 340 130 Z" fill="url(#hillFill)"></path>
+<!-- Soft secondary contour line -->
+<path d="M 0 110 C 90 105, 170 95, 240 80 C 290 68, 320 50, 340 45" fill="none" stroke="#D2E8CE" stroke-linecap="round" stroke-width="2.5"></path>
+<!-- Primary bold green trajectory line -->
+<path d="M 0 95 C 80 90, 140 75, 200 60 C 260 45, 290 32, 330 25" fill="none" stroke="#4EA948" stroke-linecap="round" stroke-width="3.5"></path>
+<!-- Peak indicator ring & point at apex -->
+<circle cx="330" cy="25" fill="#E2F2DF" opacity="0.6" r="14"></circle>
+<circle cx="330" cy="25" fill="#4EA948" opacity="0.3" r="8"></circle>
+<circle cx="330" cy="25" fill="#0C150A" r="4.5"></circle>
+</svg>
+</div>
+</div>
+<!-- Bottom Metric Pill Badges -->
+<div class="space-y-3">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<!-- Trees improvement badge pill -->
+<div class="flex items-center gap-3 p-3.5 rounded-2xl bg-[#F7F9F6] border border-gray-100 hover:border-[#E2F2DF] transition-colors">
+<div class="w-8 h-8 rounded-xl bg-[#E2F2DF] flex items-center justify-center text-emerald-800">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 2L6 11h3l-4 7h6v4h2v-4h6l-4-7h3L12 2z"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-[#0C150A]">Trees improvement</span>
+<span class="text-[11px] font-semibold text-emerald-700">+18% achieved</span>
+</div>
+</div>
+<!-- Air improvement badge pill -->
+<div class="flex items-center gap-3 p-3.5 rounded-2xl bg-[#F7F9F6] border border-gray-100 hover:border-gray-200 transition-colors">
+<div class="w-8 h-8 rounded-xl bg-[#0C150A] flex items-center justify-center text-white">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-[#0C150A]">Air improvement</span>
+<span class="text-[11px] font-semibold text-[#3F463E]">+24% purity</span>
+</div>
+</div>
+</div>
+<!-- Bottom Action Container -->
+<div class="pt-2">
+<button class="w-full py-3.5 px-4 rounded-2xl bg-[#0C150A] hover:bg-[#1a2b16] text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 shadow-sm">
+<span>Download Detailed Impact Report</span>
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- END: DetailedDashboardGrid -->
+<!-- BEGIN: QuickScanActionFloatingBar -->
+<!-- Mimicking the mobile circular bottom scan bar as a sticky floating desk widget -->
+<section class="mt-8 bg-white/95 backdrop-blur-md rounded-3xl p-4 sm:p-5 border border-black/[0.04] shadow-soft flex flex-col sm:flex-row items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<!-- Circular Scan Trigger matching the black center button on mobile nav -->
+<button aria-label="Scan Device or Sensor" class="w-12 h-12 rounded-full bg-[#0C150A] hover:bg-emerald-950 text-white flex items-center justify-center shadow-md transition-transform hover:scale-105 active:scale-95" title="Scan QR Carbon Certificate">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"></path>
+<rect height="10" rx="1" width="10" x="7" y="7"></rect>
+</svg>
+</button>
+<div>
+<h4 class="text-sm font-bold text-[#0C150A]">Hardware Telemetry &amp; Sensor Sync</h4>
+<p class="text-xs text-[#3F463E]">Connect Atmos LoRaWAN ground probes and IoT canopy nodes.</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-[#E2F2DF] px-3.5 py-1.5 rounded-full">
+<span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+          8 Nodes Online
+        </span>
+<button class="px-4 py-2 rounded-full text-xs font-bold text-[#0C150A] hover:bg-gray-100 border border-gray-200 transition-colors">
+          Manage Sensors
+        </button>
+</div>
+</section>
+<!-- END: QuickScanActionFloatingBar -->
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: MainFooter -->
+<footer class="mt-auto border-t border-black/[0.04] bg-white py-6 px-6 lg:px-12 text-xs text-[#3F463E]">
+<div class="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-lg bg-[#E2F2DF] flex items-center justify-center text-[#0C150A]">
+<svg class="w-3.5 h-3.5" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 2L6 11h3l-4 7h6v4h2v-4h6l-4-7h3L12 2z"></path>
+</svg>
+</div>
+<span class="font-bold text-[#0C150A]">Atmos by GreenStride</span>
+<span>— Verified Planetary Regenerative Infrastructure</span>
+</div>
+<div class="flex items-center gap-6 font-medium">
+<a class="hover:text-[#0C150A] transition-colors" href="#privacy">Privacy</a>
+<a class="hover:text-[#0C150A] transition-colors" href="#terms">Terms of Verification</a>
+<a class="hover:text-[#0C150A] transition-colors" href="#docs">API &amp; Node Documentation</a>
+<span class="text-gray-300">|</span>
+<span>© 2025 GreenStride Inc.</span>
+</div>
+</div>
+</footer>
+<!-- END: MainFooter -->
+<!-- BEGIN: InteractiveHandlers -->
+<script data-purpose="dashboard-interactivity">
+    // Period selector interactive toggling
+    document.addEventListener('DOMContentLoaded', () => {
+      const periodButtons = document.querySelectorAll('button:has-text("D"), button:has-text("W"), button:has-text("M"), button:has-text("Y")');
+      
+      const filterGroup = document.querySelector('.inline-flex.items-center.bg-\\[\\#F7F9F6\\]');
+      if (filterGroup) {
+        const buttons = filterGroup.querySelectorAll('button');
+        buttons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            buttons.forEach(b => {
+              b.classList.remove('bg-[#0C150A]', 'text-white', 'shadow-xs');
+              b.classList.add('text-[#3F463E]');
+            });
+            btn.classList.add('bg-[#0C150A]', 'text-white', 'shadow-xs');
+            btn.classList.remove('text-[#3F463E]');
+          });
+        });
+      }
+    });
+  </script>
+<!-- END: InteractiveHandlers -->
+</body></html>

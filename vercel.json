@@ -1,24 +1,16 @@
 {
-  "installCommand": "pnpm install --frozen-lockfile --prod=false",
-  "buildCommand": "pnpm -w run build:ci",
-  "outputDirectory": "app/mockup-sandbox/dist",
-  "functions": {
-    "api/**/*.js": {
-      "maxDuration": 30
-    }
-  },
-  "routes": [
+  "buildCommand": "echo 'No build needed - static site'",
+  "outputDirectory": "public",
+  "public": true,
+  "headers": [
     {
-      "src": "/api/healthz",
-      "dest": "/api/healthz.js"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, s-maxage=3600"
+        }
+      ]
     }
   ]
 }

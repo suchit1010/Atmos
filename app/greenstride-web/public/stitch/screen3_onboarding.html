@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>GreenStride - Onboarding</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brandDark: '#0C150A',
+            brandGreen: '#3FAF58',
+            brandPillGreen: '#DCEFD9',
+            brandMuted: '#7A8078',
+            brandLightBg: '#FAFCFA',
+            phoneBorder: '#E5E7EB',
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+          },
+          borderRadius: {
+            'phone': '46px',
+            'pill': '16px',
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Styles for Precise Aesthetics -->
+<style data-purpose="custom-layout">
+    body {
+      background-color: #E7ECE8;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Screen device frame style */
+    .mobile-frame {
+      width: 100%;
+      max-width: 390px;
+      height: 844px;
+      background-color: #FFFFFF;
+      box-shadow: 0 25px 60px -15px rgba(22, 34, 22, 0.12), 0 0 1px 1px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtitle letter spacing */
+    .editorial-sub {
+      color: #727771;
+      line-height: 1.45;
+      letter-spacing: -0.01em;
+    }
+  </style>
+</head>
+<body class="p-0 sm:p-6">
+<!-- BEGIN: MobileDeviceContainer -->
+<div class="mobile-frame sm:rounded-phone" data-purpose="onboarding-screen">
+<!-- BEGIN: TopBar -->
+<header class="pt-8 px-7 flex items-center justify-between z-20 select-none" data-purpose="navigation-header">
+<!-- Brand Logo & Name -->
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-[#EBF6EA] flex items-center justify-center text-brandGreen" data-purpose="logo-icon">
+<!-- Leaf Icon -->
+<svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.3" viewbox="0 0 24 24">
+<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+<path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+</svg>
+</div>
+<span class="text-[19px] font-bold text-brandDark tracking-[-0.02em]">GreenStride</span>
+</div>
+<!-- Skip Link -->
+<button class="text-[14px] font-medium text-[#9BA199] hover:text-brandDark transition-colors" type="button">
+        Skip
+      </button>
+</header>
+<!-- END: TopBar -->
+<!-- BEGIN: HeroGraphicSection -->
+<section class="relative flex-1 flex items-center justify-center px-4 overflow-hidden" data-purpose="planet-illustration-area">
+<!-- Planet & Orbital Network SVG Canvas -->
+<div class="relative w-[320px] h-[320px] flex items-center justify-center">
+<!-- Outer subtle ambient blur behind planet -->
+<div class="absolute inset-8 rounded-full bg-[#F1F8F0] blur-xl opacity-80 pointer-events-none"></div>
+<!-- SVG Orbital Lines & Planet Details -->
+<svg class="absolute inset-0 w-full h-full overflow-visible" fill="none" viewbox="0 0 320 320">
+<defs>
+<!-- Planet Sphere Gradient -->
+<radialgradient cx="38%" cy="32%" id="planetGlow" r="65%">
+<stop offset="0%" stop-color="#FFFFFF"></stop>
+<stop offset="55%" stop-color="#E1E7E2"></stop>
+<stop offset="100%" stop-color="#C5CEC7"></stop>
+</radialgradient>
+<clippath id="planetClip">
+<circle cx="160" cy="160" r="92"></circle>
+</clippath>
+<!-- Small 3D Node Gradient -->
+<radialgradient cx="35%" cy="35%" id="orbNodeGlow" r="65%">
+<stop offset="0%" stop-color="#FFFFFF"></stop>
+<stop offset="40%" stop-color="#C2DFC0"></stop>
+<stop offset="100%" stop-color="#7EA67C"></stop>
+</radialgradient>
+</defs>
+<!-- Elliptical Ring 1 (Back segment handled visually by overall ring balance) -->
+<ellipse cx="160" cy="158" opacity="0.85" rx="142" ry="72" stroke="#BFDCBD" stroke-dasharray="3 3.5" stroke-width="1.25" transform="rotate(-30 160 158)"></ellipse>
+<!-- Elliptical Ring 2 (Tilted steep angle) -->
+<ellipse cx="160" cy="158" opacity="0.9" rx="138" ry="62" stroke="#B3D7B1" stroke-width="1.35" transform="rotate(38 160 158)"></ellipse>
+<!-- Elliptical Ring 3 (Outer sweeping curve) -->
+<ellipse cx="160" cy="160" opacity="0.75" rx="148" ry="50" stroke="#BBDDBD" stroke-width="1.2" transform="rotate(-8 160 160)"></ellipse>
+<!-- BASE PLANET BODY -->
+<circle cx="160" cy="160" fill="url(#planetGlow)" r="92"></circle>
+<!-- CONTINENT SHAPES (clipped to sphere) -->
+<g clip-path="url(#planetClip)">
+<!-- Stylized Continent Landmass 1 (Left & Mid) -->
+<path d="M 96 112 C 104 102 120 108 132 100 C 145 92 142 82 150 78 C 160 84 158 102 150 114 C 142 126 130 126 126 138 C 122 150 134 162 132 178 C 130 194 116 206 102 216 C 90 200 86 160 90 142 Z" fill="#B3BDB5"></path>
+<!-- Stylized Continent Landmass 2 (Top Right) -->
+<path d="M 174 88 C 182 82 200 84 214 96 C 228 108 238 126 238 140 C 226 136 214 126 198 128 C 182 130 174 116 172 102 Z" fill="#B3BDB5"></path>
+<!-- Stylized Continent Landmass 3 (Bottom Right) -->
+<path d="M 190 168 C 206 162 222 172 232 186 C 242 198 234 214 220 226 C 210 220 200 206 196 194 C 192 182 184 174 190 168 Z" fill="#B4BEB6"></path>
+<!-- Latitude/Longitude Light Shading Curve -->
+<path d="M 68 160 Q 160 196 252 160" fill="none" stroke="#FFFFFF" stroke-dasharray="2 3" stroke-opacity="0.3" stroke-width="1"></path>
+</g>
+<!-- 3D PINE TREES ON GLOBE SURFACE & ORBITS -->
+<!-- Tree 1 (Top continent) -->
+<g transform="translate(142, 64) scale(0.7)">
+<polygon fill="#3D864B" points="12,2 4,14 8,14 3,21 9,21 1,28 23,28 15,21 21,21 16,14 20,14"></polygon>
+<rect fill="#2E6338" height="4" width="3" x="10.5" y="28"></rect>
+</g>
+<!-- Tree 2 (Left continent) -->
+<g transform="translate(98, 142) scale(0.68)">
+<polygon fill="#448E53" points="12,2 4,14 8,14 3,21 9,21 1,28 23,28 15,21 21,21 16,14 20,14"></polygon>
+<rect fill="#2E6338" height="4" width="3" x="10.5" y="28"></rect>
+</g>
+<!-- Tree 3 (Mid-left continent) -->
+<g transform="translate(130, 178) scale(0.65)">
+<polygon fill="#428B50" points="12,2 4,14 8,14 3,21 9,21 1,28 23,28 15,21 21,21 16,14 20,14"></polygon>
+<rect fill="#2E6338" height="4" width="3" x="10.5" y="28"></rect>
+</g>
+<!-- Tree 4 (Center-right orbit intersection) -->
+<g transform="translate(202, 122) scale(0.72)">
+<polygon fill="#3A7E46" points="12,2 4,14 8,14 3,21 9,21 1,28 23,28 15,21 21,21 16,14 20,14"></polygon>
+<rect fill="#2E6338" height="4" width="3" x="10.5" y="28"></rect>
+</g>
+<!-- Tree 5 (Right surface) -->
+<g transform="translate(236, 170) scale(0.65)">
+<polygon fill="#489457" points="12,2 4,14 8,14 3,21 9,21 1,28 23,28 15,21 21,21 16,14 20,14"></polygon>
+<rect fill="#2E6338" height="4" width="3" x="10.5" y="28"></rect>
+</g>
+<!-- Tree 6 (Lower middle surface) -->
+<g transform="translate(170, 202) scale(0.75)">
+<polygon fill="#3D864B" points="12,2 4,14 8,14 3,21 9,21 1,28 23,28 15,21 21,21 16,14 20,14"></polygon>
+<rect fill="#2E6338" height="4" width="3" x="10.5" y="28"></rect>
+</g>
+<!-- FLOATING ORBITAL SPHERICAL NODES (Green beads) -->
+<!-- Node 1: Upper-Right Large Node -->
+<circle cx="230" cy="144" fill="url(#orbNodeGlow)" filter="drop-shadow(0 2px 4px rgba(60,120,60,0.15))" r="8"></circle>
+<!-- Node 2: Mid-Left Orbit Node -->
+<circle cx="160" cy="158" fill="url(#orbNodeGlow)" r="5.5"></circle>
+<!-- Node 3: Far-Left Orbital Node -->
+<circle cx="106" cy="226" fill="url(#orbNodeGlow)" r="5"></circle>
+<!-- Node 4: Lower Small Pearl Node -->
+<circle cx="188" cy="172" fill="url(#orbNodeGlow)" r="4.5"></circle>
+<!-- Node 5: Tiny floating dust pearl -->
+<circle cx="120" cy="88" fill="#CDE7CC" r="3.5"></circle>
+</svg>
+</div>
+</section>
+<!-- END: HeroGraphicSection -->
+<!-- BEGIN: ContentAndActionsSection -->
+<footer class="px-7 pb-10 pt-2 flex flex-col justify-end" data-purpose="content-and-cta">
+<!-- Typography -->
+<div class="mb-8">
+<!-- Main Bold Headline -->
+<h1 class="text-[34px] leading-[1.14] font-bold text-brandDark tracking-[-0.03em] mb-3">
+          Planting Green,<br/>Growing Life
+        </h1>
+<!-- Subtitle Paragraph -->
+<p class="text-[13.5px] editorial-sub max-w-[310px]">
+          Your investment is susceptible to greater vulnerability from external influences.
+        </p>
+</div>
+<!-- Action Buttons Container -->
+<div class="flex flex-col items-center w-full gap-4">
+<!-- Primary Pill Button -->
+<button class="w-full bg-brandPillGreen active:bg-[#CEE8CA] transition-colors py-4 px-6 rounded-pill text-[15px] font-bold text-brandDark tracking-[-0.01em] shadow-sm flex items-center justify-center" type="button">
+          Get Started
+        </button>
+<!-- Secondary Inline Link -->
+<a class="text-[13.5px] font-semibold text-brandDark underline decoration-1 underline-offset-4 hover:opacity-75 transition-opacity" href="#login">
+          Already have an account?
+        </a>
+</div>
+</footer>
+<!-- END: ContentAndActionsSection -->
+</div>
+<!-- END: MobileDeviceContainer -->
+</body></html>

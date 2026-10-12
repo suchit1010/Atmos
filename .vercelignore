@@ -1,25 +1,26 @@
-﻿# Exclude dependencies
 node_modules
 .pnpm-store
-
-# Exclude development files
 .git
-*.log
+.env
+.env.*
+.github
+.vscode
+.vercel
 .DS_Store
-
-# Exclude documentation & tests
-test/
-docs/
-scripts/
-.env.local
-.env.*.local
-**/*.test.ts
-**/*.spec.ts
-**/*.test.js
-**/*.spec.js
-
-# Exclude large non-essential directories
-app/mobile/
-# app/mockup-sandbox/ is the frontend — do NOT exclude it
-
-# NOTE: Do NOT exclude dist/ or build/ — the built api/api-server/ bundle is needed by Vercel
+*.log
+dist
+build
+.next
+.nuxt
+out
+*.tgz
+*.tar
+*.tar.gz
+.cache
+atmos_backend
+atmos_mobile
+*.md
+ARCHITECTURE_*
+DEVELOPMENT_*
+PRODUCTION_*
+START_HERE*
