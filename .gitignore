@@ -1,6 +1,5 @@
 **/node_modules/
 **/dist/
-!lib/*/dist
 **/target/
 **/coverage/
 **/.expo/
