@@ -1,156 +1,105 @@
-/**
- * JWT Authentication Service
- * Handles token generation, validation, and refresh
- */
-
 import crypto from "node:crypto";
+import { SignJWT, jwtVerify } from "jose";
+import { getConfig } from "../config";
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-key-change-in-production";
-const JWT_EXPIRY = process.env.JWT_EXPIRY || "7d";
-const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY || "30d";
+export type Role = "producer" | "buyer" | "admin";
+const ROLES: readonly string[] = ["producer", "buyer", "admin"];
 
-// In production, use jsonwebtoken library
-// For now, using simple JWT-like structure
-
-interface TokenPayload {
+export interface AuthClaims {
   userId: string;
-  phone: string;
+  role: Role;
   wallet?: string;
-  role: "producer" | "buyer" | "admin";
-  iat: number;
-  exp: number;
 }
 
-interface AuthTokens {
+export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
 }
 
-/**
- * Parse JWT expiry duration to seconds
- */
-function parseExpiry(expiry: string): number {
-  const match = expiry.match(/^(\d+)([smhd])$/);
-  if (!match) throw new Error(`Invalid expiry format: ${expiry}`);
-
-  const [, amount, unit] = match;
-  const multipliers: Record<string, number> = {
-    s: 1,
-    m: 60,
-    h: 3600,
-    d: 86400,
-  };
-
-  return parseInt(amount) * (multipliers[unit] ?? 1);
-}
-
-/**
- * Create a simple JWT token
- * In production, use `jsonwebtoken` library
- */
-export function createTokens(
-  userId: string,
-  phone: string,
-  role: "producer" | "buyer" | "admin" = "producer",
-  wallet?: string,
-): AuthTokens {
-  const now = Math.floor(Date.now() / 1000);
-  const expiresIn = parseExpiry(JWT_EXPIRY);
-  const exp = now + expiresIn;
-
-  const payload: TokenPayload = {
-    userId,
-    phone,
-    wallet,
-    role,
-    iat: now,
-    exp,
-  };
-
-  // Simple base64 encoding (NOT cryptographically secure - use jsonwebtoken in production)
-  const header = {
-    alg: "HS256",
-    typ: "JWT",
-  };
-
-  const headerB64 = Buffer.from(JSON.stringify(header)).toString("base64url");
-  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
-
-  // Create signature
-  const signature = crypto
-    .createHmac("sha256", JWT_SECRET)
-    .update(`${headerB64}.${payloadB64}`)
-    .digest("base64url");
-
-  const accessToken = `${headerB64}.${payloadB64}.${signature}`;
-
-  // Refresh token (longer expiry)
-  const refreshExpiry = parseExpiry(REFRESH_TOKEN_EXPIRY);
-  const refreshPayload = {
-    userId,
-    type: "refresh",
-    iat: now,
-    exp: now + refreshExpiry,
-  };
-
-  const refreshPayloadB64 = Buffer.from(JSON.stringify(refreshPayload)).toString("base64url");
-  const refreshSignature = crypto
-    .createHmac("sha256", JWT_SECRET)
-    .update(`${headerB64}.${refreshPayloadB64}`)
-    .digest("base64url");
-
-  const refreshToken = `${headerB64}.${refreshPayloadB64}.${refreshSignature}`;
-
-  return {
-    accessToken,
-    refreshToken,
-    expiresIn,
-  };
-}
-
-/**
- * Verify and decode JWT token
- */
-export function verifyToken(token: string): TokenPayload {
-  try {
-    const [headerB64, payloadB64, signatureB64] = token.split(".");
-
-    if (!headerB64 || !payloadB64 || !signatureB64) {
-      throw new Error("Invalid token format");
-    }
-
-    // Verify signature
-    const expectedSignature = crypto
-      .createHmac("sha256", JWT_SECRET)
-      .update(`${headerB64}.${payloadB64}`)
-      .digest("base64url");
-
-    if (signatureB64 !== expectedSignature) {
-      throw new Error("Invalid signature");
-    }
-
-    // Decode payload
-    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString());
-
-    // Check expiry
-    const now = Math.floor(Date.now() / 1000);
-    if (payload.exp < now) {
-      throw new Error("Token expired");
-    }
-
-    return payload as TokenPayload;
-  } catch (error: any) {
-    throw new Error(`Token verification failed: ${error.message}`);
+/** Every verification failure maps to this one generic error: no detail reaches the client. */
+export class AuthError extends Error {
+  constructor() {
+    super("unauthorized");
+    this.name = "AuthError";
   }
 }
 
-/**
- * Extract token from Authorization header
- */
-export function extractToken(authHeader: string | undefined): string | null {
-  if (!authHeader) return null;
+const ISSUER = "atmos";
+const AUDIENCE = "atmos-api";
 
-  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+const keyCache = new Map<string, Uint8Array>();
+
+/** Sub-keys are derived from the one configured secret so a leaked code key never signs tokens. */
+export function deriveKey(label: string): Uint8Array {
+  const secret = getConfig().jwtSecret;
+  const cacheKey = `${label}:${secret}`;
+  let key = keyCache.get(cacheKey);
+  if (!key) {
+    key = new Uint8Array(crypto.hkdfSync("sha256", secret, "atmos-v1", label, 32));
+    keyCache.set(cacheKey, key);
+  }
+  return key;
+}
+
+export async function issueTokens(opts: {
+  userId: string;
+  role: Role;
+  wallet?: string;
+  accessTtlSeconds?: number;
+}): Promise<AuthTokens> {
+  const config = getConfig();
+  const key = deriveKey("atmos-jwt");
+  const accessTtl = opts.accessTtlSeconds ?? config.accessTtlSeconds;
+  const sign = (typ: "access" | "refresh", ttl: number): Promise<string> =>
+    new SignJWT({ role: opts.role, typ, ...(opts.wallet ? { wallet: opts.wallet } : {}) })
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject(opts.userId)
+      .setIssuer(ISSUER)
+      .setAudience(AUDIENCE)
+      .setIssuedAt()
+      .setExpirationTime(`${ttl}s`)
+      .setJti(crypto.randomUUID())
+      .sign(key);
+  const [accessToken, refreshToken] = await Promise.all([
+    sign("access", accessTtl),
+    sign("refresh", config.refreshTtlSeconds),
+  ]);
+  return { accessToken, refreshToken, expiresIn: accessTtl };
+}
+
+async function verify(token: string, typ: "access" | "refresh"): Promise<AuthClaims> {
+  try {
+    const { payload } = await jwtVerify(token, deriveKey("atmos-jwt"), {
+      algorithms: ["HS256"],
+      issuer: ISSUER,
+      audience: AUDIENCE,
+    });
+    const role = payload["role"];
+    const wallet = payload["wallet"];
+    if (payload["typ"] !== typ) throw new AuthError();
+    if (typeof payload.sub !== "string" || typeof role !== "string" || !ROLES.includes(role)) throw new AuthError();
+    return {
+      userId: payload.sub,
+      role: role as Role,
+      ...(typeof wallet === "string" ? { wallet } : {}),
+    };
+  } catch {
+    throw new AuthError();
+  }
+}
+
+export const verifyAccessToken = (token: string): Promise<AuthClaims> => verify(token, "access");
+export const verifyRefreshToken = (token: string): Promise<AuthClaims> => verify(token, "refresh");
+
+export function extractToken(header: string | undefined): string | null {
+  if (!header) return null;
+  const match = /^Bearer\s+(.+)$/i.exec(header);
   return match?.[1] ?? null;
+}
+
+/** The same phone always maps to the same pseudonymous id, with no database. */
+export function userIdFromPhone(phoneE164: string): string {
+  const mac = crypto.createHmac("sha256", deriveKey("atmos-userid")).update(phoneE164).digest("hex");
+  return `u_${mac.slice(0, 24)}`;
 }

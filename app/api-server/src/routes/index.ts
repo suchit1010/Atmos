@@ -1,19 +1,18 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
-import paymentsRouter from "./payments";
-import verifyRouter from "./verify";
-import paymentsPrivateRouter from "./payments-private";
-import portfolioPrivateRouter from "./portfolio-private";
-import solanaRouter from "./solana";
+import authRouter from "./auth";
+import batchesRouter from "./batches";
+import proofRouter from "./proof";
+import chainRouter from "./chain";
+import demoRouter from "./demo";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
-// Private Umbra routes should take precedence for payments
-router.use('/payments', paymentsPrivateRouter);
-router.use(paymentsRouter);
-router.use('/portfolio', portfolioPrivateRouter);
-router.use(verifyRouter);
-router.use(solanaRouter);
+router.use(authRouter);
+router.use(batchesRouter);
+router.use(proofRouter);
+router.use(chainRouter);
+router.use(demoRouter);
 
 export default router;

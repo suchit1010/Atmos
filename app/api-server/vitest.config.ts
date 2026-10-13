@@ -7,5 +7,6 @@ export default defineConfig({
     globals: true,
     clearMocks: true,
     restoreMocks: true,
+    env: { LOG_LEVEL: "silent" },
   },
 });

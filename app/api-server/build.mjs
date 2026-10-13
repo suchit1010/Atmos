@@ -206,6 +206,11 @@ async function buildAll() {
     plugins: [
       esbuildPluginPino({ transports: ["pino-pretty"] })
     ],
+    // Bundled CommonJS packages (express and others) call require() on Node built-ins; an ESM
+    // output has no `require`, so provide one.
+    banner: {
+      js: `import { createRequire as __atmosCreateRequire } from "node:module";\nconst require = __atmosCreateRequire(import.meta.url);`,
+    },
   });
 }
 

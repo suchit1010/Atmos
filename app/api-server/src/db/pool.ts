@@ -1,31 +1,27 @@
 import { pool as workspacePool } from "@workspace/db";
 
-interface MockQueryResult {
-  rows: any[];
-  rowCount: number;
+export interface QueryResultLike<T> {
+  rows: T[];
+  rowCount: number | null;
 }
 
-const pool = process.env.DATABASE_URL ? workspacePool : null;
+/** True when DATABASE_URL is set. Without it, `query` returns empty results (mock mode). */
+export const isDatabaseAvailable = Boolean(process.env["DATABASE_URL"]);
 
-if (!pool) {
-  console.warn("Database not available; using mock queries for development/testing");
-}
+const pool = isDatabaseAvailable ? workspacePool : null;
+let warned = false;
 
-export async function query(text: string, params?: any[]): Promise<MockQueryResult> {
+export async function query<T = Record<string, unknown>>(
+  text: string,
+  params?: unknown[],
+): Promise<QueryResultLike<T>> {
   if (pool) {
-    return pool.query(text, params);
+    const result = await pool.query(text, params);
+    return { rows: result.rows as T[], rowCount: result.rowCount };
   }
-
-  // Mock mode: return empty results for SELECT, success for mutations
-  console.log(`[MOCK DB] Query: ${text.substring(0, 50)}...`);
-  
-  if (text.toUpperCase().startsWith('SELECT')) {
-    return { rows: [], rowCount: 0 };
+  if (!warned) {
+    warned = true;
+    console.warn("DATABASE_URL is not set: database queries return empty results (mock mode).");
   }
-  
-  if (text.toUpperCase().startsWith('INSERT')) {
-    return { rows: [{ id: Math.random().toString(36).substr(2, 9) }], rowCount: 1 };
-  }
-
   return { rows: [], rowCount: 0 };
 }
