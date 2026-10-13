@@ -62,6 +62,7 @@ import {
   CreditCard,
   QrCode,
   DollarSign,
+  Plus,
 } from "lucide-react";
 import {
   DodoPaymentsService,
@@ -147,6 +148,23 @@ export interface UploadedPhotoItem {
   syntheticScore: number;
   aiDetections: string[];
   algoMetrics: { label: string; value: string; match: string }[];
+}
+
+export interface MarketListingItem {
+  id: string;
+  title: string;
+  batch: string;
+  pricePerTonne: number;
+  availableTonnes: number;
+  score: string;
+  verifiers: number;
+  badge: string;
+  location: string;
+  type: string;
+  isUserCreated?: boolean;
+  zkCommitment?: string;
+  solanaMint?: string;
+  createdAt?: string;
 }
 
 export const ALL_PROJECT_CONFIGS: ProjectConfig[] = [
@@ -639,14 +657,25 @@ export function AtmosMobileExperience() {
 
   // Screen 9 & 10: Marketplace & Payment States
   const [marketSearch, setMarketSearch] = useState("");
-  const [marketFilter, setMarketFilter] = useState<"all" | "biochar" | "agroforestry">("all");
+  const [marketFilter, setMarketFilter] = useState<string>("all");
   const [showListCreditsModal, setShowListCreditsModal] = useState(false);
   const [listPrice, setListPrice] = useState(11100);
   const [listTonnes, setListTonnes] = useState(5.796);
   const [purchaseTonnes, setPurchaseTonnes] = useState(5.0);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [marketListings, setMarketListings] = useState([
+
+  // Custom Projects & Project Creation States
+  const [customProjects, setCustomProjects] = useState<ProjectConfig[]>([]);
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [newProjTitle, setNewProjTitle] = useState("");
+  const [newProjMethodology, setNewProjMethodology] = useState<string>("agroforestry");
+  const [newProjLocation, setNewProjLocation] = useState("Satara, Maharashtra, India");
+  const [newProjCoords, setNewProjCoords] = useState("17.6805° N, 73.9904° E");
+  const [newProjCO2, setNewProjCO2] = useState<number>(8.5);
+  const [newProjPrice, setNewProjPrice] = useState<number>(12500);
+
+  const [marketListings, setMarketListings] = useState<MarketListingItem[]>([
     {
       id: "kalol-batch-3",
       title: "Biochar · Kalol, Gujarat",
@@ -810,9 +839,12 @@ export function AtmosMobileExperience() {
   // Compute live yield percentage
   const yieldPct = ((biocharOutput / biomassInput) * 100).toFixed(1);
 
+  // Combined Available Projects (Standard 9 Methodologies + User Registered Custom Projects)
+  const allAvailableProjects = [...ALL_PROJECT_CONFIGS, ...customProjects];
+
   // Active Project configuration accessor for the selected methodology
   const currentProjectConfig =
-    ALL_PROJECT_CONFIGS.find((p) => p.id === selectedProjectId) || ALL_PROJECT_CONFIGS[0];
+    allAvailableProjects.find((p) => p.id === selectedProjectId) || allAvailableProjects[0];
   const currentMetric1 =
     projectMetricValues[selectedProjectId]?.m1 ?? currentProjectConfig.metric1Default;
   const currentMetric2 =
@@ -1027,6 +1059,129 @@ export function AtmosMobileExperience() {
     setAuthToast(`Solana Pay: ${usdcAmt} USDC Confirmed on Devnet (Slot #250,231) ✓`);
     setTimeout(() => setAuthToast(null), 3500);
     navigateTo("11_certificate");
+  };
+
+  // Create and register a custom climate project, and instantly list it on the marketplace
+  const handleCreateAndListProject = () => {
+    const rawTitle = newProjTitle.trim();
+    const projTitle = rawTitle || `Project ${newProjMethodology.toUpperCase()} · ${newProjLocation.split(",")[0]}`;
+    const projId = `custom_${Date.now()}`;
+
+    // Select icon based on methodology
+    let methodIcon = Sparkles;
+    let badgeText = "Custom Verified";
+    let defaultCalc = "✓ Yield Verified · within dMRV limit";
+    if (newProjMethodology === "biochar") {
+      methodIcon = Leaf;
+      badgeText = "Biochar Pilot";
+      defaultCalc = "✓ Yield 26.4% · within 45% limit";
+    } else if (newProjMethodology === "agroforestry") {
+      methodIcon = Sparkles;
+      badgeText = "NDVI Verified";
+      defaultCalc = "✓ Crown density 69.1% · 95% survival";
+    } else if (newProjMethodology === "solar") {
+      methodIcon = Sun;
+      badgeText = "Grid Connected";
+      defaultCalc = "✓ DLMS Generation Verified";
+    } else if (newProjMethodology === "ev_fleet") {
+      methodIcon = Car;
+      badgeText = "CAN-Bus IoT";
+      defaultCalc = "✓ ICE Displacement Verified";
+    } else if (newProjMethodology === "building_retrofit") {
+      methodIcon = Building;
+      badgeText = "BMS Verified";
+      defaultCalc = "✓ ASHRAE 90.1 Verified";
+    } else if (newProjMethodology === "shipping") {
+      methodIcon = Anchor;
+      badgeText = "IMO CORSIA";
+      defaultCalc = "✓ Low Sulfur Fuel Swapped";
+    } else if (newProjMethodology === "aviation") {
+      methodIcon = Plane;
+      badgeText = "SAF Blend";
+      defaultCalc = "✓ ASTM D7566 Verified";
+    } else if (newProjMethodology === "city_initiative") {
+      methodIcon = Home;
+      badgeText = "Municipal dMRV";
+      defaultCalc = "✓ Methane Avoidance Verified";
+    }
+
+    const newProject: ProjectConfig = {
+      id: projId,
+      title: projTitle,
+      shortTitle: projTitle.split("·")[0].trim() || "Climate Unit",
+      badge: "✨ Newly Registered",
+      icon: methodIcon,
+      color: "#276A3C",
+      projectName: `${projTitle} · ${newProjLocation.split(",")[0]}`,
+      location: newProjLocation,
+      coords: newProjCoords || "19.0760° N, 72.8777° E",
+      metric1Name: "Feedstock / Scope Volume",
+      metric1Unit: "units",
+      metric1Default: 12500,
+      metric1Min: 1000,
+      metric1Max: 50000,
+      metric1Step: 500,
+      metric2Name: "Net CO₂ Sequestration",
+      metric2Unit: "kg",
+      metric2Default: Math.round(newProjCO2 * 1000),
+      metric2Min: 500,
+      metric2Max: 25000,
+      metric2Step: 100,
+      calcBadge: defaultCalc,
+      calcLimit: "Target: >90%",
+      equipmentDefault: "IoT Enclave + Multispectral Optical Sensor",
+      equipmentOptions: [
+        "IoT Enclave + Multispectral Optical Sensor",
+        "Sentinel-2 Orbital Calibrator",
+        "Hardware Secure Element Key",
+      ],
+      satelliteTitle: "Orbital Sentinel-2 Multispectral & Thermal Audit",
+      satelliteBadge: "99.4% MATCH",
+      satellitePill1: "Orbital Telemetry: Verified ✓",
+      satellitePill2: `Delta Area: ${newProjLocation.split(",")[0]}`,
+      satellitePill3: "Sentinel-2B: Overpass Confirmed",
+      photos: [
+        { label: "P#1", desc: "Project perimeter verified with RTK-GPS survey stakes", badge: "Site Surveyed" },
+        { label: "P#2", desc: "Real-time telemetry and IoT monitoring device", badge: "Telemetry Logged" },
+        { label: "P#3", desc: "Verification audit log with cryptographic hash", badge: "Audit Hash" },
+      ],
+      co2Estimated: `${newProjCO2.toFixed(3)} tCO₂e`,
+    };
+
+    const newListing: MarketListingItem = {
+      id: `listing-${projId}`,
+      title: `${projTitle} · ${newProjLocation.split(",")[0]}`,
+      batch: `Batch #1 · ${newProjCO2.toFixed(3)} tCO₂e · Vintage 2026`,
+      pricePerTonne: newProjPrice,
+      availableTonnes: newProjCO2,
+      score: "96/100",
+      verifiers: 2,
+      badge: "✨ Just Listed · You",
+      location: newProjLocation.split(",")[0],
+      type: newProjMethodology,
+      isUserCreated: true,
+      zkCommitment: `0x${Math.random().toString(16).substring(2, 10)}${Math.random().toString(16).substring(2, 10)}`,
+      solanaMint: `ZK-SOL-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+      createdAt: new Date().toISOString(),
+    };
+
+    setCustomProjects((prev) => [newProject, ...prev]);
+    setSelectedProjectId(projId);
+    setMarketListings((prev) => [newListing, ...prev]);
+    setMarketFilter("all");
+    setShowCreateProjectModal(false);
+    setNewProjTitle("");
+
+    playHapticSound("success");
+    confetti({
+      particleCount: 90,
+      spread: 75,
+      origin: { y: 0.6 },
+      colors: ["#35C46A", "#E2F2DF", "#0C150A", "#FFD700"],
+    });
+    setAuthToast(`✨ Created "${projTitle}" and listed on Market!`);
+    setTimeout(() => setAuthToast(null), 3500);
+    navigateTo("09_marketplace");
   };
 
   // Helper: renders bottom 5-tab bar on main screens
@@ -1728,17 +1883,43 @@ export function AtmosMobileExperience() {
                           <div className="flex items-center justify-between">
                             <h1 className="text-2xl font-extrabold text-[#0C150A]">Select project type</h1>
                             <span className="text-[10px] bg-[#E2F2DF] text-[#276A3C] font-extrabold px-2 py-0.5 rounded-full border border-[#276A3C]/20">
-                              9 / 9 Active
+                              {allAvailableProjects.length} Active
                             </span>
                           </div>
                           <p className="text-xs text-[#3F463E] mt-1 leading-relaxed">
-                            All 9 climate methodologies are active with satellite orbital telemetry, IoT enclave feeds, and dMRV verification.
+                            All climate methodologies are active with satellite orbital telemetry, IoT enclave feeds, and dMRV verification.
                           </p>
                         </div>
 
-                        {/* 3x3 Tile Grid - All 9 Methodologies Active */}
+                        {/* Register New Climate Project Action Banner */}
+                        <motion.div
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            playHapticSound("tap");
+                            setShowCreateProjectModal(true);
+                          }}
+                          className="p-3.5 rounded-2xl border-2 border-dashed border-[#276A3C]/40 bg-[#E2F2DF]/50 hover:bg-[#E2F2DF]/80 cursor-pointer flex items-center justify-between transition-all shadow-2xs"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-full bg-[#276A3C] text-white flex items-center justify-center font-black shadow-xs">
+                              <Plus size={18} />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-extrabold text-[#0C150A] flex items-center gap-1.5">
+                                <span>Register New Project</span>
+                                <span className="text-[8px] bg-[#276A3C] text-white px-1.5 py-0.2 rounded-full font-bold">New</span>
+                              </h4>
+                              <p className="text-[10px] text-[#3F463E]">Add site coords, methodology, and list on market</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold text-[#276A3C] bg-white px-2.5 py-1 rounded-full border border-[#276A3C]/20 shadow-2xs">
+                            + Register
+                          </span>
+                        </motion.div>
+
+                        {/* Tile Grid - All Available Methodologies & Custom Projects */}
                         <div className="grid grid-cols-3 gap-2.5">
-                          {ALL_PROJECT_CONFIGS.map((project) => {
+                          {allAvailableProjects.map((project) => {
                             const IconComp = project.icon;
                             const isSelected = selectedProjectId === project.id;
                             return (
@@ -2686,36 +2867,122 @@ export function AtmosMobileExperience() {
                           </span>
                         </div>
 
-                        {/* Filter Pills & List Button */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            {(["all", "biochar", "agroforestry"] as const).map((filter) => (
+                        {/* Filter Pills & Action Buttons */}
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between gap-1.5">
+                            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+                              {[
+                                { id: "all", label: "All" },
+                                { id: "mine", label: "✨ Mine / Recent" },
+                                { id: "biochar", label: "Biochar" },
+                                { id: "agroforestry", label: "Agroforestry" },
+                              ].map((f) => (
+                                <button
+                                  key={f.id}
+                                  onClick={() => {
+                                    playHapticSound("tap");
+                                    setMarketFilter(f.id);
+                                  }}
+                                  className={`px-3 py-1 rounded-full text-xs font-bold transition-colors whitespace-nowrap ${
+                                    marketFilter === f.id
+                                      ? "bg-[#0C150A] text-white"
+                                      : "bg-white border border-black/5 text-[#3F463E] hover:bg-black/5"
+                                  }`}
+                                >
+                                  {f.label}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
                               <button
-                                key={filter}
                                 onClick={() => {
                                   playHapticSound("tap");
-                                  setMarketFilter(filter);
+                                  setShowCreateProjectModal(true);
                                 }}
-                                className={`px-3 py-1 rounded-full text-xs font-bold capitalize transition-colors ${
-                                  marketFilter === filter
-                                    ? "bg-[#0C150A] text-white"
-                                    : "bg-white border border-black/5 text-[#3F463E] hover:bg-black/5"
-                                }`}
+                                className="text-[10px] font-bold text-[#0C150A] bg-white border border-black/10 px-2.5 py-1 rounded-full hover:bg-black/5 transition-colors shadow-2xs flex items-center gap-1"
+                                title="Register custom climate project"
                               >
-                                {filter === "agroforestry" ? "Agroforestry" : filter}
+                                <Plus size={11} /> Register
                               </button>
-                            ))}
+                              <button
+                                onClick={() => {
+                                  playHapticSound("tap");
+                                  setShowListCreditsModal(true);
+                                }}
+                                className="text-[10px] font-bold text-[#276A3C] bg-[#E2F2DF] px-2.5 py-1 rounded-full hover:bg-[#d4edd0] transition-colors"
+                              >
+                                + List Batch
+                              </button>
+                            </div>
                           </div>
-                          <button
-                            onClick={() => {
-                              playHapticSound("tap");
-                              setShowListCreditsModal(true);
-                            }}
-                            className="text-[10px] font-bold text-[#276A3C] bg-[#E2F2DF] px-2.5 py-1 rounded-full hover:bg-[#d4edd0] transition-colors"
-                          >
-                            + List Batch
-                          </button>
                         </div>
+
+                        {/* Recent Project Spotlight Banner */}
+                        {marketListings.some((item) => item.isUserCreated) && (
+                          (() => {
+                            const recentProj = marketListings.find((item) => item.isUserCreated)!;
+                            return (
+                              <motion.div
+                                initial={{ opacity: 0, y: -6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-gradient-to-br from-[#E2F2DF] via-[#F3F9F1] to-white border-2 border-[#276A3C]/40 rounded-3xl p-3.5 shadow-sm relative overflow-hidden"
+                              >
+                                <div className="flex items-center justify-between text-[10px] mb-1.5">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="bg-[#276A3C] text-white px-2 py-0.5 rounded-full font-bold flex items-center gap-1 shadow-2xs text-[9px]">
+                                      <Sparkles size={10} /> Recent Project · Active in Market
+                                    </span>
+                                    <span className="bg-white text-[#0C150A] px-1.5 py-0.5 rounded-full font-mono text-[8px] border border-black/10 font-bold">
+                                      {recentProj.solanaMint || "Solana Devnet ZK"}
+                                    </span>
+                                  </div>
+                                  <span className="text-[9px] text-[#276A3C] font-extrabold flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#35C46A] animate-pulse" />
+                                    Live
+                                  </span>
+                                </div>
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <h3 className="text-sm font-black text-[#0C150A] leading-tight">
+                                      {recentProj.title}
+                                    </h3>
+                                    <p className="text-[11px] text-[#3F463E] mt-0.5">
+                                      {recentProj.batch}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="text-sm font-black text-[#0C150A]">
+                                      ₹{recentProj.pricePerTonne.toLocaleString("en-IN")}
+                                    </span>
+                                    <span className="text-[10px] text-[#3F463E]"> / t</span>
+                                    <p className="text-[9px] text-[#276A3C] font-bold">
+                                      {recentProj.availableTonnes} t available
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between pt-2.5 mt-2 border-t border-[#276A3C]/20">
+                                  <div className="flex items-center gap-1 text-[9px] text-[#3F463E]">
+                                    <ShieldCheck size={12} className="text-[#276A3C]" />
+                                    <span>Dual Verifier Consensus · Score {recentProj.score}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      onClick={() => {
+                                        playHapticSound("tap");
+                                        setPurchaseTonnes(Math.min(5.0, recentProj.availableTonnes));
+                                        navigateTo("10_payment");
+                                      }}
+                                      className="px-3 py-1 rounded-full bg-[#0C150A] text-white text-[10px] font-bold hover:bg-black transition-colors shadow-2xs flex items-center gap-1"
+                                    >
+                                      <span>Quick Buy</span>
+                                      <ArrowUpRight size={11} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            );
+                          })()
+                        )}
 
                         {/* Market Spot Ticker Bar */}
                         <div className="bg-white border border-black/5 rounded-2xl p-3 flex items-center justify-between shadow-xs text-xs">
@@ -2733,7 +3000,12 @@ export function AtmosMobileExperience() {
                         <div className="flex flex-col gap-2.5 mt-0.5">
                           {marketListings
                             .filter((item) => {
-                              const matchesFilter = marketFilter === "all" || item.type === marketFilter;
+                              const matchesFilter =
+                                marketFilter === "all"
+                                  ? true
+                                  : marketFilter === "mine"
+                                  ? item.isUserCreated === true
+                                  : item.type === marketFilter;
                               const matchesSearch =
                                 item.title.toLowerCase().includes(marketSearch.toLowerCase()) ||
                                 item.location.toLowerCase().includes(marketSearch.toLowerCase()) ||
@@ -2743,12 +3015,30 @@ export function AtmosMobileExperience() {
                             .map((listing) => (
                               <div
                                 key={listing.id}
-                                className="bg-white border border-black/5 rounded-3xl p-4 flex flex-col gap-2 shadow-xs hover:border-black/20 transition-all"
+                                className={`rounded-3xl p-4 flex flex-col gap-2 shadow-xs transition-all ${
+                                  listing.isUserCreated
+                                    ? "bg-gradient-to-br from-[#F5FBF3] to-white border-2 border-[#276A3C]/40 ring-2 ring-[#276A3C]/20"
+                                    : "bg-white border border-black/5 hover:border-black/20"
+                                }`}
                               >
                                 <div className="flex items-center justify-between text-[9px]">
-                                  <span className="bg-[#E2F2DF] text-[#276A3C] px-2 py-0.5 rounded-full font-bold">
-                                    {listing.badge}
-                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <span
+                                      className={`px-2 py-0.5 rounded-full font-bold flex items-center gap-1 ${
+                                        listing.isUserCreated
+                                          ? "bg-[#276A3C] text-white shadow-2xs"
+                                          : "bg-[#E2F2DF] text-[#276A3C]"
+                                      }`}
+                                    >
+                                      {listing.isUserCreated && <Sparkles size={9} />}
+                                      {listing.badge}
+                                    </span>
+                                    {listing.solanaMint && (
+                                      <span className="text-[8px] bg-black/5 text-[#0C150A] px-1.5 py-0.5 rounded-full font-mono">
+                                        {listing.solanaMint}
+                                      </span>
+                                    )}
+                                  </div>
                                   <span className="text-[#3F463E]">
                                     Score {listing.score} · {listing.verifiers} verifiers
                                   </span>
@@ -2767,23 +3057,36 @@ export function AtmosMobileExperience() {
                                       Available: {listing.availableTonnes} t
                                     </p>
                                   </div>
-                                  <motion.button
-                                    whileTap={{ scale: 0.92 }}
-                                    onClick={() => {
-                                      playHapticSound("tap");
-                                      setPurchaseTonnes(Math.min(5.0, listing.availableTonnes));
-                                      navigateTo("10_payment");
-                                    }}
-                                    className="w-9 h-9 rounded-full bg-[#0C150A] text-white flex items-center justify-center hover:scale-105 transition-transform shadow-xs"
-                                  >
-                                    <ArrowUpRight size={18} />
-                                  </motion.button>
+                                  <div className="flex items-center gap-1.5">
+                                    {listing.isUserCreated && (
+                                      <span className="text-[9px] font-bold text-[#276A3C] bg-[#E2F2DF] px-2 py-1 rounded-full">
+                                        Your Project
+                                      </span>
+                                    )}
+                                    <motion.button
+                                      whileTap={{ scale: 0.92 }}
+                                      onClick={() => {
+                                        playHapticSound("tap");
+                                        setPurchaseTonnes(Math.min(5.0, listing.availableTonnes));
+                                        navigateTo("10_payment");
+                                      }}
+                                      className="w-9 h-9 rounded-full bg-[#0C150A] text-white flex items-center justify-center hover:scale-105 transition-transform shadow-xs"
+                                      title="Purchase Credits"
+                                    >
+                                      <ArrowUpRight size={18} />
+                                    </motion.button>
+                                  </div>
                                 </div>
                               </div>
                             ))}
 
                           {marketListings.filter((item) => {
-                            const matchesFilter = marketFilter === "all" || item.type === marketFilter;
+                            const matchesFilter =
+                              marketFilter === "all"
+                                ? true
+                                : marketFilter === "mine"
+                                ? item.isUserCreated === true
+                                : item.type === marketFilter;
                             const matchesSearch =
                               item.title.toLowerCase().includes(marketSearch.toLowerCase()) ||
                               item.location.toLowerCase().includes(marketSearch.toLowerCase()) ||
@@ -2791,17 +3094,31 @@ export function AtmosMobileExperience() {
                             return matchesFilter && matchesSearch;
                           }).length === 0 && (
                             <div className="p-6 text-center bg-white rounded-3xl border border-black/5 text-xs text-[#3F463E]">
-                              <p className="font-bold text-[#0C150A]">No units match '{marketSearch}'</p>
-                              <p className="text-[10px] mt-1">Try resetting the filter or search term</p>
-                              <button
-                                onClick={() => {
-                                  setMarketSearch("");
-                                  setMarketFilter("all");
-                                }}
-                                className="mt-2 text-[10px] font-bold text-[#276A3C] underline"
-                              >
-                                Reset filters
-                              </button>
+                              <p className="font-bold text-[#0C150A]">No units match your filter</p>
+                              <p className="text-[10px] mt-1">
+                                {marketFilter === "mine"
+                                  ? "You have not registered or listed any custom projects yet."
+                                  : `No listings match '${marketSearch}'`}
+                              </p>
+                              <div className="mt-2.5 flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    setMarketSearch("");
+                                    setMarketFilter("all");
+                                  }}
+                                  className="text-[10px] font-bold text-[#276A3C] underline"
+                                >
+                                  Reset filters
+                                </button>
+                                {marketFilter === "mine" && (
+                                  <button
+                                    onClick={() => setShowCreateProjectModal(true)}
+                                    className="text-[10px] font-bold bg-[#0C150A] text-white px-2.5 py-1 rounded-full shadow-xs"
+                                  >
+                                    + Register Project
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -5895,7 +6212,31 @@ export function AtmosMobileExperience() {
 
               <button
                 onClick={() => {
+                  const newListing: MarketListingItem = {
+                    id: `batch-${Date.now()}`,
+                    title: `${currentProjectConfig.shortTitle} · ${currentProjectConfig.location.split(",")[0]}`,
+                    batch: `Batch #${Math.floor(Math.random() * 20) + 1} · ${listTonnes.toFixed(3)} tCO₂e · Vintage 2026`,
+                    pricePerTonne: listPrice,
+                    availableTonnes: parseFloat(listTonnes.toFixed(3)),
+                    score: "94/100",
+                    verifiers: 2,
+                    badge: "✨ Just Listed · You",
+                    location: currentProjectConfig.location.split(",")[0],
+                    type: currentProjectConfig.id,
+                    isUserCreated: true,
+                    zkCommitment: activeZKCommitment || "0x3f98a2e1d749bc10",
+                    solanaMint: `ZK-SOL-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+                    createdAt: new Date().toISOString(),
+                  };
+                  setMarketListings((prev) => [newListing, ...prev]);
+                  setMarketFilter("all");
                   playHapticSound("success");
+                  confetti({
+                    particleCount: 85,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ["#35C46A", "#E2F2DF", "#0C150A", "#FFD700"],
+                  });
                   setShowListCreditsModal(false);
                   setAuthToast(`Listed ${listTonnes.toFixed(1)} tCO₂e on market at ₹${listPrice.toLocaleString("en-IN")}/t ✓`);
                   setTimeout(() => setAuthToast(null), 3000);
@@ -5987,6 +6328,219 @@ export function AtmosMobileExperience() {
               >
                 Close
               </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 21. Register & List New Climate Project Modal */}
+      <AnimatePresence>
+        {showCreateProjectModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs font-['Inter',sans-serif]">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white text-[#0C150A] rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-3.5 border border-black/10 max-h-[92vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between border-b border-black/10 pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-[#E2F2DF] text-[#276A3C] flex items-center justify-center shadow-xs">
+                    <Sparkles size={16} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-[#0C150A]">Register & List Project</h3>
+                    <p className="text-[9px] text-[#3F463E]">Publish directly to Atmos Carbon Market</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCreateProjectModal(false)}
+                  className="p-1 text-black/60 hover:text-black"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Form fields */}
+              <div className="space-y-3 text-xs">
+                {/* Project Title */}
+                <div className="space-y-1">
+                  <label className="font-bold text-[#0C150A] text-[11px] block">
+                    Project Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newProjTitle}
+                    onChange={(e) => setNewProjTitle(e.target.value)}
+                    placeholder="e.g. Satara Agroforestry Canopy"
+                    className="w-full bg-[#F7F9F6] border border-black/10 px-3 py-2 rounded-2xl text-xs font-semibold text-[#0C150A] outline-none focus:border-[#276A3C]"
+                  />
+                </div>
+
+                {/* Methodology Selector */}
+                <div className="space-y-1">
+                  <label className="font-bold text-[#0C150A] text-[11px] block">
+                    Methodology Type
+                  </label>
+                  <select
+                    value={newProjMethodology}
+                    onChange={(e) => {
+                      setNewProjMethodology(e.target.value);
+                      if (e.target.value === "biochar") {
+                        setNewProjLocation("Kalol, Gujarat, India");
+                        setNewProjCoords("23.2798° N, 72.4984° E");
+                        setNewProjCO2(6.4);
+                        setNewProjPrice(11100);
+                      } else if (e.target.value === "agroforestry") {
+                        setNewProjLocation("Satara, Maharashtra, India");
+                        setNewProjCoords("17.6805° N, 73.9904° E");
+                        setNewProjCO2(8.5);
+                        setNewProjPrice(12500);
+                      } else if (e.target.value === "solar") {
+                        setNewProjLocation("Bhadla Solar Park, Rajasthan");
+                        setNewProjCoords("27.5385° N, 71.9174° E");
+                        setNewProjCO2(12.0);
+                        setNewProjPrice(10800);
+                      } else if (e.target.value === "ev_fleet") {
+                        setNewProjLocation("Bengaluru Hub, Karnataka");
+                        setNewProjCoords("12.9716° N, 77.5946° E");
+                        setNewProjCO2(5.2);
+                        setNewProjPrice(13200);
+                      } else if (e.target.value === "building_retrofit") {
+                        setNewProjLocation("BKC Commercial Complex, Mumbai");
+                        setNewProjCoords("19.0657° N, 72.8688° E");
+                        setNewProjCO2(15.0);
+                        setNewProjPrice(11500);
+                      } else if (e.target.value === "shipping") {
+                        setNewProjLocation("Kandla Green Corridor, Gujarat");
+                        setNewProjCoords("22.9842° N, 70.2185° E");
+                        setNewProjCO2(25.0);
+                        setNewProjPrice(14000);
+                      } else if (e.target.value === "aviation") {
+                        setNewProjLocation("Mumbai-Delhi SAF Corridor");
+                        setNewProjCoords("19.0896° N, 72.8656° E");
+                        setNewProjCO2(20.0);
+                        setNewProjPrice(14500);
+                      } else if (e.target.value === "city_initiative") {
+                        setNewProjLocation("Surat Ward 4 Waste Facility");
+                        setNewProjCoords("21.1702° N, 72.8311° E");
+                        setNewProjCO2(10.0);
+                        setNewProjPrice(10500);
+                      }
+                    }}
+                    className="w-full bg-[#F7F9F6] border border-black/10 px-3 py-2 rounded-2xl text-xs font-semibold text-[#0C150A] outline-none focus:border-[#276A3C]"
+                  >
+                    <option value="agroforestry">Agroforestry & Tree Planting</option>
+                    <option value="biochar">Biochar Pyrolysis</option>
+                    <option value="solar">Solar Energy Generation</option>
+                    <option value="ev_fleet">Commercial EV Fleet</option>
+                    <option value="building_retrofit">Building Energy Efficiency</option>
+                    <option value="shipping">Green Shipping Corridor</option>
+                    <option value="aviation">SAF Aviation Blend</option>
+                    <option value="city_initiative">Municipal Waste Composting</option>
+                  </select>
+                </div>
+
+                {/* Location & Coords */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="font-bold text-[#0C150A] text-[10px] block">
+                      Site Location
+                    </label>
+                    <input
+                      type="text"
+                      value={newProjLocation}
+                      onChange={(e) => setNewProjLocation(e.target.value)}
+                      placeholder="e.g. Satara, MH"
+                      className="w-full bg-[#F7F9F6] border border-black/10 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold text-[#0C150A] outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-bold text-[#0C150A] text-[10px] block">
+                      GPS Coordinates
+                    </label>
+                    <input
+                      type="text"
+                      value={newProjCoords}
+                      onChange={(e) => setNewProjCoords(e.target.value)}
+                      placeholder="17.68° N, 73.99° E"
+                      className="w-full bg-[#F7F9F6] border border-black/10 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold text-[#0C150A] outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Tonnes & Asking Price */}
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <label className="font-bold text-[#0C150A] text-[11px]">
+                      Available Volume (tCO₂e)
+                    </label>
+                    <span className="font-black text-[#276A3C] text-xs">
+                      {newProjCO2.toFixed(1)} t
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="50"
+                    step="0.5"
+                    value={newProjCO2}
+                    onChange={(e) => setNewProjCO2(parseFloat(e.target.value))}
+                    className="w-full accent-[#0C150A]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-[#0C150A] text-[11px] block">
+                    Asking Price per Tonne (₹)
+                  </label>
+                  <div className="flex items-center gap-1.5 bg-[#F7F9F6] border border-black/10 px-3 py-2 rounded-2xl">
+                    <span className="text-[#3F463E] font-bold">₹</span>
+                    <input
+                      type="number"
+                      value={newProjPrice}
+                      onChange={(e) => setNewProjPrice(Math.max(1000, parseInt(e.target.value) || 0))}
+                      className="bg-transparent text-sm font-black text-[#0C150A] outline-none flex-1"
+                    />
+                    <span className="text-[10px] text-[#3F463E]">INR / tonne</span>
+                  </div>
+                </div>
+
+                {/* Financial Summary */}
+                <div className="bg-[#E2F2DF] p-3 rounded-2xl border border-[#276A3C]/20 text-xs space-y-1">
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-[#3F463E]">Listing Total Value:</span>
+                    <b>₹{Math.round(newProjCO2 * newProjPrice).toLocaleString("en-IN")}</b>
+                  </div>
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-[#3F463E]">Dual MRV Escrow (5%):</span>
+                    <span className="text-red-700">-₹{Math.round(newProjCO2 * newProjPrice * 0.05).toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-[#276A3C]/30 text-xs font-black text-[#0C150A]">
+                    <span>Expected Payout (UPI/USDC):</span>
+                    <span className="text-[#276A3C]">
+                      ₹{Math.round(newProjCO2 * newProjPrice * 0.95).toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="flex flex-col gap-2 pt-1">
+                <button
+                  onClick={handleCreateAndListProject}
+                  className="w-full h-12 rounded-full bg-[#0C150A] text-white font-extrabold text-xs shadow-md hover:bg-black transition-colors flex items-center justify-center gap-2"
+                >
+                  <Sparkles size={14} className="text-[#35C46A]" />
+                  <span>Create & List on Market Now</span>
+                </button>
+                <button
+                  onClick={() => setShowCreateProjectModal(false)}
+                  className="w-full py-1 text-center text-xs font-semibold text-[#3F463E] hover:text-black"
+                >
+                  Cancel
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
