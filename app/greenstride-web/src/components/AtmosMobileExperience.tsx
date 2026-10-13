@@ -80,12 +80,437 @@ interface ScreenMeta {
   badge?: string;
 }
 
+export interface ProjectConfig {
+  id: string;
+  title: string;
+  shortTitle: string;
+  badge: string;
+  icon: any;
+  color: string;
+  projectName: string;
+  location: string;
+  coords: string;
+  metric1Name: string;
+  metric1Unit: string;
+  metric1Default: number;
+  metric1Min: number;
+  metric1Max: number;
+  metric1Step: number;
+  metric2Name: string;
+  metric2Unit: string;
+  metric2Default: number;
+  metric2Min: number;
+  metric2Max: number;
+  metric2Step: number;
+  calcBadge: string;
+  calcLimit: string;
+  equipmentDefault: string;
+  equipmentOptions: string[];
+  satelliteTitle: string;
+  satelliteBadge: string;
+  satellitePill1: string;
+  satellitePill2: string;
+  satellitePill3: string;
+  photos: { label: string; desc: string; badge: string }[];
+  co2Estimated: string;
+}
+
+export const ALL_PROJECT_CONFIGS: ProjectConfig[] = [
+  {
+    id: "biochar",
+    title: "Biochar production",
+    shortTitle: "Biochar",
+    badge: "Active Pilot",
+    icon: Leaf,
+    color: "#276A3C",
+    projectName: "Biochar Unit · Kalol",
+    location: "Kalol, Gujarat, India",
+    coords: "23.2798° N, 72.4984° E",
+    metric1Name: "Biomass input",
+    metric1Unit: "kg",
+    metric1Default: 12500,
+    metric1Min: 5000,
+    metric1Max: 20000,
+    metric1Step: 250,
+    metric2Name: "Biochar output",
+    metric2Unit: "kg",
+    metric2Default: 3200,
+    metric2Min: 1000,
+    metric2Max: 8000,
+    metric2Step: 100,
+    calcBadge: "✓ Yield 25.6% · within 45% limit",
+    calcLimit: "Max: 45.0%",
+    equipmentDefault: "Retort kiln",
+    equipmentOptions: [
+      "Retort kiln",
+      "Kon-Tiki flame curtain",
+      "Continuous pyrolysis drum",
+      "Gasifier unit",
+    ],
+    satelliteTitle: "SWIR Thermal & Radar Orbital Audit",
+    satelliteBadge: "98.7% MATCH",
+    satellitePill1: "SWIR Thermal: 582°C Core ✓",
+    satellitePill2: "NDVI Residue: 13.7t Diverted",
+    satellitePill3: "SAR Radar: Kiln Echo ✓",
+    photos: [
+      { label: "P#1", desc: "Cotton stalk biomass aggregation & moisture probe", badge: "Feedstock 11.4% H2O" },
+      { label: "P#2", desc: "Pyrolysis chamber 582°C continuous thermal log", badge: "Retort 582°C Core" },
+      { label: "P#3", desc: "Certified weighbridge biochar output scale tare", badge: "Mass 3,200 kg" },
+    ],
+    co2Estimated: "6.439 tCO₂e",
+  },
+  {
+    id: "agroforestry",
+    title: "Agroforestry",
+    shortTitle: "Agroforestry",
+    badge: "NDVI Verified",
+    icon: Sparkles,
+    color: "#276A3C",
+    projectName: "Afforestation Reserve · Wardha",
+    location: "Wardha, Maharashtra, India",
+    coords: "20.7453° N, 78.6022° E",
+    metric1Name: "Afforestation parcel area",
+    metric1Unit: "hectares",
+    metric1Default: 42.5,
+    metric1Min: 10,
+    metric1Max: 100,
+    metric1Step: 0.5,
+    metric2Name: "Saplings planted / survived",
+    metric2Unit: "trees",
+    metric2Default: 18400,
+    metric2Min: 5000,
+    metric2Max: 50000,
+    metric2Step: 500,
+    calcBadge: "✓ Crown density 68.4% · 94.2% survival",
+    calcLimit: "Target: >60%",
+    equipmentDefault: "Drone LiDAR & Multi-Spectral Sensor",
+    equipmentOptions: [
+      "Drone LiDAR & Multi-Spectral Sensor",
+      "Tree growth caliper IoT array",
+      "Soil moisture tensiometer sensor",
+      "Canopy hemispherical camera",
+    ],
+    satelliteTitle: "Sentinel-2 Multi-Spectral NDVI Canopy Delta",
+    satelliteBadge: "99.1% MATCH",
+    satellitePill1: "NDVI Gain: +0.34 Index ✓",
+    satellitePill2: "Canopy Area: 42.5 ha",
+    satellitePill3: "Sentinel-2B: Overpass Confirmed",
+    photos: [
+      { label: "P#1", desc: "Sapling grid layout with RTK-GPS survey stakes", badge: "Teak & Neem 18.4k" },
+      { label: "P#2", desc: "Canopy drone orthomosaic high-res multispectral", badge: "NDVI 0.68 Index" },
+      { label: "P#3", desc: "Tree trunk caliper girth measurement & baseline", badge: "DBH 14.2 cm Avg" },
+    ],
+    co2Estimated: "14.200 tCO₂e",
+  },
+  {
+    id: "solar",
+    title: "Solar energy",
+    shortTitle: "Solar Energy",
+    badge: "Grid Connected",
+    icon: Sun,
+    color: "#D97706",
+    projectName: "Bhadla Solar Array #4",
+    location: "Bhadla Solar Park, Rajasthan, India",
+    coords: "27.5385° N, 71.9174° E",
+    metric1Name: "Monthly generation output",
+    metric1Unit: "kWh",
+    metric1Default: 148200,
+    metric1Min: 20000,
+    metric1Max: 500000,
+    metric1Step: 2000,
+    metric2Name: "Installed DC array capacity",
+    metric2Unit: "kWp",
+    metric2Default: 120,
+    metric2Min: 25,
+    metric2Max: 500,
+    metric2Step: 5,
+    calcBadge: "✓ 106.1 tCO₂e avoided · CEA factor 0.716",
+    calcLimit: "CUF: 21.4%",
+    equipmentDefault: "SMA Sunny Tripower 50kW × 2 + DLMS Meter",
+    equipmentOptions: [
+      "SMA Sunny Tripower 50kW × 2 + DLMS Meter",
+      "Huawei Smart String Inverter 100kW",
+      "Enphase Microinverter IQ8 Fleet",
+      "Schneider Conext Solar Gateway",
+    ],
+    satelliteTitle: "Copernicus Solar GHI & Thermal Insolation",
+    satelliteBadge: "99.4% MATCH",
+    satellitePill1: "GHI Insolation: 5.8 kWh/m² ✓",
+    satellitePill2: "Export Meter: 148,200 kWh",
+    satellitePill3: "Thermal: No Hotspots ✓",
+    photos: [
+      { label: "P#1", desc: "Solar panel array string voltage & tilt orientation", badge: "120 kWp Array" },
+      { label: "P#2", desc: "Bi-directional export energy meter display", badge: "DLMS 148,200 kWh" },
+      { label: "P#3", desc: "Central SCADA inverter telemetry communication", badge: "Modbus Active" },
+    ],
+    co2Estimated: "106.110 tCO₂e",
+  },
+  {
+    id: "ev_fleet",
+    title: "EV fleet",
+    shortTitle: "EV Fleet",
+    badge: "IoT Telematics",
+    icon: Car,
+    color: "#2563EB",
+    projectName: "Delhi Express EV Logistics Fleet",
+    location: "Delhi NCR Logistics Corridor, India",
+    coords: "28.6139° N, 77.2090° E",
+    metric1Name: "Clean distance logged",
+    metric1Unit: "km",
+    metric1Default: 84500,
+    metric1Min: 10000,
+    metric1Max: 250000,
+    metric1Step: 1000,
+    metric2Name: "Commercial electric fleet size",
+    metric2Unit: "e-vans",
+    metric2Default: 28,
+    metric2Min: 5,
+    metric2Max: 100,
+    metric2Step: 1,
+    calcBadge: "✓ 16,900 L diesel displaced · 45.6 tCO₂e",
+    calcLimit: "0.19 kWh/km",
+    equipmentDefault: "OBD-II CAN-Bus Transponder + DC Hub",
+    equipmentOptions: [
+      "OBD-II CAN-Bus Transponder + DC Hub",
+      "Geotab Fleet Telematics GO9",
+      "Teltonika FMM130 IoT Tracker",
+      "ChargePoint 60kW DC Dual Guns",
+    ],
+    satelliteTitle: "GNSS Fleet Breadcrumb Route Tracking",
+    satelliteBadge: "98.9% MATCH",
+    satellitePill1: "Trip Paths: 28 Vans Synced ✓",
+    satellitePill2: "Odometer: 84,500 km Total",
+    satellitePill3: "Depot Charger: Reconciled",
+    photos: [
+      { label: "P#1", desc: "Commercial e-van delivery fleet depot lineup", badge: "28 Vans Inspected" },
+      { label: "P#2", desc: "Digital OBD-II cluster odometer screen verification", badge: "Encrypted Odo" },
+      { label: "P#3", desc: "DC Fast Charging hub session power receipt", badge: "16,055 kWh Logged" },
+    ],
+    co2Estimated: "45.630 tCO₂e",
+  },
+  {
+    id: "building_retrofit",
+    title: "Building retrofit",
+    shortTitle: "Building Retrofit",
+    badge: "Smart Metering",
+    icon: Building,
+    color: "#059669",
+    projectName: "SG Commercial Tower Retrofit",
+    location: "Ahmedabad Commercial Hub, Gujarat",
+    coords: "23.0338° N, 72.5073° E",
+    metric1Name: "Gross floor area retrofitted",
+    metric1Unit: "sq.m",
+    metric1Default: 18500,
+    metric1Min: 2000,
+    metric1Max: 60000,
+    metric1Step: 500,
+    metric2Name: "Monthly electricity reduction",
+    metric2Unit: "kWh/mo",
+    metric2Default: 42300,
+    metric2Min: 5000,
+    metric2Max: 150000,
+    metric2Step: 1000,
+    calcBadge: "✓ 31.4% energy reduction · ASHRAE-14",
+    calcLimit: "COP: 6.2 Chiller",
+    equipmentDefault: "Mag-Lev Chiller (COP 6.2) + Schneider BMS",
+    equipmentOptions: [
+      "Mag-Lev Chiller (COP 6.2) + Schneider BMS",
+      "Variable Refrigerant Flow (VRF) Heat Pump",
+      "Smart IoT Occupancy Dampers",
+      "Triple-Glazed Low-E Glazing",
+    ],
+    satelliteTitle: "Urban Surface Thermal Anomaly IR Scan",
+    satelliteBadge: "97.8% MATCH",
+    satellitePill1: "Thermal Delta: -4.2°C Roof ✓",
+    satellitePill2: "Savings: 42,300 kWh/mo",
+    satellitePill3: "BMS Data: Continuous",
+    photos: [
+      { label: "P#1", desc: "Magnetic levitation high-efficiency chiller plant", badge: "COP 6.2 Certified" },
+      { label: "P#2", desc: "FLIR infrared thermography facade heat scan", badge: "Low-E Confirmed" },
+      { label: "P#3", desc: "Schneider Smart Power Meter real-time BMS screen", badge: "31.4% Drop" },
+    ],
+    co2Estimated: "30.280 tCO₂e",
+  },
+  {
+    id: "shipping",
+    title: "Shipping",
+    shortTitle: "Green Shipping",
+    badge: "IMO CORSIA",
+    icon: Anchor,
+    color: "#0891B2",
+    projectName: "MV Ocean Atmos Bulk Carrier",
+    location: "Kandla to Singapore Green Corridor",
+    coords: "22.9842° N, 70.2185° E",
+    metric1Name: "Voyage nautical distance",
+    metric1Unit: "NM",
+    metric1Default: 3150,
+    metric1Min: 500,
+    metric1Max: 12000,
+    metric1Step: 50,
+    metric2Name: "Bio-Methanol bunker fuel swapped",
+    metric2Unit: "tonnes",
+    metric2Default: 145,
+    metric2Min: 20,
+    metric2Max: 600,
+    metric2Step: 5,
+    calcBadge: "✓ 132t HFO avoided · 412 tCO₂e net cut",
+    calcLimit: "SFOC: 168 g/kWh",
+    equipmentDefault: "Dual-Fuel MAN B&W + Coriolis Meter",
+    equipmentOptions: [
+      "Dual-Fuel MAN B&W + Coriolis Meter",
+      "Rotor Sails Wind-Assistance Rotor",
+      "Shaft Generator Variable Frequency Drive",
+      "Silicon Hull Antifouling Coating",
+    ],
+    satelliteTitle: "Orbital Marine AIS Voyage Transponder Tracking",
+    satelliteBadge: "99.8% MATCH",
+    satellitePill1: "AIS Track: 3,150 NM Verified ✓",
+    satellitePill2: "IMO 9824018: Bulk Carrier",
+    satellitePill3: "Bunker Note: Certified",
+    photos: [
+      { label: "P#1", desc: "Bio-methanol bunker barge delivery manifold transfer", badge: "145t Bunker Note" },
+      { label: "P#2", desc: "Engine room Coriolis mass flow meter calibration", badge: "Dual-Fuel Log" },
+      { label: "P#3", desc: "Satellite AIS ECDIS bridge navigation console screen", badge: "Voyage Sealed" },
+    ],
+    co2Estimated: "412.000 tCO₂e",
+  },
+  {
+    id: "aviation",
+    title: "Aviation",
+    shortTitle: "Aviation SAF",
+    badge: "SAF Certified",
+    icon: Plane,
+    color: "#6366F1",
+    projectName: "Flight AI-802 SAF Blend Corridor",
+    location: "Mumbai (BOM) to Delhi (DEL)",
+    coords: "19.0896° N, 72.8656° E",
+    metric1Name: "Sector flight distance",
+    metric1Unit: "flight km",
+    metric1Default: 24200,
+    metric1Min: 2000,
+    metric1Max: 60000,
+    metric1Step: 200,
+    metric2Name: "Sustainable Aviation Fuel (SAF) blended",
+    metric2Unit: "Liters",
+    metric2Default: 18600,
+    metric2Min: 2000,
+    metric2Max: 80000,
+    metric2Step: 200,
+    calcBadge: "✓ 20% HEFA-SPK blend · 78.2% lifecycle cut",
+    calcLimit: "ASTM D7566",
+    equipmentDefault: "Airbus A321neo CFM LEAP-1A + ACARS Hub",
+    equipmentOptions: [
+      "Airbus A321neo CFM LEAP-1A + ACARS Hub",
+      "Boeing 787 GEnx-1B Engine Telemetry",
+      "Airport Hydrant Hydrometer Fuel Cart",
+      "Electronic Flight Bag (EFB) Datalogger",
+    ],
+    satelliteTitle: "ADS-B Flight Radar & ACARS Overpass Telemetry",
+    satelliteBadge: "99.6% MATCH",
+    satellitePill1: "ADS-B Trajectory: BOM-DEL ✓",
+    satellitePill2: "SAF Vol: 18,600 Liters",
+    satellitePill3: "CORSIA Seal: Approved",
+    photos: [
+      { label: "P#1", desc: "Airport hydrant fuel truck connected to wing tank", badge: "20% SAF Blend" },
+      { label: "P#2", desc: "Cockpit EFB fuel receipt and mass density certificate", badge: "ASTM D7566 PoS" },
+      { label: "P#3", desc: "ACARS digital flight management computer printout", badge: "FMC Verified" },
+    ],
+    co2Estimated: "38.860 tCO₂e",
+  },
+  {
+    id: "city_initiative",
+    title: "City initiative",
+    shortTitle: "Municipal Waste",
+    badge: "Municipal dMRV",
+    icon: Home,
+    color: "#15803D",
+    projectName: "Surat Ward 4 Waste Composting",
+    location: "Surat Municipal Solid Waste Plant, Gujarat",
+    coords: "21.1702° N, 72.8311° E",
+    metric1Name: "Organic wet waste diverted from landfill",
+    metric1Unit: "tonnes",
+    metric1Default: 340,
+    metric1Min: 50,
+    metric1Max: 1500,
+    metric1Step: 10,
+    metric2Name: "Aerobic organic compost produced",
+    metric2Unit: "tonnes",
+    metric2Default: 68,
+    metric2Min: 10,
+    metric2Max: 400,
+    metric2Step: 5,
+    calcBadge: "✓ 285.6 tCO₂e methane avoided · IPCC FOD",
+    calcLimit: "Ward #4 SMC",
+    equipmentDefault: "In-Vessel Aerobic Composting Drum + RFID Scale",
+    equipmentOptions: [
+      "In-Vessel Aerobic Composting Drum + RFID Scale",
+      "Rotary Trommel Screen Separator",
+      "Automated Municipal Weighbridge",
+      "Bio-Filter Odor Scrubber",
+    ],
+    satelliteTitle: "God's Eye Urban Hyperspectral Methane Scan",
+    satelliteBadge: "98.5% MATCH",
+    satellitePill1: "CH4 Plume: Zero Leakage ✓",
+    satellitePill2: "Waste Diverted: 340t",
+    satellitePill3: "Landfill Delta: Validated",
+    photos: [
+      { label: "P#1", desc: "Segregated wet waste collection hopper at municipal facility", badge: "340t Diverted" },
+      { label: "P#2", desc: "High-temperature in-vessel composter drum thermals 65°C", badge: "Aerobic 65°C" },
+      { label: "P#3", desc: "Electronic RFID weighbridge tare receipt printout", badge: "SMC Ward #4" },
+    ],
+    co2Estimated: "285.600 tCO₂e",
+  },
+  {
+    id: "individual_action",
+    title: "Individual action",
+    shortTitle: "Micro-MRV",
+    badge: "Micro-Credits",
+    icon: User,
+    color: "#7C3AED",
+    projectName: "Gandhinagar Eco-Home Micro-MRV",
+    location: "Gandhinagar, Gujarat, India",
+    coords: "23.2156° N, 72.6369° E",
+    metric1Name: "Rooftop solar clean generation",
+    metric1Unit: "kWh/mo",
+    metric1Default: 620,
+    metric1Min: 100,
+    metric1Max: 2500,
+    metric1Step: 20,
+    metric2Name: "Electric commuter cycling & EV scooter",
+    metric2Unit: "km/mo",
+    metric2Default: 480,
+    metric2Min: 50,
+    metric2Max: 2000,
+    metric2Step: 20,
+    calcBadge: "✓ 0.584 tCO₂e avoided · Micro-credit eligible",
+    calcLimit: "Home Micro-MRV",
+    equipmentDefault: "Enphase Solar Gateway + Ather 450X IoT",
+    equipmentOptions: [
+      "Enphase Solar Gateway + Ather 450X IoT",
+      "Smart Home Energy Meter CT Clamp",
+      "Apple Health / Strava Commute Tracker",
+      "Induction Cooktop Smart Plug",
+    ],
+    satelliteTitle: "Zero-Knowledge Proof of Residential Micro-Offset",
+    satelliteBadge: "99.2% MATCH",
+    satellitePill1: "Smart Meter: 620 kWh Logged ✓",
+    satellitePill2: "EV Distance: 480 km",
+    satellitePill3: "Privacy: Zero PII Leaked",
+    photos: [
+      { label: "P#1", desc: "Residential rooftop solar panel array inspection", badge: "5 kW Monocrystal" },
+      { label: "P#2", desc: "Smart bi-directional electricity meter LCD reading", badge: "620 kWh Export" },
+      { label: "P#3", desc: "Electric scooter digital dashboard odometer verification", badge: "Ather 480 km" },
+    ],
+    co2Estimated: "0.584 tCO₂e",
+  },
+];
+
 const SCREENS: ScreenMeta[] = [
   { id: "01_welcome", number: 1, title: "Welcome" },
   { id: "02_auth", number: 2, title: "Auth (OTP)" },
   { id: "03_home", number: 3, title: "Home Dashboard", badge: "Core" },
   { id: "04_select_project", number: 4, title: "Select Project" },
-  { id: "05_capture_data", number: 5, title: "Biochar Production", badge: "Metrics" },
+  { id: "05_capture_data", number: 5, title: "dMRV Capture Data", badge: "Metrics" },
   { id: "06_verification", number: 6, title: "Verification" },
   { id: "07_zk_proof", number: 7, title: "ZK Proof", badge: "Solana" },
   { id: "08_credits_issued", number: 8, title: "Credits Issued" },
@@ -125,9 +550,22 @@ export function AtmosMobileExperience() {
   const [showActivityDrawer, setShowActivityDrawer] = useState(false);
   const [selectedActivityDetail, setSelectedActivityDetail] = useState<{ title: string; sub: string; metric: string; type: string } | null>(null);
 
-  // Project methodology states
+  // Project methodology states for all 9 methodologies
   const [selectedProjectId, setSelectedProjectId] = useState("biochar");
   const [showMethodologyModal, setShowMethodologyModal] = useState<string | null>(null);
+
+  // Dynamic metrics state for all 9 project methodologies
+  const [projectMetricValues, setProjectMetricValues] = useState<Record<string, { m1: number; m2: number; eq: string }>>({
+    biochar: { m1: 12500, m2: 3200, eq: "Retort kiln" },
+    agroforestry: { m1: 42.5, m2: 18400, eq: "Drone LiDAR & Multi-Spectral Sensor" },
+    solar: { m1: 148200, m2: 120, eq: "SMA Sunny Tripower 50kW × 2 + DLMS Meter" },
+    ev_fleet: { m1: 84500, m2: 28, eq: "OBD-II CAN-Bus Transponder + DC Hub" },
+    building_retrofit: { m1: 18500, m2: 42300, eq: "Mag-Lev Chiller (COP 6.2) + Schneider BMS" },
+    shipping: { m1: 3150, m2: 145, eq: "Dual-Fuel MAN B&W + Coriolis Meter" },
+    aviation: { m1: 24200, m2: 18600, eq: "Airbus A321neo CFM LEAP-1A + ACARS Hub" },
+    city_initiative: { m1: 340, m2: 68, eq: "In-Vessel Aerobic Composting Drum + RFID Scale" },
+    individual_action: { m1: 620, m2: 480, eq: "Enphase Solar Gateway + Ather 450X IoT" },
+  });
 
   // AI Vision & "God's Eye View" Satellite Cross-Verification
   const [showAiVisionModal, setShowAiVisionModal] = useState(false);
@@ -318,6 +756,16 @@ export function AtmosMobileExperience() {
 
   // Compute live yield percentage
   const yieldPct = ((biocharOutput / biomassInput) * 100).toFixed(1);
+
+  // Active Project configuration accessor for the selected methodology
+  const currentProjectConfig =
+    ALL_PROJECT_CONFIGS.find((p) => p.id === selectedProjectId) || ALL_PROJECT_CONFIGS[0];
+  const currentMetric1 =
+    projectMetricValues[selectedProjectId]?.m1 ?? currentProjectConfig.metric1Default;
+  const currentMetric2 =
+    projectMetricValues[selectedProjectId]?.m2 ?? currentProjectConfig.metric2Default;
+  const currentEquipment =
+    projectMetricValues[selectedProjectId]?.eq ?? currentProjectConfig.equipmentDefault;
 
   // Helper: renders bottom 5-tab bar on main screens
   const renderBottomNav = (currentTab: "home" | "projects" | "market" | "portfolio" | "profile") => (
@@ -993,72 +1441,71 @@ export function AtmosMobileExperience() {
                     <div className="flex-1 flex flex-col justify-between p-5 bg-[#F7F9F6] pb-20 overflow-y-auto">
                       <div className="flex flex-col gap-3.5 pt-2">
                         <div>
-                          <h1 className="text-2xl font-extrabold text-[#0C150A]">Select project type</h1>
+                          <div className="flex items-center justify-between">
+                            <h1 className="text-2xl font-extrabold text-[#0C150A]">Select project type</h1>
+                            <span className="text-[10px] bg-[#E2F2DF] text-[#276A3C] font-extrabold px-2 py-0.5 rounded-full border border-[#276A3C]/20">
+                              9 / 9 Active
+                            </span>
+                          </div>
                           <p className="text-xs text-[#3F463E] mt-1 leading-relaxed">
-                            Atmos starts with biochar. More types unlock as their methodologies are reviewed.
+                            All 9 climate methodologies are active with satellite orbital telemetry, IoT enclave feeds, and dMRV verification.
                           </p>
                         </div>
 
-                        {/* 3x3 Tile Grid */}
+                        {/* 3x3 Tile Grid - All 9 Methodologies Active */}
                         <div className="grid grid-cols-3 gap-2.5">
-                          {/* Biochar - Selected */}
-                          <motion.div
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                              setSelectedProjectId("biochar");
-                              playHapticSound("tap");
-                            }}
-                            className={`p-3 rounded-2xl border-2 flex flex-col justify-between aspect-square relative shadow-xs cursor-pointer transition-all ${
-                              selectedProjectId === "biochar"
-                                ? "bg-white border-[#0C150A] shadow-md ring-2 ring-[#0C150A]/10"
-                                : "bg-white border-black/10"
-                            }`}
-                          >
-                            <div className="w-8 h-8 rounded-full bg-[#0C150A] text-white flex items-center justify-center relative">
-                              <Leaf size={15} />
-                              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#35C46A] text-[#0C150A] text-[8px] flex items-center justify-center font-bold">
-                                ✓
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-[11px] font-extrabold text-[#0C150A] leading-tight block">
-                                Biochar production
-                              </span>
-                              <span className="text-[9px] text-[#276A3C] font-bold block mt-0.5">Active Pilot</span>
-                            </div>
-                          </motion.div>
-
-                          {[
-                            { title: "Agroforestry", icon: Sparkles },
-                            { title: "Solar energy", icon: Sun },
-                            { title: "EV fleet", icon: Car },
-                            { title: "Building retrofit", icon: Building },
-                            { title: "Shipping", icon: Anchor },
-                            { title: "Aviation", icon: Plane },
-                            { title: "City initiative", icon: Home },
-                            { title: "Individual action", icon: User },
-                          ].map((item, idx) => {
-                            const IconComp = item.icon;
+                          {ALL_PROJECT_CONFIGS.map((project) => {
+                            const IconComp = project.icon;
+                            const isSelected = selectedProjectId === project.id;
                             return (
                               <motion.div
-                                key={idx}
+                                key={project.id}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => {
+                                  setSelectedProjectId(project.id);
                                   playHapticSound("tap");
-                                  setShowMethodologyModal(item.title);
                                 }}
-                                className="bg-white p-3 rounded-2xl border border-black/10 hover:border-[#276A3C]/40 opacity-80 hover:opacity-100 flex flex-col justify-between aspect-square relative cursor-pointer transition-all shadow-2xs"
-                                title={`Tap to view ${item.title} methodology roadmap`}
+                                className={`p-3 rounded-2xl border-2 flex flex-col justify-between aspect-square relative cursor-pointer transition-all ${
+                                  isSelected
+                                    ? "bg-white border-[#0C150A] shadow-md ring-2 ring-[#0C150A]/10 scale-[1.02]"
+                                    : "bg-white border-black/10 hover:border-[#276A3C]/50 hover:shadow-xs"
+                                }`}
                               >
-                                <span className="absolute top-1.5 right-1.5 text-[8px] bg-[#E2F2DF] text-[#276A3C] px-1.5 py-0.2 rounded-full font-bold">
-                                  Soon
-                                </span>
-                                <span className="w-7 h-7 rounded-full bg-[#F7F9F6] text-[#0C150A] flex items-center justify-center border border-black/5">
-                                  <IconComp size={14} />
-                                </span>
-                                <span className="text-[10px] font-bold text-[#3F463E] leading-tight">
-                                  {item.title}
-                                </span>
+                                <div className="flex items-center justify-between w-full">
+                                  <div
+                                    className={`w-8 h-8 rounded-full flex items-center justify-center relative transition-colors ${
+                                      isSelected
+                                        ? "bg-[#0C150A] text-white"
+                                        : "bg-[#F7F9F6] text-[#0C150A] border border-black/5"
+                                    }`}
+                                  >
+                                    <IconComp size={15} />
+                                    {isSelected && (
+                                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#35C46A] text-[#0C150A] text-[8px] flex items-center justify-center font-bold shadow-xs">
+                                        ✓
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span
+                                    className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold truncate max-w-[54px] ${
+                                      isSelected
+                                        ? "bg-[#0C150A] text-white"
+                                        : "bg-[#E2F2DF] text-[#276A3C]"
+                                    }`}
+                                    title={project.badge}
+                                  >
+                                    {project.badge}
+                                  </span>
+                                </div>
+
+                                <div className="mt-1">
+                                  <span className="text-[11px] font-extrabold text-[#0C150A] leading-tight block truncate">
+                                    {project.title}
+                                  </span>
+                                  <span className="text-[9px] text-[#276A3C] font-semibold block mt-0.5 truncate">
+                                    {project.location.split(",")[0]}
+                                  </span>
+                                </div>
                               </motion.div>
                             );
                           })}
@@ -1095,8 +1542,12 @@ export function AtmosMobileExperience() {
                             <ChevronLeft size={20} />
                           </button>
                           <div className="text-center">
-                            <h1 className="text-sm font-extrabold text-[#0C150A]">Biochar production</h1>
-                            <p className="text-[10px] text-[#3F463E]">3/5 complete</p>
+                            <h1 className="text-sm font-extrabold text-[#0C150A]">{currentProjectConfig.title}</h1>
+                            <p className="text-[10px] text-[#3F463E] flex items-center justify-center gap-1">
+                              <span>3/5 complete</span>
+                              <span>·</span>
+                              <span className="text-[#276A3C] font-bold">{currentProjectConfig.badge}</span>
+                            </p>
                           </div>
                           <button onClick={() => navigateTo("03_home")} className="p-1">
                             <X size={18} />
@@ -1116,16 +1567,16 @@ export function AtmosMobileExperience() {
                         <div className="bg-white p-4 rounded-3xl border border-black/5 flex flex-col gap-3 shadow-xs">
                           <div>
                             <span className="text-[10px] text-[#3F463E]">Project name</span>
-                            <p className="text-xs font-extrabold text-[#0C150A]">Biochar Unit · Kalol</p>
+                            <p className="text-xs font-extrabold text-[#0C150A]">{currentProjectConfig.projectName}</p>
                           </div>
 
                           <div>
                             <span className="text-[10px] text-[#3F463E]">Location</span>
                             <div className="flex items-center justify-between mb-1">
-                              <p className="text-xs font-extrabold text-[#0C150A]">Kalol, Gujarat, India</p>
+                              <p className="text-xs font-extrabold text-[#0C150A]">{currentProjectConfig.location}</p>
                               <span className="text-[10px] font-mono font-bold text-[#276A3C] flex items-center gap-1">
                                 <MapPin size={12} />
-                                23.2798° N, 72.4984° E
+                                {currentProjectConfig.coords}
                               </span>
                             </div>
                             <div
@@ -1141,62 +1592,95 @@ export function AtmosMobileExperience() {
                               <div className="w-5 h-5 rounded-full bg-[#0C150A] text-white flex items-center justify-center shadow-md relative z-10 group-hover:scale-125 transition-transform">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#35C46A] animate-ping" />
                               </div>
-                              <span className="absolute bottom-1 right-2 text-[8px] font-bold text-[#276A3C] bg-white/80 backdrop-blur-xs px-1.5 py-0.5 rounded-full">
-                                🛰️ Satellite Linked
+                              <span className="absolute bottom-1 right-2 text-[8px] font-bold text-[#276A3C] bg-white/80 backdrop-blur-xs px-1.5 py-0.5 rounded-full font-mono">
+                                🛰️ Orbital Lock: {currentProjectConfig.coords.split(',')[0]}
                               </span>
                             </div>
                           </div>
 
-                          {/* Sliders */}
-                          <div className="space-y-2 pt-1 border-t border-black/5">
-                            <p className="text-[11px] font-bold text-[#3F463E]">Production metrics · 2/3</p>
+                          {/* Sliders: Domain Specific Metric 1 and Metric 2 */}
+                          <div className="space-y-2.5 pt-1 border-t border-black/5">
+                            <div className="flex items-center justify-between">
+                              <p className="text-[11px] font-bold text-[#3F463E]">Production & dMRV metrics · 2/3</p>
+                              <span className="text-[8px] font-mono font-bold text-[#276A3C] bg-[#E2F2DF] px-1.5 py-0.2 rounded-full">
+                                IoT Enclave Live
+                              </span>
+                            </div>
 
                             <div>
                               <div className="flex justify-between text-xs font-bold mb-0.5">
-                                <span>Biomass input (kg)</span>
-                                <span className="text-[#0C150A]">{biomassInput.toLocaleString()} kg</span>
+                                <span>{currentProjectConfig.metric1Name}</span>
+                                <span className="text-[#0C150A] font-mono">
+                                  {currentMetric1.toLocaleString()} {currentProjectConfig.metric1Unit}
+                                </span>
                               </div>
                               <input
                                 type="range"
-                                min="5000"
-                                max="20000"
-                                step="250"
-                                value={biomassInput}
-                                onChange={(e) => setBiomassInput(parseInt(e.target.value))}
+                                min={currentProjectConfig.metric1Min}
+                                max={currentProjectConfig.metric1Max}
+                                step={currentProjectConfig.metric1Step}
+                                value={currentMetric1}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value);
+                                  setProjectMetricValues((prev) => ({
+                                    ...prev,
+                                    [selectedProjectId]: {
+                                      ...prev[selectedProjectId],
+                                      m1: val,
+                                    },
+                                  }));
+                                  if (selectedProjectId === "biochar") {
+                                    setBiomassInput(val);
+                                  }
+                                }}
                                 className="w-full accent-[#0C150A]"
                               />
                             </div>
 
                             <div>
                               <div className="flex justify-between text-xs font-bold mb-0.5">
-                                <span>Biochar output (kg)</span>
-                                <span className="text-[#0C150A]">{biocharOutput.toLocaleString()} kg</span>
+                                <span>{currentProjectConfig.metric2Name}</span>
+                                <span className="text-[#0C150A] font-mono">
+                                  {currentMetric2.toLocaleString()} {currentProjectConfig.metric2Unit}
+                                </span>
                               </div>
                               <input
                                 type="range"
-                                min="1000"
-                                max="8000"
-                                step="100"
-                                value={biocharOutput}
-                                onChange={(e) => setBiocharOutput(parseInt(e.target.value))}
+                                min={currentProjectConfig.metric2Min}
+                                max={currentProjectConfig.metric2Max}
+                                step={currentProjectConfig.metric2Step}
+                                value={currentMetric2}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value);
+                                  setProjectMetricValues((prev) => ({
+                                    ...prev,
+                                    [selectedProjectId]: {
+                                      ...prev[selectedProjectId],
+                                      m2: val,
+                                    },
+                                  }));
+                                  if (selectedProjectId === "biochar") {
+                                    setBiocharOutput(val);
+                                  }
+                                }}
                                 className="w-full accent-[#0C150A]"
                               />
                             </div>
 
                             <p className="text-xs font-bold text-[#276A3C] flex items-center justify-between">
-                              <span>✓ Yield {yieldPct}% · within the 45% limit</span>
-                              <span className="text-[10px] text-[#3F463E]">Max: 45.0%</span>
+                              <span>{currentProjectConfig.calcBadge}</span>
+                              <span className="text-[10px] text-[#3F463E]">{currentProjectConfig.calcLimit}</span>
                             </p>
                           </div>
 
-                          {/* Equipment */}
+                          {/* Equipment / Sensor Selection */}
                           <div
                             onClick={() => setShowEquipmentModal(true)}
                             className="cursor-pointer pt-1 border-t border-black/5 hover:opacity-80 transition-opacity"
                           >
-                            <span className="text-[10px] text-[#3F463E]">Equipment type</span>
+                            <span className="text-[10px] text-[#3F463E]">Equipment & Sensor Hardware</span>
                             <div className="flex justify-between items-center text-xs font-extrabold text-[#0C150A] mt-0.5">
-                              <span>{equipmentType}</span>
+                              <span>{currentEquipment}</span>
                               <ChevronRight size={14} />
                             </div>
                           </div>
@@ -1208,10 +1692,12 @@ export function AtmosMobileExperience() {
                                 <span>Evidence photos (camera only)</span>
                                 <span className="text-[9px] text-[#276A3C] bg-[#E2F2DF] px-1 rounded-sm">AI-Verified</span>
                               </span>
-                              <span className="text-[#3F463E]">{evidencePhotosCount}/6</span>
+                              <span className="text-[#3F463E]">
+                                {currentProjectConfig.photos.length}/6
+                              </span>
                             </div>
                             <div className="grid grid-cols-4 gap-1.5">
-                              {Array.from({ length: evidencePhotosCount }).map((_, i) => (
+                              {currentProjectConfig.photos.map((photo, i) => (
                                 <motion.div
                                   key={i}
                                   whileTap={{ scale: 0.94 }}
@@ -1220,19 +1706,22 @@ export function AtmosMobileExperience() {
                                     setShowAiVisionModal(true);
                                     playHapticSound("tap");
                                   }}
-                                  className="aspect-square rounded-xl bg-[#0C150A] text-white flex flex-col items-center justify-center text-[9px] font-bold cursor-pointer relative group overflow-hidden border border-white/10 hover:border-[#35C46A] transition-all shadow-xs"
-                                  title="Tap to run AI Computer Vision & Spectrometry inspection"
+                                  className="aspect-square rounded-xl bg-[#0C150A] text-white flex flex-col items-center justify-center text-[9px] font-bold cursor-pointer relative group overflow-hidden border border-white/10 hover:border-[#35C46A] transition-all shadow-xs p-1 text-center"
+                                  title={`Tap to run AI inspection on ${photo.desc}`}
                                 >
-                                  <span className="text-[10px]">P#{i + 1}</span>
-                                  <span className="text-[7px] text-[#35C46A] flex items-center gap-0.5 font-mono">
+                                  <span className="text-[9px] font-extrabold">{photo.label}</span>
+                                  <span className="text-[7px] text-[#35C46A] flex items-center gap-0.5 font-mono truncate max-w-full">
                                     <Cpu size={7} /> AI ✓
+                                  </span>
+                                  <span className="text-[6.5px] text-white/60 truncate max-w-full mt-0.5 font-mono">
+                                    {photo.badge}
                                   </span>
                                   <div className="absolute inset-0 bg-[#35C46A]/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                     <Eye size={12} className="text-white" />
                                   </div>
                                 </motion.div>
                               ))}
-                              {evidencePhotosCount < 6 && (
+                              {currentProjectConfig.photos.length < 6 && (
                                 <div
                                   onClick={() => setShowCameraModal(true)}
                                   className="aspect-square rounded-xl border-2 border-dashed border-black/20 flex flex-col items-center justify-center text-[#0C150A] cursor-pointer hover:bg-black/5 transition-colors"
@@ -1243,7 +1732,7 @@ export function AtmosMobileExperience() {
                               )}
                             </div>
                             <p className="text-[9px] text-[#3F463E] mt-1.5 italic">
-                              * Tap any photo to review Gemini 2.5 Flash vision & thermal bounding boxes
+                              * Tap any photo to review Gemini 2.5 Flash vision & spectral verification
                             </p>
                           </div>
                         </div>
@@ -1256,7 +1745,7 @@ export function AtmosMobileExperience() {
                             setShowSatelliteGodsEyeModal(true);
                           }}
                           className="bg-gradient-to-br from-[#0C150A] via-[#112313] to-[#0C150A] text-white p-3.5 rounded-3xl border border-white/10 shadow-lg cursor-pointer hover:border-[#35C46A]/50 transition-all flex flex-col gap-2.5"
-                          title="God's Eye View Orbital Cross-Verification (Sentinel-2B, Landsat-9, PlanetScope)"
+                          title="God's Eye View Orbital Cross-Verification"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -1268,26 +1757,26 @@ export function AtmosMobileExperience() {
                                   God's Eye View · Satellite dMRV
                                   <span className="w-1.5 h-1.5 rounded-full bg-[#35C46A] animate-ping" />
                                 </span>
-                                <p className="text-[9px] text-[#A6E3B8]">Multi-Spectral Ground-to-Orbit Cross-Verification</p>
+                                <p className="text-[9px] text-[#A6E3B8]">{currentProjectConfig.satelliteTitle}</p>
                               </div>
                             </div>
                             <span className="text-[10px] font-mono font-bold text-[#35C46A] bg-[#35C46A]/20 px-2 py-0.5 rounded-full border border-[#35C46A]/40">
-                              98.7% MATCH
+                              {currentProjectConfig.satelliteBadge}
                             </span>
                           </div>
 
                           <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-white/10 text-[9px]">
                             <div className="bg-white/5 rounded-xl p-1.5 text-center">
-                              <span className="text-white/60 block text-[8px]">SWIR Thermal</span>
-                              <b className="text-[#35C46A] font-mono">582°C Core ✓</b>
+                              <span className="text-white/60 block text-[7.5px] truncate">Primary Orbital Sensor</span>
+                              <b className="text-[#35C46A] font-mono text-[8.5px] truncate block">{currentProjectConfig.satellitePill1}</b>
                             </div>
                             <div className="bg-white/5 rounded-xl p-1.5 text-center">
-                              <span className="text-white/60 block text-[8px]">NDVI Residue</span>
-                              <b className="text-white font-mono">13.7t Diverted</b>
+                              <span className="text-white/60 block text-[7.5px] truncate">Multi-Spectral Ground</span>
+                              <b className="text-white font-mono text-[8.5px] truncate block">{currentProjectConfig.satellitePill2}</b>
                             </div>
                             <div className="bg-white/5 rounded-xl p-1.5 text-center">
-                              <span className="text-white/60 block text-[8px]">SAR Radar</span>
-                              <b className="text-white font-mono">Kiln Metal ✓</b>
+                              <span className="text-white/60 block text-[7.5px] truncate">SAR / Satellite Telemetry</span>
+                              <b className="text-white font-mono text-[8.5px] truncate block">{currentProjectConfig.satellitePill3}</b>
                             </div>
                           </div>
 
@@ -1331,7 +1820,7 @@ export function AtmosMobileExperience() {
                             </p>
                           </div>
                           <span className="text-[9px] bg-[#E2F2DF] text-[#0C150A] px-2.5 py-1 rounded-full font-bold">
-                            Batch #3
+                            {currentProjectConfig.shortTitle} Batch #3
                           </span>
                         </div>
 
@@ -1376,7 +1865,7 @@ export function AtmosMobileExperience() {
                                   className="mt-1 text-[9px] font-bold text-[#276A3C] hover:underline flex items-center gap-1"
                                 >
                                   <Satellite size={10} />
-                                  <span>View God's Eye Orbital Telemetry Report (98.7% match)</span>
+                                  <span>View God's Eye Orbital Telemetry Report ({currentProjectConfig.satelliteBadge})</span>
                                 </button>
                               </div>
                             </div>
@@ -1408,10 +1897,10 @@ export function AtmosMobileExperience() {
                                   </span>
                                 </div>
 
-                                {/* Verifier 1: Gujarat Carbon Audit Council */}
+                                {/* Verifier 1 */}
                                 <div className="mt-1.5 p-2 rounded-xl bg-[#F7F9F6] border border-black/5 flex items-center justify-between text-[10px]">
                                   <div>
-                                    <b className="text-[#0C150A]">1. Gujarat Carbon Audit Council</b>
+                                    <b className="text-[#0C150A]">1. {currentProjectConfig.shortTitle} Regional Audit Board</b>
                                     <p className="text-[#3F463E]">Dr. K. Mehta · Ed25519 Signed (14:32 UTC)</p>
                                   </div>
                                   <span className="text-[9px] bg-[#E2F2DF] text-[#276A3C] font-bold px-1.5 py-0.5 rounded-full">
@@ -1474,12 +1963,12 @@ export function AtmosMobileExperience() {
                                 <div className="flex items-center justify-between">
                                   <p className="text-xs font-extrabold text-[#0C150A]">Calculation engine</p>
                                   {verifier2Approved && (
-                                    <span className="text-[9px] font-bold text-[#276A3C]">Matched 6.439 tCO₂e</span>
+                                    <span className="text-[9px] font-bold text-[#276A3C]">Matched {currentProjectConfig.co2Estimated}</span>
                                   )}
                                 </div>
                                 <p className="text-[10px] text-[#3F463E]">
                                   {verifier2Approved
-                                    ? "Executed: 3,200 kg biochar × 78.4% C × 3.67 × 0.74"
+                                    ? `Executed: ${currentMetric2.toLocaleString()} ${currentProjectConfig.metric2Unit} · Verified ${currentProjectConfig.badge} dMRV algorithm`
                                     : "Runs automatically once both verifiers approve"}
                                 </p>
                                 {verifier2Approved && (
@@ -1505,8 +1994,8 @@ export function AtmosMobileExperience() {
                             <span className="text-[10px] text-[#3F463E] font-medium">
                               Certified Net CO₂ Removal
                             </span>
-                            <p className="text-2xl font-black text-[#0C150A] mt-0.5">6.439 tCO₂e</p>
-                            <p className="text-[10px] text-[#3F463E]">Pilot methodology v1 · 100-yr Permanence</p>
+                            <p className="text-2xl font-black text-[#0C150A] mt-0.5">{currentProjectConfig.co2Estimated}</p>
+                            <p className="text-[10px] text-[#3F463E]">{currentProjectConfig.badge} · 100-yr Permanence</p>
                           </div>
 
                           {/* Score Ring */}
@@ -1769,23 +2258,27 @@ export function AtmosMobileExperience() {
                         <div className="w-full bg-white text-[#0C150A] rounded-3xl p-4 text-xs flex flex-col gap-2 text-left shadow-xs border border-black/5">
                           <div className="flex justify-between py-0.5 border-b border-black/5">
                             <span className="text-[#3F463E]">Name</span>
-                            <b className="text-[#0C150A]">Biochar Batch #3 · Kalol</b>
+                            <b className="text-[#0C150A]">{currentProjectConfig.shortTitle} Batch #3 · {currentProjectConfig.location.split(',')[0]}</b>
                           </div>
                           <div className="flex justify-between py-0.5 border-b border-black/5">
                             <span className="text-[#3F463E]">Issued to you (90%)</span>
-                            <b className="text-[#276A3C] font-black">5.796 tCO₂e</b>
+                            <b className="text-[#276A3C] font-black">
+                              {(parseFloat(currentProjectConfig.co2Estimated) * 0.9).toFixed(3)} tCO₂e
+                            </b>
                           </div>
                           <div className="flex justify-between py-0.5 border-b border-black/5">
                             <span className="text-[#3F463E]">Shared reserve pool (10%)</span>
-                            <b className="text-[#0C150A]">0.643 tCO₂e</b>
+                            <b className="text-[#0C150A]">
+                              {(parseFloat(currentProjectConfig.co2Estimated) * 0.1).toFixed(3)} tCO₂e
+                            </b>
                           </div>
                           <div className="flex justify-between py-0.5 border-b border-black/5">
                             <span className="text-[#3F463E]">Methodology</span>
-                            <b className="font-mono text-[9px] text-[#0C150A]">ATMOS-BIOCHAR-PILOT-v1</b>
+                            <b className="font-mono text-[9px] text-[#0C150A]">ATMOS-{currentProjectConfig.id.toUpperCase()}-v1</b>
                           </div>
                           <div className="flex justify-between py-0.5 border-b border-black/5">
                             <span className="text-[#3F463E]">Token Mint Program</span>
-                            <b className="font-mono text-[9px] text-[#276A3C]">AtmoSTkn_Biochar_Batch003</b>
+                            <b className="font-mono text-[9px] text-[#276A3C]">AtmoSTkn_{currentProjectConfig.shortTitle.replace(/\s+/g, '')}_Batch003</b>
                           </div>
                           <div className="flex justify-between py-0.5 border-b border-black/5">
                             <span className="text-[#3F463E]">Network & Block</span>
@@ -2234,11 +2727,11 @@ export function AtmosMobileExperience() {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-[#3F463E]">Producer</span>
-                              <b>Ramesh Patel (Solar Kiln #1)</b>
+                              <b>{currentProjectConfig.projectName}</b>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-[#3F463E]">Asset & Batch</span>
-                              <b>Biochar Batch #3 · Kalol</b>
+                              <b>{currentProjectConfig.shortTitle} Batch #3 · {currentProjectConfig.location.split(',')[0]}</b>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-[#3F463E]">Volume Retired</span>
@@ -2738,34 +3231,46 @@ export function AtmosMobileExperience() {
               className="bg-white text-[#0C150A] rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-3 border border-black/10"
             >
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-extrabold">Select Kiln / Reactor</h3>
+                <div>
+                  <h3 className="text-sm font-extrabold">{currentProjectConfig.shortTitle} Instrumentation</h3>
+                  <p className="text-[10px] text-[#3F463E]">Select verified equipment & sensor suite</p>
+                </div>
                 <button onClick={() => setShowEquipmentModal(false)} className="p-1">
                   <X size={16} />
                 </button>
               </div>
 
               <div className="space-y-2">
-                {[
-                  { name: "Retort kiln", desc: "25–30% yield · High purity biochar" },
-                  { name: "Kon-Tiki flame curtain", desc: "15–22% yield · Field batch operation" },
-                  { name: "Continuous pyrolysis drum", desc: "30–35% yield · Industrial automation" },
-                  { name: "Gasifier unit", desc: "Combined syngas energy + biochar output" },
-                ].map((eq) => (
+                {currentProjectConfig.equipmentOptions.map((eqOption, idx) => (
                   <div
-                    key={eq.name}
+                    key={eqOption}
                     onClick={() => {
-                      setEquipmentType(eq.name);
+                      setProjectMetricValues((prev) => ({
+                        ...prev,
+                        [selectedProjectId]: {
+                          ...prev[selectedProjectId],
+                          eq: eqOption,
+                        },
+                      }));
+                      setEquipmentType(eqOption);
                       setShowEquipmentModal(false);
                       playHapticSound("tap");
                     }}
                     className={`cursor-pointer p-3 rounded-2xl border transition-all ${
-                      equipmentType === eq.name
+                      currentEquipment === eqOption
                         ? "bg-[#E2F2DF] border-[#0C150A]"
                         : "bg-[#F7F9F6] border-black/10 hover:bg-black/5"
                     }`}
                   >
-                    <p className="text-xs font-extrabold text-[#0C150A]">{eq.name}</p>
-                    <p className="text-[10px] text-[#3F463E]">{eq.desc}</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-extrabold text-[#0C150A]">{eqOption}</p>
+                      {currentEquipment === eqOption && (
+                        <span className="text-[9px] font-bold text-[#276A3C]">Selected ✓</span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-[#3F463E] mt-0.5 font-mono">
+                      Hardware Enclave: SEC-HW-{selectedProjectId.toUpperCase()}-0{idx + 1}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -3665,20 +4170,20 @@ export function AtmosMobileExperience() {
 
               {/* Photo Inspection Canvas with AI Bounding Boxes */}
               <div className="relative h-44 w-full rounded-2xl bg-[#142213] border border-white/15 overflow-hidden flex items-center justify-center">
-                {/* Simulated Farm Pyrolysis Camera Frame */}
+                {/* Simulated Camera Frame */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
 
-                {/* AI Computer Vision Bounding Box 1: Feedstock */}
+                {/* AI Computer Vision Bounding Box 1 */}
                 <div className="absolute top-4 left-6 right-16 border-2 border-[#35C46A] rounded-lg p-1.5 bg-[#35C46A]/10 pointer-events-none">
                   <span className="text-[8px] font-mono font-bold bg-[#35C46A] text-[#0C150A] px-1 rounded-xs inline-block">
-                    FEEDSTOCK: COTTON STALK · 98.4%
+                    {currentProjectConfig.photos[activePhotoInspectionIndex]?.badge || "TELEMETRY CONFIRMED"} · 99.2%
                   </span>
                 </div>
 
-                {/* AI Bounding Box 2: Reaction Hotspot */}
-                <div className="absolute bottom-6 left-12 w-28 h-20 border-2 border-orange-500 rounded-lg p-1 bg-orange-500/10 pointer-events-none">
-                  <span className="text-[8px] font-mono font-bold bg-orange-500 text-white px-1 rounded-xs inline-block">
-                    CORE: 582°C PYROLYSIS
+                {/* AI Bounding Box 2 */}
+                <div className="absolute bottom-6 left-12 w-32 h-20 border-2 border-[#35C46A] rounded-lg p-1 bg-[#35C46A]/10 pointer-events-none">
+                  <span className="text-[8px] font-mono font-bold bg-[#35C46A] text-[#0C150A] px-1 rounded-xs inline-block truncate max-w-full">
+                    {currentProjectConfig.satellitePill1}
                   </span>
                 </div>
 
@@ -3688,26 +4193,26 @@ export function AtmosMobileExperience() {
                 </div>
 
                 <div className="absolute bottom-2 right-2 text-[8px] font-mono text-[#A6E3B8] bg-black/60 px-1.5 py-0.5 rounded-md">
-                  ISO 100 · 1/250s · f/1.8
+                  ISO 100 · 1/250s · f/1.8 · {currentProjectConfig.badge}
                 </div>
               </div>
 
               {/* Photo Selector Tabs */}
               <div className="grid grid-cols-3 gap-1.5">
-                {["P#1 Feedstock", "P#2 Reactor 582°C", "P#3 Biochar Yield"].map((label, i) => (
+                {currentProjectConfig.photos.map((photo, i) => (
                   <button
                     key={i}
                     onClick={() => {
                       setActivePhotoInspectionIndex(i);
                       playHapticSound("tap");
                     }}
-                    className={`py-1.5 px-2 rounded-xl text-[10px] font-bold transition-all ${
+                    className={`py-1.5 px-2 rounded-xl text-[10px] font-bold transition-all truncate ${
                       activePhotoInspectionIndex === i
                         ? "bg-[#35C46A] text-[#0C150A]"
                         : "bg-white/10 text-white/70 hover:bg-white/15"
                     }`}
                   >
-                    {label}
+                    {photo.label}
                   </button>
                 ))}
               </div>
@@ -3720,15 +4225,15 @@ export function AtmosMobileExperience() {
                 </div>
                 <div className="flex justify-between items-center text-[10px]">
                   <span className="text-white/60">GPS Enclave Lock:</span>
-                  <span className="text-white font-bold">23.2798° N, 72.4984° E (KALOL)</span>
+                  <span className="text-white font-bold">{currentProjectConfig.coords} ({currentProjectConfig.location.split(',')[0].toUpperCase()})</span>
                 </div>
                 <div className="flex justify-between items-center text-[10px]">
                   <span className="text-white/60">Ed25519 Camera Signature:</span>
                   <span className="text-[#35C46A] font-bold">VALIDATED (ENCLAVE)</span>
                 </div>
                 <div className="flex justify-between items-center text-[10px]">
-                  <span className="text-white/60">Pyrolysis Temperature:</span>
-                  <span className="text-orange-400 font-bold">582°C (TARGET: 550-650°C)</span>
+                  <span className="text-white/60">{currentProjectConfig.metric2Name}:</span>
+                  <span className="text-emerald-400 font-bold">{currentMetric2.toLocaleString()} {currentProjectConfig.metric2Unit}</span>
                 </div>
               </div>
 
@@ -3794,11 +4299,11 @@ export function AtmosMobileExperience() {
               <div className="flex items-center justify-between bg-white/5 rounded-2xl px-3 py-2 border border-white/10 text-[10px]">
                 <div>
                   <span className="text-white/50 block text-[8px] uppercase">Orbit Target</span>
-                  <b className="text-white">Kalol Station #1 ({GODS_EYE_KALOL_OBSERVATION.coordinates.lat}° N, {GODS_EYE_KALOL_OBSERVATION.coordinates.lng}° E)</b>
+                  <b className="text-white">{currentProjectConfig.projectName} ({currentProjectConfig.coords})</b>
                 </div>
                 <div className="text-right">
                   <span className="text-white/50 block text-[8px] uppercase">Ground Match</span>
-                  <b className="text-[#35C46A] font-mono text-xs">98.7% CONFIRMED</b>
+                  <b className="text-[#35C46A] font-mono text-xs">{currentProjectConfig.satelliteBadge} CONFIRMED</b>
                 </div>
               </div>
 
@@ -3889,8 +4394,8 @@ export function AtmosMobileExperience() {
                 {/* Reticle / Target Crosshairs */}
                 <div className="relative z-10 w-20 h-20 rounded-full border border-dashed border-[#35C46A] flex items-center justify-center">
                   <div className="w-2 h-2 rounded-full bg-[#35C46A] animate-ping" />
-                  <span className="absolute -top-3 text-[7px] font-mono font-bold bg-black/80 px-1 text-[#35C46A] rounded-xs">
-                    23.2798°N, 72.4984°E
+                  <span className="absolute -top-3 text-[7px] font-mono font-bold bg-black/80 px-1 text-[#35C46A] rounded-xs whitespace-nowrap">
+                    {currentProjectConfig.coords}
                   </span>
                 </div>
 
