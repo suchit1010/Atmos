@@ -58,7 +58,22 @@ import {
   CheckCheck,
   Upload,
   Image as ImageIcon,
+  Wallet,
+  CreditCard,
+  QrCode,
+  DollarSign,
 } from "lucide-react";
+import {
+  DodoPaymentsService,
+  DodoCheckoutRequest,
+  DodoPaymentSession,
+  DodoPaymentResult,
+} from "../services/dodoPayments";
+import {
+  PhantomSolanaService,
+  PhantomWalletState,
+  DEFAULT_DEVNET_WALLET,
+} from "../services/phantomSolanaWallet";
 
 export type ScreenId =
   | "01_welcome"          // 1. Splash / Welcome
@@ -549,8 +564,21 @@ export function AtmosMobileExperience() {
   const [biomassInput, setBiomassInput] = useState(12500);
   const [biocharOutput, setBiocharOutput] = useState(3200);
   const [equipmentType, setEquipmentType] = useState("Retort kiln");
-  const [evidencePhotosCount, setEvidencePhotosCount] = useState(3);
-  const [paymentMethod, setPaymentMethod] = useState<"upi" | "card">("upi");
+  const [paymentMethod, setPaymentMethod] = useState<"dodo_upi" | "dodo_card" | "phantom_solana">("dodo_upi");
+
+  // Solana & Phantom Web3 Wallet state
+  const [walletState, setWalletState] = useState<PhantomWalletState>(DEFAULT_DEVNET_WALLET);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+
+  // Dodo Payments state
+  const [dodoActiveSession, setDodoActiveSession] = useState<DodoPaymentSession | null>(null);
+  const [dodoCheckoutTab, setDodoCheckoutTab] = useState<"upi" | "card" | "netbanking">("upi");
+  const [dodoUpiTimer, setDodoUpiTimer] = useState(299);
+  const [dodoCardNumber, setDodoCardNumber] = useState("4242 •••• •••• 4242");
+  const [dodoCardExpiry, setDodoCardExpiry] = useState("12/28");
+  const [dodoCardCvv, setDodoCardCvv] = useState("883");
+  const [dodoCardHolder, setDodoCardHolder] = useState("Ramesh Patel");
+  const [isDodoProcessing, setIsDodoProcessing] = useState(false);
   const [portfolioTab, setPortfolioTab] = useState<"holdings" | "history" | "impact">("holdings");
 
   // User Profile & Firebase Google Auth state
@@ -904,6 +932,103 @@ export function AtmosMobileExperience() {
     }, 1800);
   };
 
+  // Phantom Wallet Web3 Handlers
+  const handleConnectPhantom = async () => {
+    playHapticSound("tap");
+    setWalletState((prev) => ({ ...prev, isConnecting: true }));
+    const result = await PhantomSolanaService.connect();
+    setWalletState(result.state);
+    if (result.success) {
+      playHapticSound("success");
+      setAuthToast(`Phantom Wallet Connected: ${result.state.shortAddress} (Devnet) ✓`);
+      setTimeout(() => setAuthToast(null), 3000);
+    }
+  };
+
+  const handleDisconnectPhantom = async () => {
+    playHapticSound("tap");
+    const newState = await PhantomSolanaService.disconnect();
+    setWalletState(newState);
+    setAuthToast("Phantom Wallet Disconnected");
+    setTimeout(() => setAuthToast(null), 2000);
+  };
+
+  const handleAirdropDevnetSol = async () => {
+    playHapticSound("tap");
+    setAuthToast("Requesting 1.0 SOL Devnet Airdrop...");
+    const newBal = await PhantomSolanaService.airdropSol(walletState.solBalance);
+    setWalletState((prev) => ({ ...prev, solBalance: newBal }));
+    playHapticSound("success");
+    setAuthToast(`Airdrop Confirmed! New Balance: ${newBal} SOL ✓`);
+    setTimeout(() => setAuthToast(null), 3000);
+  };
+
+  // Dodo Payments Checkout Handlers
+  const handleInitiateDodoPayment = async () => {
+    playHapticSound("tap");
+    setIsProcessingPayment(true);
+    const inrAmt = Math.round(purchaseTonnes * 11100);
+    const session = await DodoPaymentsService.createCheckoutSession({
+      projectId: selectedProjectId,
+      projectName: currentProjectConfig.projectName,
+      tonnesCO2e: purchaseTonnes,
+      amountINR: inrAmt,
+      amountUSD: DodoPaymentsService.inrToUsd(inrAmt),
+      currency: "INR",
+      customerEmail: currentUser?.email || "buyer@atmos.eco",
+      customerName: currentUser?.displayName || "Ramesh Patel",
+      paymentMethod: paymentMethod === "dodo_upi" ? "upi" : "card",
+      beneficiaryUpi: "rameshp@upi",
+    });
+    setDodoActiveSession(session);
+    setDodoCheckoutTab(paymentMethod === "dodo_card" ? "card" : "upi");
+    setIsProcessingPayment(false);
+    setShowDodoModal(true);
+  };
+
+  const handleConfirmDodoPayment = async () => {
+    setIsDodoProcessing(true);
+    playHapticSound("tap");
+    const inrAmt = Math.round(purchaseTonnes * 11100);
+    await DodoPaymentsService.confirmPayment(
+      dodoActiveSession?.sessionId || "dodo_demo",
+      dodoCheckoutTab === "card" ? "card" : "upi",
+      inrAmt
+    );
+    setTimeout(() => {
+      setIsDodoProcessing(false);
+      setShowDodoModal(false);
+      playHapticSound("success");
+      confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+      setAuthToast(`Dodo Escrow Released ₹${inrAmt.toLocaleString("en-IN")} · Certificate Deed Minted on Solana Devnet ✓`);
+      setTimeout(() => setAuthToast(null), 3500);
+      navigateTo("11_certificate");
+    }, 1200);
+  };
+
+  // Direct Phantom Solana Pay Execution
+  const handlePayWithPhantom = async () => {
+    if (!walletState.isConnected) {
+      await handleConnectPhantom();
+      return;
+    }
+    setIsProcessingPayment(true);
+    playHapticSound("tap");
+    const usdcAmt = DodoPaymentsService.inrToUsd(Math.round(purchaseTonnes * 11100));
+    await PhantomSolanaService.signAndPayUSDC(
+      "AtmoSEscrow1111111111111111111111111111111111",
+      usdcAmt,
+      purchaseTonnes,
+      selectedProjectId
+    );
+    setIsProcessingPayment(false);
+    playHapticSound("success");
+    confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 } });
+    setAuthToast(`Solana Pay: ${usdcAmt} USDC Confirmed on Devnet (Slot #250,231) ✓`);
+    setTimeout(() => setAuthToast(null), 3500);
+    navigateTo("11_certificate");
+  };
+
   // Helper: renders bottom 5-tab bar on main screens
   const renderBottomNav = (currentTab: "home" | "projects" | "market" | "portfolio" | "profile") => (
     <div className="absolute left-0 right-0 bottom-0 h-[76px] bg-[#F1F1F1] rounded-t-[32px] px-3 flex justify-between items-center shadow-lg border-t border-black/5 z-30 select-none">
@@ -968,7 +1093,29 @@ export function AtmosMobileExperience() {
           
           {/* iOS Dynamic Island & Status Bar */}
           <div className="relative z-40 w-full pt-3 px-7 flex items-center justify-between text-[13px] font-bold tracking-tight text-[#0C150A] select-none">
-            <span>9:41</span>
+            <div className="flex items-center gap-2">
+              <span>9:41</span>
+              {/* Phantom Wallet Web3 Status Pill */}
+              <button
+                onClick={() => {
+                  if (!walletState.isConnected) {
+                    handleConnectPhantom();
+                  } else {
+                    setShowWalletModal(true);
+                  }
+                }}
+                className={`px-1.5 py-0.5 rounded-full text-[8.5px] font-bold font-mono transition-all flex items-center gap-1 shadow-2xs border ${
+                  walletState.isConnected
+                    ? "bg-[#512da8]/15 border-[#795290]/40 text-[#512da8] hover:bg-[#512da8]/25"
+                    : "bg-[#512da8] text-white border-transparent hover:bg-[#4527a0]"
+                }`}
+                title="Phantom Solana Web3 Wallet"
+              >
+                <Wallet size={9} />
+                <span>{walletState.isConnected ? walletState.shortAddress : "Phantom"}</span>
+                {walletState.isConnected && <span className="w-1.5 h-1.5 rounded-full bg-[#35C46A]" />}
+              </button>
+            </div>
 
             {/* Dynamic Island Pill with Interactive Screen Jumper */}
             <div
@@ -2665,10 +2812,10 @@ export function AtmosMobileExperience() {
                   )}
 
                   {/* ============================================================== */}
-                  {/* SCREEN 10: PAYMENT (Page 10 in Userflow) */}
+                  {/* SCREEN 10: PAYMENT & SETTLEMENT (Page 10 in Userflow) */}
                   {/* ============================================================== */}
                   {activeScreen === "10_payment" && (
-                    <div className="flex-1 flex flex-col justify-between p-5 bg-[#F7F9F6] overflow-y-auto">
+                    <div className="flex-1 flex flex-col justify-between p-5 bg-[#F7F9F6] overflow-y-auto font-['Inter',sans-serif]">
                       <div className="flex flex-col gap-3 pt-1">
                         <div className="flex items-center justify-between">
                           <button
@@ -2680,13 +2827,29 @@ export function AtmosMobileExperience() {
                           >
                             <ChevronLeft size={20} />
                           </button>
-                          <h1 className="text-xl font-extrabold text-[#0C150A]">Payment & Escrow</h1>
-                          <span className="text-[9px] bg-[#E2F2DF] text-[#0C150A] px-2 py-0.5 rounded-full font-bold">
-                            Devnet
-                          </span>
+                          <h1 className="text-xl font-extrabold text-[#0C150A]">Payment & Settlement</h1>
+                          <button
+                            onClick={() => {
+                              if (!walletState.isConnected) {
+                                handleConnectPhantom();
+                              } else {
+                                setShowWalletModal(true);
+                              }
+                            }}
+                            className={`px-2 py-0.5 rounded-full text-[9px] font-bold font-mono transition-all flex items-center gap-1 border shadow-xs ${
+                              walletState.isConnected
+                                ? "bg-[#512da8]/15 border-[#795290]/40 text-[#512da8] hover:bg-[#512da8]/25"
+                                : "bg-[#512da8] text-white border-transparent hover:bg-[#4527a0]"
+                            }`}
+                            title="Solana & Phantom Web3 Wallet"
+                          >
+                            <Wallet size={10} />
+                            <span>{walletState.isConnected ? walletState.shortAddress : "Phantom"}</span>
+                            {walletState.isConnected && <span className="w-1.5 h-1.5 rounded-full bg-[#35C46A]" />}
+                          </button>
                         </div>
                         <p className="text-xs text-[#3F463E] text-center">
-                          Buying Biochar · Kalol, Gujarat (Batch #3)
+                          Buying {currentProjectConfig.shortTitle} · {currentProjectConfig.location.split(',')[0]} (Batch #3)
                         </p>
 
                         {/* Interactive Quantity Selector */}
@@ -2739,77 +2902,132 @@ export function AtmosMobileExperience() {
                         </div>
 
                         {/* Amount & Transparent Settlement Split Card */}
-                        <div className="bg-white rounded-3xl p-5 border border-black/5 shadow-xs flex flex-col gap-3">
-                          <div>
-                            <span className="text-xs text-[#3F463E] font-medium">Total Settlement Amount</span>
-                            <p className="text-3xl font-black text-[#0C150A] leading-tight">
-                              ₹{Math.round(purchaseTonnes * 11100).toLocaleString("en-IN")}
-                            </p>
+                        <div className="bg-white rounded-3xl p-4.5 border border-black/5 shadow-xs flex flex-col gap-3">
+                          <div className="flex justify-between items-baseline">
+                            <div>
+                              <span className="text-[11px] text-[#3F463E] font-medium block">Total Settlement</span>
+                              <p className="text-2xl font-black text-[#0C150A] leading-tight">
+                                ₹{Math.round(purchaseTonnes * 11100).toLocaleString("en-IN")}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[10px] text-white bg-[#512da8] px-2 py-0.5 rounded-full font-mono font-bold">
+                                ≈ ${DodoPaymentsService.inrToUsd(Math.round(purchaseTonnes * 11100))} USDC
+                              </span>
+                            </div>
                           </div>
 
-                          <div className="border-y border-black/5 py-2.5 space-y-1 text-xs">
-                            <div className="flex justify-between">
+                          <div className="border-y border-black/5 py-2 space-y-1 text-xs">
+                            <div className="flex justify-between text-[11px]">
                               <span className="text-[#3F463E]">{purchaseTonnes.toFixed(2)} tCO₂e × ₹11,100</span>
                               <b>₹{Math.round(purchaseTonnes * 11100).toLocaleString("en-IN")}</b>
                             </div>
-                            <div className="flex justify-between text-[11px]">
-                              <span className="text-[#3F463E]">↳ Ramesh Patel UPI (95%)</span>
+                            <div className="flex justify-between text-[10.5px]">
+                              <span className="text-[#3F463E]">↳ Ramesh Patel UPI Escrow (95%)</span>
                               <b className="text-[#276A3C]">
                                 ₹{Math.round(purchaseTonnes * 11100 * 0.95).toLocaleString("en-IN")}
                               </b>
                             </div>
-                            <div className="flex justify-between text-[11px]">
+                            <div className="flex justify-between text-[10.5px]">
                               <span className="text-[#3F463E]">↳ Verifier & MRV Escrow (5%)</span>
                               <b>₹{Math.round(purchaseTonnes * 11100 * 0.05).toLocaleString("en-IN")}</b>
                             </div>
-                            <div className="flex justify-between text-[11px]">
-                              <span className="text-[#3F463E]">↳ Dodo Payments Processing</span>
-                              <b className="text-[#276A3C]">Sponsored</b>
-                            </div>
-                            <div className="flex justify-between font-extrabold text-sm pt-1 border-t border-black/5">
-                              <span>Total to Pay</span>
-                              <span>₹{Math.round(purchaseTonnes * 11100).toLocaleString("en-IN")}</span>
+                            <div className="flex justify-between text-[10.5px]">
+                              <span className="text-[#3F463E]">↳ Dodo Payments MoR Gateway</span>
+                              <b className="text-[#276A3C]">Sponsored (0%)</b>
                             </div>
                           </div>
 
+                          {/* 3 Payment Methods: Dodo UPI, Dodo Cards, Phantom Solana Pay */}
                           <div>
-                            <p className="text-xs font-bold text-[#3F463E] mb-1.5">Payment method</p>
+                            <p className="text-xs font-bold text-[#0C150A] mb-1.5">Select Settlement Method</p>
                             <div className="space-y-1.5">
+                              {/* 1. Dodo UPI */}
                               <div
                                 onClick={() => {
                                   playHapticSound("tap");
-                                  setPaymentMethod("upi");
+                                  setPaymentMethod("dodo_upi");
                                 }}
-                                className={`cursor-pointer p-3 rounded-2xl border-2 flex items-center justify-between transition-all ${
-                                  paymentMethod === "upi" ? "border-[#0C150A] bg-[#E2F2DF]" : "border-black/10 bg-[#F7F9F6]"
+                                className={`cursor-pointer p-2.5 rounded-2xl border-2 flex items-center justify-between transition-all ${
+                                  paymentMethod === "dodo_upi" ? "border-[#0C150A] bg-[#E2F2DF]" : "border-black/10 bg-[#F7F9F6] hover:bg-black/5"
                                 }`}
                               >
-                                <div>
-                                  <p className="text-xs font-extrabold text-[#0C150A]">UPI / Instant Indian Bank Transfer</p>
-                                  <p className="text-[10px] text-[#3F463E]">Instant settlement via GPay, PhonePe, BHIM</p>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-7 h-7 rounded-xl bg-[#0C150A] text-white flex items-center justify-center shrink-0">
+                                    <QrCode size={14} />
+                                  </div>
+                                  <div>
+                                    <p className="text-[11px] font-extrabold text-[#0C150A] flex items-center gap-1.5">
+                                      <span>Dodo Payments · UPI Instant</span>
+                                      <span className="text-[8px] bg-[#276A3C]/15 text-[#276A3C] px-1 py-0.2 rounded-xs font-mono">Dodo MoR</span>
+                                    </p>
+                                    <p className="text-[9.5px] text-[#3F463E]">GPay, PhonePe, Paytm, BHIM Escrow</p>
+                                  </div>
                                 </div>
-                                {paymentMethod === "upi" && (
-                                  <span className="w-5 h-5 rounded-full bg-[#0C150A] text-white flex items-center justify-center text-[10px]">
+                                {paymentMethod === "dodo_upi" && (
+                                  <span className="w-4 h-4 rounded-full bg-[#0C150A] text-white flex items-center justify-center text-[9px]">
                                     ✓
                                   </span>
                                 )}
                               </div>
 
+                              {/* 2. Dodo Global Cards */}
                               <div
                                 onClick={() => {
                                   playHapticSound("tap");
-                                  setPaymentMethod("card");
+                                  setPaymentMethod("dodo_card");
                                 }}
-                                className={`cursor-pointer p-3 rounded-2xl border-2 flex items-center justify-between transition-all ${
-                                  paymentMethod === "card" ? "border-[#0C150A] bg-[#E2F2DF]" : "border-black/10 bg-[#F7F9F6]"
+                                className={`cursor-pointer p-2.5 rounded-2xl border-2 flex items-center justify-between transition-all ${
+                                  paymentMethod === "dodo_card" ? "border-[#0C150A] bg-[#E2F2DF]" : "border-black/10 bg-[#F7F9F6] hover:bg-black/5"
                                 }`}
                               >
-                                <div>
-                                  <p className="text-xs font-extrabold text-[#0C150A]">International Card (Dodo Escrow)</p>
-                                  <p className="text-[10px] text-[#3F463E]">Visa, Mastercard, Amex for Global Buyers</p>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-7 h-7 rounded-xl bg-[#0C150A] text-white flex items-center justify-center shrink-0">
+                                    <CreditCard size={14} />
+                                  </div>
+                                  <div>
+                                    <p className="text-[11px] font-extrabold text-[#0C150A] flex items-center gap-1.5">
+                                      <span>Dodo Payments · Global Cards</span>
+                                      <span className="text-[8px] bg-[#276A3C]/15 text-[#276A3C] px-1 py-0.2 rounded-xs font-mono">50+ Currencies</span>
+                                    </p>
+                                    <p className="text-[9.5px] text-[#3F463E]">Visa, Mastercard, Amex with Zero Forex</p>
+                                  </div>
                                 </div>
-                                {paymentMethod === "card" && (
-                                  <span className="w-5 h-5 rounded-full bg-[#0C150A] text-white flex items-center justify-center text-[10px]">
+                                {paymentMethod === "dodo_card" && (
+                                  <span className="w-4 h-4 rounded-full bg-[#0C150A] text-white flex items-center justify-center text-[9px]">
+                                    ✓
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* 3. Phantom Solana Pay */}
+                              <div
+                                onClick={() => {
+                                  playHapticSound("tap");
+                                  setPaymentMethod("phantom_solana");
+                                }}
+                                className={`cursor-pointer p-2.5 rounded-2xl border-2 flex items-center justify-between transition-all ${
+                                  paymentMethod === "phantom_solana" ? "border-[#512da8] bg-[#512da8]/10" : "border-black/10 bg-[#F7F9F6] hover:bg-black/5"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="w-7 h-7 rounded-xl bg-[#512da8] text-white flex items-center justify-center shrink-0">
+                                    <Wallet size={14} />
+                                  </div>
+                                  <div>
+                                    <p className="text-[11px] font-extrabold text-[#0C150A] flex items-center gap-1.5">
+                                      <span>Phantom · Solana Pay</span>
+                                      <span className="text-[8px] bg-[#512da8]/20 text-[#512da8] px-1 py-0.2 rounded-xs font-mono">USDC / SOL</span>
+                                    </p>
+                                    <p className="text-[9.5px] text-[#3F463E]">
+                                      {walletState.isConnected
+                                        ? `Connected: ${walletState.shortAddress} (${walletState.solBalance} SOL)`
+                                        : "Direct Web3 On-Chain Confidential Transfer"}
+                                    </p>
+                                  </div>
+                                </div>
+                                {paymentMethod === "phantom_solana" && (
+                                  <span className="w-4 h-4 rounded-full bg-[#512da8] text-white flex items-center justify-center text-[9px]">
                                     ✓
                                   </span>
                                 )}
@@ -2817,9 +3035,9 @@ export function AtmosMobileExperience() {
                             </div>
                           </div>
 
-                          <div className="bg-[#E2F2DF]/70 border border-[#276A3C]/20 rounded-xl p-2.5">
-                            <p className="text-[10px] text-[#276A3C] leading-relaxed font-medium">
-                              Funds held in Dodo Smart Escrow until the retirement transaction commits to the Solana blockchain.
+                          <div className="bg-[#E2F2DF]/70 border border-[#276A3C]/20 rounded-xl p-2">
+                            <p className="text-[9.5px] text-[#276A3C] leading-relaxed font-medium">
+                              Protected by Dodo Escrow: Funds released to producer upon Solana alt-bn128 ZK deed validation.
                             </p>
                           </div>
                         </div>
@@ -2830,24 +3048,35 @@ export function AtmosMobileExperience() {
                           whileTap={{ scale: 0.98 }}
                           disabled={isProcessingPayment}
                           onClick={() => {
-                            setIsProcessingPayment(true);
-                            playHapticSound("tap");
-                            setTimeout(() => {
-                              setIsProcessingPayment(false);
-                              playHapticSound("success");
-                              confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-                              setAuthToast("Payment Settled! Certificate Minted on Solana Devnet ✓");
-                              setTimeout(() => setAuthToast(null), 3000);
-                              navigateTo("11_certificate");
-                            }, 1100);
+                            if (paymentMethod === "phantom_solana") {
+                              handlePayWithPhantom();
+                            } else {
+                              handleInitiateDodoPayment();
+                            }
                           }}
-                          className="w-full h-13 rounded-full bg-[#0C150A] text-white font-extrabold text-base shadow-md hover:bg-black transition-colors flex items-center justify-center gap-2"
+                          className={`w-full h-13 rounded-full text-white font-extrabold text-base shadow-md transition-colors flex items-center justify-center gap-2 ${
+                            paymentMethod === "phantom_solana"
+                              ? "bg-[#512da8] hover:bg-[#4527a0]"
+                              : "bg-[#0C150A] hover:bg-black"
+                          }`}
                         >
                           {isProcessingPayment ? (
                             <>
                               <RefreshCw size={16} className="animate-spin text-[#35C46A]" />
-                              <span>Settling via Dodo Escrow...</span>
+                              <span>{paymentMethod === "phantom_solana" ? "Broadcasting to Solana Devnet..." : "Creating Dodo Escrow Session..."}</span>
                             </>
+                          ) : paymentMethod === "phantom_solana" ? (
+                            walletState.isConnected ? (
+                              <>
+                                <span>Pay ${DodoPaymentsService.inrToUsd(Math.round(purchaseTonnes * 11100))} USDC via Phantom</span>
+                                <ChevronRight size={18} />
+                              </>
+                            ) : (
+                              <>
+                                <Wallet size={16} />
+                                <span>Connect Phantom Wallet to Pay</span>
+                              </>
+                            )
                           ) : (
                             <>
                               <span>Pay ₹{Math.round(purchaseTonnes * 11100).toLocaleString("en-IN")} via Dodo</span>
@@ -2855,7 +3084,9 @@ export function AtmosMobileExperience() {
                             </>
                           )}
                         </motion.button>
-                        <p className="text-[10px] text-[#3F463E]">Secured by Dodo Payments & Solana SPL Token Program</p>
+                        <p className="text-[9.5px] text-[#3F463E]">
+                          Secured by Dodo Payments Merchant of Record & Solana SPL Token-2022
+                        </p>
                       </div>
                     </div>
                   )}
@@ -3774,57 +4005,409 @@ export function AtmosMobileExperience() {
         )}
       </AnimatePresence>
 
-      {/* 5. Dodo Payments Checkout Modal */}
+      {/* 5. Dodo Payments Checkout Gateway Modal */}
       <AnimatePresence>
         {showDodoModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs font-['Inter',sans-serif]">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white text-[#0C150A] rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-3.5 border border-black/10 font-['Inter',sans-serif]"
+              className="bg-white text-[#0C150A] rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-3.5 border border-black/10 max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between border-b border-black/10 pb-2">
+              {/* Dodo Header */}
+              <div className="flex items-center justify-between border-b border-black/10 pb-2.5">
                 <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-[#0C150A] text-white flex items-center justify-center text-xs font-black">
+                  <div className="w-8 h-8 rounded-full bg-[#0C150A] text-white flex items-center justify-center text-xs font-black shadow-xs">
                     D
-                  </span>
-                  <h3 className="text-sm font-extrabold">Dodo Payments Gateway</h3>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-[#0C150A] flex items-center gap-1.5">
+                      <span>Dodo Payments Checkout</span>
+                      <span className="text-[8px] bg-[#E2F2DF] text-[#276A3C] font-mono px-1 py-0.2 rounded-xs">MoR</span>
+                    </h3>
+                    <p className="text-[9px] text-[#3F463E]">
+                      Global Merchant of Record · Smart Escrow
+                    </p>
+                  </div>
                 </div>
-                <button onClick={() => setShowDodoModal(false)} className="p-1 text-black/60">
-                  <X size={16} />
+                <button
+                  onClick={() => setShowDodoModal(false)}
+                  className="w-7 h-7 rounded-full bg-black/5 flex items-center justify-center text-black/60 hover:text-black hover:bg-black/10 transition-colors"
+                >
+                  <X size={15} />
                 </button>
               </div>
 
-              <div className="text-center py-1">
-                <p className="text-xs text-[#3F463E]">Amount Due</p>
-                <p className="text-2xl font-black text-[#0C150A]">₹55,500</p>
-                <p className="text-[10px] text-[#276A3C] font-bold">5.000 tCO₂e Biochar · Kalol</p>
+              {/* Order Amount Card */}
+              <div className="bg-[#F7F9F6] p-3 rounded-2xl border border-black/5 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-[#3F463E] block">Amount to Settle</span>
+                  <p className="text-2xl font-black text-[#0C150A]">
+                    ₹{Math.round(purchaseTonnes * 11100).toLocaleString("en-IN")}
+                  </p>
+                  <span className="text-[9.5px] text-[#276A3C] font-mono font-bold">
+                    {purchaseTonnes.toFixed(2)} tCO₂e · {currentProjectConfig.shortTitle}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-white bg-[#0C150A] px-2 py-0.5 rounded-full font-mono font-bold block mb-1">
+                    ≈ ${DodoPaymentsService.inrToUsd(Math.round(purchaseTonnes * 11100))} USD
+                  </span>
+                  <span className="text-[8px] text-[#3F463E] font-mono">0% Forex Fee</span>
+                </div>
               </div>
 
-              <div className="bg-[#F7F9F6] p-3 rounded-2xl border border-black/5 flex flex-col items-center gap-1.5">
-                <div className="w-24 h-24 bg-black rounded-xl p-1 flex items-center justify-center">
-                  <div className="w-full h-full bg-white grid grid-cols-4 gap-0.5 p-1">
-                    <div className="bg-black col-span-2 row-span-2" />
-                    <div className="bg-black" />
-                    <div className="bg-black" />
-                    <div className="bg-white" />
-                    <div className="bg-black" />
-                    <div className="bg-black col-span-2" />
+              {/* Dodo Checkout Tabs */}
+              <div className="grid grid-cols-3 gap-1 bg-[#F1F1F1] p-1 rounded-2xl text-[10px] font-bold">
+                <button
+                  onClick={() => {
+                    playHapticSound("tap");
+                    setDodoCheckoutTab("upi");
+                  }}
+                  className={`py-1.5 rounded-xl transition-all flex items-center justify-center gap-1 ${
+                    dodoCheckoutTab === "upi" ? "bg-white text-[#0C150A] shadow-xs" : "text-[#3F463E] hover:text-[#0C150A]"
+                  }`}
+                >
+                  <QrCode size={11} />
+                  <span>UPI QR</span>
+                </button>
+                <button
+                  onClick={() => {
+                    playHapticSound("tap");
+                    setDodoCheckoutTab("card");
+                  }}
+                  className={`py-1.5 rounded-xl transition-all flex items-center justify-center gap-1 ${
+                    dodoCheckoutTab === "card" ? "bg-white text-[#0C150A] shadow-xs" : "text-[#3F463E] hover:text-[#0C150A]"
+                  }`}
+                >
+                  <CreditCard size={11} />
+                  <span>Card</span>
+                </button>
+                <button
+                  onClick={() => {
+                    playHapticSound("tap");
+                    setDodoCheckoutTab("netbanking");
+                  }}
+                  className={`py-1.5 rounded-xl transition-all flex items-center justify-center gap-1 ${
+                    dodoCheckoutTab === "netbanking" ? "bg-white text-[#0C150A] shadow-xs" : "text-[#3F463E] hover:text-[#0C150A]"
+                  }`}
+                >
+                  <DollarSign size={11} />
+                  <span>NetBanking</span>
+                </button>
+              </div>
+
+              {/* Tab 1: UPI QR */}
+              {dodoCheckoutTab === "upi" && (
+                <div className="space-y-2.5">
+                  <div className="bg-[#F7F9F6] p-3 rounded-2xl border border-black/5 flex flex-col items-center text-center gap-2">
+                    {/* Simulated Dodo UPI QR Code */}
+                    <div className="w-32 h-32 bg-white rounded-2xl p-2 border-2 border-black/10 shadow-xs flex items-center justify-center relative">
+                      <div className="w-full h-full bg-[#0C150A] rounded-xl p-1.5 flex items-center justify-center">
+                        <div className="w-full h-full bg-white grid grid-cols-5 gap-0.5 p-1 rounded-lg">
+                          <div className="bg-black col-span-2 row-span-2 rounded-xs" />
+                          <div className="bg-black" />
+                          <div className="bg-black col-span-2 row-span-2 rounded-xs" />
+                          <div className="bg-black" />
+                          <div className="bg-black" />
+                          <div className="bg-white" />
+                          <div className="bg-black" />
+                          <div className="bg-black" />
+                          <div className="bg-black col-span-2 row-span-2 rounded-xs" />
+                          <div className="bg-black" />
+                          <div className="bg-black" />
+                          <div className="bg-black" />
+                        </div>
+                      </div>
+                      <div className="absolute w-7 h-7 rounded-full bg-[#0C150A] text-white flex items-center justify-center text-[10px] font-black border-2 border-white shadow-xs">
+                        D
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-center gap-1.5 text-[10px] font-mono text-[#0C150A]">
+                        <span>VPA: atmos.carbon@dodoescrow</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard?.writeText("atmos.carbon@dodoescrow");
+                            playHapticSound("tap");
+                            setAuthToast("Copied Dodo Escrow UPI VPA ✓");
+                            setTimeout(() => setAuthToast(null), 2500);
+                          }}
+                          className="text-[#276A3C] hover:underline"
+                        >
+                          <Copy size={10} />
+                        </button>
+                      </div>
+                      <p className="text-[9.5px] text-[#3F463E] mt-0.5">
+                        Scan with Google Pay, PhonePe, Paytm, or BHIM
+                      </p>
+                      <span className="text-[8.5px] font-mono text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded-full inline-block mt-1 font-bold">
+                        Expires in 04:58 · Auto-Polling Active
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    disabled={isDodoProcessing}
+                    onClick={handleConfirmDodoPayment}
+                    className="w-full h-11 rounded-full bg-[#0C150A] text-white font-extrabold text-xs shadow-md hover:bg-black transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    {isDodoProcessing ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin text-[#35C46A]" />
+                        <span>Verifying UPI Receipt via Svix...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check size={14} className="text-[#35C46A]" />
+                        <span>Simulate App Approval & Release Escrow</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Tab 2: Credit / Debit Card */}
+              {dodoCheckoutTab === "card" && (
+                <div className="space-y-2">
+                  <div className="space-y-1.5 text-[10px]">
+                    <div>
+                      <label className="text-[#3F463E] font-bold block mb-0.5">Card Number</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={dodoCardNumber}
+                          onChange={(e) => setDodoCardNumber(e.target.value)}
+                          className="w-full h-9 rounded-xl border border-black/15 px-3 font-mono text-xs text-[#0C150A] bg-[#F7F9F6] focus:outline-none focus:border-[#0C150A]"
+                        />
+                        <span className="absolute right-3 top-2.5 text-[8.5px] font-bold text-[#276A3C]">
+                          VISA / MC
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <div>
+                        <label className="text-[#3F463E] font-bold block mb-0.5">Expires (MM/YY)</label>
+                        <input
+                          type="text"
+                          value={dodoCardExpiry}
+                          onChange={(e) => setDodoCardExpiry(e.target.value)}
+                          className="w-full h-9 rounded-xl border border-black/15 px-3 font-mono text-xs text-[#0C150A] bg-[#F7F9F6] focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[#3F463E] font-bold block mb-0.5">CVV / CVC</label>
+                        <input
+                          type="password"
+                          value={dodoCardCvv}
+                          onChange={(e) => setDodoCardCvv(e.target.value)}
+                          className="w-full h-9 rounded-xl border border-black/15 px-3 font-mono text-xs text-[#0C150A] bg-[#F7F9F6] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[#3F463E] font-bold block mb-0.5">Cardholder Name</label>
+                      <input
+                        type="text"
+                        value={dodoCardHolder}
+                        onChange={(e) => setDodoCardHolder(e.target.value)}
+                        className="w-full h-9 rounded-xl border border-black/15 px-3 text-xs text-[#0C150A] bg-[#F7F9F6] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[8px] text-[#3F463E] px-1">
+                    <span>3D Secure 2.0 Verified</span>
+                    <span className="text-[#276A3C] font-bold">256-Bit SSL Encrypted</span>
+                  </div>
+
+                  <button
+                    disabled={isDodoProcessing}
+                    onClick={handleConfirmDodoPayment}
+                    className="w-full h-11 rounded-full bg-[#0C150A] text-white font-extrabold text-xs shadow-md hover:bg-black transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    {isDodoProcessing ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin text-[#35C46A]" />
+                        <span>Processing with Dodo MoR...</span>
+                      </>
+                    ) : (
+                      <span>Pay ₹{Math.round(purchaseTonnes * 11100).toLocaleString("en-IN")} via Dodo MoR</span>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Tab 3: NetBanking */}
+              {dodoCheckoutTab === "netbanking" && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                    {["HDFC Bank", "ICICI Bank", "State Bank of India", "Axis Bank", "Kotak Mahindra", "Punjab National"].map((b, i) => (
+                      <button
+                        key={b}
+                        onClick={() => playHapticSound("tap")}
+                        className={`p-2 rounded-xl border text-left font-bold transition-all ${
+                          i === 0 ? "border-[#0C150A] bg-[#E2F2DF] text-[#0C150A]" : "border-black/10 bg-[#F7F9F6] text-[#3F463E]"
+                        }`}
+                      >
+                        {b}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    disabled={isDodoProcessing}
+                    onClick={handleConfirmDodoPayment}
+                    className="w-full h-11 rounded-full bg-[#0C150A] text-white font-extrabold text-xs shadow-md hover:bg-black transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    {isDodoProcessing ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin text-[#35C46A]" />
+                        <span>Authorizing Bank Portal...</span>
+                      </>
+                    ) : (
+                      <span>Authorize via HDFC NetBanking</span>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Security Escrow Notice */}
+              <div className="bg-[#E2F2DF] p-2 rounded-xl border border-[#276A3C]/20 text-[8.5px] text-[#276A3C] font-mono leading-relaxed text-center">
+                Svix Webhook signature: HMAC-SHA256 · Funds held in Dodo Escrow until permanent retirement deed on Solana Devnet.
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 5B. Phantom Solana Web3 Wallet Modal */}
+      <AnimatePresence>
+        {showWalletModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs font-['Inter',sans-serif]">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#0C150A] text-white rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-3.5 border border-white/15 max-h-[90vh] overflow-y-auto"
+            >
+              {/* Wallet Header */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-[#512da8] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Wallet size={16} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5">
+                      <span>Phantom Wallet</span>
+                      <span className="w-2 h-2 rounded-full bg-[#35C46A] animate-ping" />
+                    </h3>
+                    <p className="text-[9px] text-[#A6E3B8] font-mono">
+                      Solana Devnet · Alt-bn128 Precompile Ready
+                    </p>
                   </div>
                 </div>
-                <p className="text-[10px] font-bold text-[#3F463E]">Scan with GPay, PhonePe, Paytm, or BHIM</p>
+                <button
+                  onClick={() => setShowWalletModal(false)}
+                  className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
               </div>
 
-              <button
-                onClick={() => {
-                  setShowDodoModal(false);
-                  navigateTo("11_certificate");
-                }}
-                className="w-full h-11 rounded-full bg-[#0C150A] text-white font-extrabold text-xs shadow-md hover:bg-black transition-colors"
-              >
-                Simulate Instant Payment
-              </button>
+              {/* Address Card */}
+              <div className="bg-white/5 p-3 rounded-2xl border border-white/10 space-y-1.5 font-mono text-[10px]">
+                <div className="flex justify-between items-center text-white/60">
+                  <span>CONNECTED ADDRESS</span>
+                  <span className="text-[#35C46A] font-bold">DEVNET (32/32)</span>
+                </div>
+                <div className="flex items-center justify-between bg-black/40 p-2 rounded-xl border border-white/5">
+                  <span className="text-[#35C46A] truncate pr-2">
+                    {walletState.publicKey || PhantomSolanaService.FALLBACK_PUBKEY}
+                  </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard?.writeText(walletState.publicKey || PhantomSolanaService.FALLBACK_PUBKEY);
+                      playHapticSound("tap");
+                      setAuthToast("Copied Phantom Public Key to clipboard ✓");
+                      setTimeout(() => setAuthToast(null), 2500);
+                    }}
+                    className="text-white/60 hover:text-white p-1"
+                    title="Copy Address"
+                  >
+                    <Copy size={12} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Balances Card */}
+              <div className="grid grid-cols-2 gap-2 font-mono">
+                <div className="bg-white/5 p-3 rounded-2xl border border-white/10">
+                  <span className="text-[9px] text-white/50 block">SOL BALANCE</span>
+                  <p className="text-base font-extrabold text-white mt-0.5">
+                    {walletState.solBalance} SOL
+                  </p>
+                  <span className="text-[8px] text-[#35C46A]">
+                    ≈ ${(walletState.solBalance * 142).toFixed(2)} USD
+                  </span>
+                </div>
+                <div className="bg-white/5 p-3 rounded-2xl border border-white/10">
+                  <span className="text-[9px] text-white/50 block">USDC BALANCE</span>
+                  <p className="text-base font-extrabold text-[#35C46A] mt-0.5">
+                    ${walletState.usdcBalance.toLocaleString()}
+                  </p>
+                  <span className="text-[8px] text-white/60 font-sans">
+                    Solana Pay Ready
+                  </span>
+                </div>
+              </div>
+
+              {/* Wallet Actions */}
+              <div className="space-y-1.5 pt-1">
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    onClick={handleAirdropDevnetSol}
+                    className="h-10 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-[10px] transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <RefreshCw size={12} />
+                    <span>Airdrop +1.0 SOL</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const url = `https://solscan.io/account/${walletState.publicKey || PhantomSolanaService.FALLBACK_PUBKEY}?cluster=devnet`;
+                      navigator.clipboard?.writeText(url);
+                      playHapticSound("tap");
+                      setAuthToast("Copied Devnet Solscan Account URL ✓");
+                      setTimeout(() => setAuthToast(null), 2500);
+                    }}
+                    className="h-10 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-[10px] transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <ExternalLink size={12} />
+                    <span>View on Solscan</span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (walletState.isConnected) {
+                      handleDisconnectPhantom();
+                    } else {
+                      handleConnectPhantom();
+                    }
+                  }}
+                  className={`w-full h-11 rounded-full font-extrabold text-xs shadow-md transition-colors ${
+                    walletState.isConnected
+                      ? "bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30"
+                      : "bg-[#512da8] text-white hover:bg-[#4527a0]"
+                  }`}
+                >
+                  {walletState.isConnected ? "Disconnect Phantom Wallet" : "Connect Phantom Wallet"}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
