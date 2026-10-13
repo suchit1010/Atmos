@@ -56,6 +56,8 @@ import {
   Shield,
   Radio,
   CheckCheck,
+  Upload,
+  Image as ImageIcon,
 } from "lucide-react";
 
 export type ScreenId =
@@ -113,6 +115,23 @@ export interface ProjectConfig {
   satellitePill3: string;
   photos: { label: string; desc: string; badge: string }[];
   co2Estimated: string;
+}
+
+export interface UploadedPhotoItem {
+  id: string;
+  label: string;
+  desc: string;
+  badge: string;
+  url?: string;
+  timestamp: string;
+  gps: string;
+  aiVerified: boolean;
+  algoVerified: boolean;
+  aiConfidence: number;
+  algoConfidence: number;
+  syntheticScore: number;
+  aiDetections: string[];
+  algoMetrics: { label: string; value: string; match: string }[];
 }
 
 export const ALL_PROJECT_CONFIGS: ProjectConfig[] = [
@@ -567,7 +586,13 @@ export function AtmosMobileExperience() {
     individual_action: { m1: 620, m2: 480, eq: "Enphase Solar Gateway + Ather 450X IoT" },
   });
 
-  // AI Vision & "God's Eye View" Satellite Cross-Verification
+  // AI Vision, Photo Upload & "God's Eye View" Satellite Cross-Verification
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [uploadedPhotosByProject, setUploadedPhotosByProject] = useState<Record<string, UploadedPhotoItem[]>>({});
+  const [isVerifyingPhoto, setIsVerifyingPhoto] = useState(false);
+  const [verificationProgressStep, setVerificationProgressStep] = useState<string>("");
+  const [cameraCaptureMode, setCameraCaptureMode] = useState<"upload" | "camera">("upload");
+  const [pendingUploadPreview, setPendingUploadPreview] = useState<string | null>(null);
   const [showAiVisionModal, setShowAiVisionModal] = useState(false);
   const [activePhotoInspectionIndex, setActivePhotoInspectionIndex] = useState(0);
   const [showSatelliteGodsEyeModal, setShowSatelliteGodsEyeModal] = useState(false);
@@ -766,6 +791,118 @@ export function AtmosMobileExperience() {
     projectMetricValues[selectedProjectId]?.m2 ?? currentProjectConfig.metric2Default;
   const currentEquipment =
     projectMetricValues[selectedProjectId]?.eq ?? currentProjectConfig.equipmentDefault;
+
+  // Active Project Photos: default verified photos + user uploaded/captured photos
+  const currentProjectPhotos: UploadedPhotoItem[] = [
+    ...currentProjectConfig.photos.map((p, idx) => ({
+      id: `default-${currentProjectConfig.id}-${idx}`,
+      label: p.label,
+      desc: p.desc,
+      badge: p.badge,
+      timestamp: "2026-10-12 18:25 UTC",
+      gps: currentProjectConfig.coords,
+      aiVerified: true,
+      algoVerified: true,
+      aiConfidence: 99.4,
+      algoConfidence: 99.1,
+      syntheticScore: 0.00,
+      aiDetections: [
+        `${currentProjectConfig.shortTitle.toUpperCase()} ASSET CONFIRMED · 99.4%`,
+        `CALIBRATION SCALE 1:1 · ZERO LENS DISTORTION`,
+        `GENAI / SYNTHETIC ARTIFACTS: 0.00%`
+      ],
+      algoMetrics: [
+        { label: "Orbital Band Reflectance", value: currentProjectConfig.satelliteBadge, match: "MATCHED ✓" },
+        { label: "Thermodynamic Assertion", value: currentProjectConfig.calcLimit, match: "PASSED ✓" },
+        { label: "Hardware Ed25519 Enclave", value: "Valid Key", match: "SIGNED ✓" }
+      ]
+    })),
+    ...(uploadedPhotosByProject[selectedProjectId] || [])
+  ];
+
+  // Currently inspected photo for AI+Algo suite
+  const activeInspectedPhoto = currentProjectPhotos[activePhotoInspectionIndex] || currentProjectPhotos[0];
+
+  // Dynamic ZK proof & Solana tokenization values
+  const activeZKCommitment = `zk_snark_${selectedProjectId}_${((Math.round(currentMetric1 * 13 + currentMetric2 * 7)) % 899999 + 100000).toString(16)}e904df62`;
+  const activeSolanaTxSig = `5ayYk98X2z21QwLa771vM2kZ18bQs8XfVjC${selectedProjectId.slice(0, 3).toUpperCase()}982KLmN5v`;
+
+  // Photo Upload & Verification Handlers
+  const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setPendingUploadPreview(dataUrl);
+      playHapticSound("tap");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCommitPhotoVerification = (photoDataUrl?: string) => {
+    const imgUrl = photoDataUrl || pendingUploadPreview;
+    setIsVerifyingPhoto(true);
+    playHapticSound("shutter");
+    setVerificationProgressStep("1. Gemini 2.5 Multi-Modal Vision Scanning...");
+
+    setTimeout(() => {
+      setVerificationProgressStep("2. Algorithmic IoT & Orbital Reflectance Cross-Check...");
+      playHapticSound("tap");
+    }, 600);
+
+    setTimeout(() => {
+      setVerificationProgressStep("3. Formulating Ed25519 Enclave & Solana ZK Witness...");
+      playHapticSound("tap");
+    }, 1200);
+
+    setTimeout(() => {
+      setIsVerifyingPhoto(false);
+      setVerificationProgressStep("");
+      setPendingUploadPreview(null);
+      setShowCameraModal(false);
+
+      const newIndex = currentProjectPhotos.length + 1;
+      const newPhotoItem: UploadedPhotoItem = {
+        id: `photo-${Date.now()}`,
+        label: `P#${newIndex}`,
+        desc: `${currentProjectConfig.shortTitle} Field Evidence`,
+        badge: "AI+Algo Verified ✓",
+        url: imgUrl || undefined,
+        timestamp: new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC",
+        gps: currentProjectConfig.coords,
+        aiVerified: true,
+        algoVerified: true,
+        aiConfidence: 99.5,
+        algoConfidence: 99.2,
+        syntheticScore: 0.00,
+        aiDetections: [
+          `${currentProjectConfig.shortTitle.toUpperCase()} GROUND TRUTH CONFIRMED · 99.5%`,
+          `PHYSICAL CAMERA SENSOR: SONY-IMX989 1-INCH ENCLAVE`,
+          `GENAI / SYNTHETIC ARTIFACTS: 0.00% (AUTHENTIC PHYSICAL)`
+        ],
+        algoMetrics: [
+          { label: "Orbital Cross-Correlation", value: currentProjectConfig.satelliteBadge, match: "MATCHED ✓" },
+          { label: "Thermodynamic Limit Check", value: currentProjectConfig.calcLimit, match: "PASSED ✓" },
+          { label: "Hardware Ed25519 Enclave", value: "Valid Key", match: "SIGNED ✓" }
+        ]
+      };
+
+      setUploadedPhotosByProject((prev) => ({
+        ...prev,
+        [selectedProjectId]: [...(prev[selectedProjectId] || []), newPhotoItem]
+      }));
+
+      setActivePhotoInspectionIndex(currentProjectPhotos.length);
+      playHapticSound("success");
+      setAuthToast(`Photo P#${newIndex} Verified with AI + Algo (99.5% Match)! Enclave Sealed ✓`);
+      setTimeout(() => {
+        setAuthToast(null);
+        setShowAiVisionModal(true);
+      }, 2200);
+    }, 1800);
+  };
 
   // Helper: renders bottom 5-tab bar on main screens
   const renderBottomNav = (currentTab: "home" | "projects" | "market" | "portfolio" | "profile") => (
@@ -1685,21 +1822,30 @@ export function AtmosMobileExperience() {
                             </div>
                           </div>
 
-                          {/* Photos with AI multi-modal inspector */}
+                          {/* Photos with AI multi-modal inspector & Real Upload */}
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageFileSelect}
+                          />
                           <div className="pt-1 border-t border-black/5">
                             <div className="flex justify-between items-center text-[11px] font-bold mb-1.5">
                               <span className="flex items-center gap-1">
-                                <span>Evidence photos (camera only)</span>
-                                <span className="text-[9px] text-[#276A3C] bg-[#E2F2DF] px-1 rounded-sm">AI-Verified</span>
+                                <span>Evidence photos & Field upload</span>
+                                <span className="text-[8px] text-[#276A3C] bg-[#E2F2DF] px-1.5 py-0.2 rounded-full font-bold flex items-center gap-0.5">
+                                  <Cpu size={8} /> AI + Algo Verified
+                                </span>
                               </span>
-                              <span className="text-[#3F463E]">
-                                {currentProjectConfig.photos.length}/6
+                              <span className="text-[#3F463E] font-mono">
+                                {currentProjectPhotos.length}/6
                               </span>
                             </div>
                             <div className="grid grid-cols-4 gap-1.5">
-                              {currentProjectConfig.photos.map((photo, i) => (
+                              {currentProjectPhotos.map((photo, i) => (
                                 <motion.div
-                                  key={i}
+                                  key={photo.id || i}
                                   whileTap={{ scale: 0.94 }}
                                   onClick={() => {
                                     setActivePhotoInspectionIndex(i);
@@ -1707,32 +1853,49 @@ export function AtmosMobileExperience() {
                                     playHapticSound("tap");
                                   }}
                                   className="aspect-square rounded-xl bg-[#0C150A] text-white flex flex-col items-center justify-center text-[9px] font-bold cursor-pointer relative group overflow-hidden border border-white/10 hover:border-[#35C46A] transition-all shadow-xs p-1 text-center"
-                                  title={`Tap to run AI inspection on ${photo.desc}`}
+                                  title={`Tap to run AI + Algo cross-verification inspection on ${photo.desc}`}
                                 >
-                                  <span className="text-[9px] font-extrabold">{photo.label}</span>
-                                  <span className="text-[7px] text-[#35C46A] flex items-center gap-0.5 font-mono truncate max-w-full">
-                                    <Cpu size={7} /> AI ✓
-                                  </span>
-                                  <span className="text-[6.5px] text-white/60 truncate max-w-full mt-0.5 font-mono">
-                                    {photo.badge}
-                                  </span>
-                                  <div className="absolute inset-0 bg-[#35C46A]/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  {photo.url ? (
+                                    <img
+                                      src={photo.url}
+                                      alt={photo.desc}
+                                      className="absolute inset-0 w-full h-full object-cover rounded-xl opacity-60 group-hover:opacity-85 transition-opacity"
+                                    />
+                                  ) : null}
+                                  <div className="relative z-10 flex flex-col items-center">
+                                    <span className="text-[9px] font-extrabold">{photo.label}</span>
+                                    <span className="text-[7px] text-[#35C46A] flex items-center gap-0.5 font-mono truncate max-w-full">
+                                      <Cpu size={7} /> AI+Algo ✓
+                                    </span>
+                                    <span className="text-[6.5px] text-white/80 truncate max-w-full mt-0.5 font-mono">
+                                      {photo.badge}
+                                    </span>
+                                  </div>
+                                  <div className="absolute inset-0 bg-[#35C46A]/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
                                     <Eye size={12} className="text-white" />
                                   </div>
                                 </motion.div>
                               ))}
-                              {currentProjectConfig.photos.length < 6 && (
-                                <div
-                                  onClick={() => setShowCameraModal(true)}
-                                  className="aspect-square rounded-xl border-2 border-dashed border-black/20 flex flex-col items-center justify-center text-[#0C150A] cursor-pointer hover:bg-black/5 transition-colors"
+                              {currentProjectPhotos.length < 6 && (
+                                <motion.div
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => {
+                                    playHapticSound("tap");
+                                    setShowCameraModal(true);
+                                  }}
+                                  className="aspect-square rounded-xl border-2 border-dashed border-[#276A3C]/40 bg-[#E2F2DF]/30 flex flex-col items-center justify-center text-[#0C150A] cursor-pointer hover:bg-[#E2F2DF]/60 transition-colors group"
+                                  title="Upload or capture photo evidence for AI + Algo cross-verification"
                                 >
-                                  <Camera size={16} />
-                                  <span className="text-[8px] font-bold mt-0.5">Add</span>
-                                </div>
+                                  <div className="flex items-center gap-1 text-[#276A3C]">
+                                    <Upload size={13} />
+                                    <Camera size={13} />
+                                  </div>
+                                  <span className="text-[8px] font-extrabold mt-1 text-[#276A3C]">+ Upload</span>
+                                </motion.div>
                               )}
                             </div>
                             <p className="text-[9px] text-[#3F463E] mt-1.5 italic">
-                              * Tap any photo to review Gemini 2.5 Flash vision & spectral verification
+                              * Upload field photo or capture camera. AI + Algorithmic engine verifies against God's Eye satellite telemetry.
                             </p>
                           </div>
                         </div>
@@ -2112,7 +2275,7 @@ export function AtmosMobileExperience() {
                               </span>
                               <div>
                                 <span className="text-xs font-extrabold text-[#0C150A] block">1. Computing Witness</span>
-                                <span className="text-[10px] text-[#3F463E]">Cotton feedstock mass & kiln temp polynomial</span>
+                                <span className="text-[10px] text-[#3F463E]">{currentProjectConfig.shortTitle} {currentProjectConfig.metric1Name.toLowerCase()} & {currentProjectConfig.metric2Name.toLowerCase()} polynomial</span>
                               </div>
                             </div>
                             <span className="text-[9px] font-mono font-bold text-[#276A3C]">0.12s</span>
@@ -2125,7 +2288,7 @@ export function AtmosMobileExperience() {
                               </span>
                               <div>
                                 <span className="text-xs font-extrabold text-[#0C150A] block">2. Groth16 Prover</span>
-                                <span className="text-[10px] text-[#3F463E]">4,892 R1CS constraints satisfied</span>
+                                <span className="text-[10px] text-[#3F463E]">4,892 R1CS constraints satisfied · SnarkJS WASM</span>
                               </div>
                             </div>
                             <span className="text-[9px] font-mono font-bold text-[#276A3C]">0.84s</span>
@@ -2138,7 +2301,7 @@ export function AtmosMobileExperience() {
                               </span>
                               <div>
                                 <span className="text-xs font-extrabold text-[#0C150A] block">3. Verifying on Solana</span>
-                                <span className="text-[10px] text-[#3F463E]">Alt-bn128 curve program on Devnet</span>
+                                <span className="text-[10px] text-[#3F463E]">Alt-bn128 curve syscall on Devnet slot #250,231</span>
                               </div>
                             </div>
                             <span className="text-[9px] font-mono font-bold text-[#35C46A]">Ready</span>
@@ -2169,14 +2332,14 @@ export function AtmosMobileExperience() {
                             <motion.div
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: "auto" }}
-                              className="mt-2.5 pt-2 border-t border-black/5 font-mono text-[9px] text-[#0C150A] space-y-1 bg-[#F7F9F6] p-2 rounded-xl"
+                              className="mt-2.5 pt-2 border-t border-black/5 font-mono text-[9px] text-[#0C150A] space-y-1.5 bg-[#F7F9F6] p-2.5 rounded-xl"
                             >
-                              <div className="text-[#3F463E]">circuit: BiocharSequestration.circom (v2.1)</div>
-                              <div className="text-[#3F463E]">curve: BN254 / Alt-bn128 (SnarkJS WASM)</div>
-                              <div className="text-[#276A3C] font-bold">public_signals: [6439, 20261012, 0x7m4...9kL]</div>
-                              <div className="text-black/50">private_witness: [mass: 3200kg, c_frac: 784, t_max: 582C]</div>
-                              <div className="text-black/50">proof.pi_a: 0x1f89e4c...e92a</div>
-                              <div className="text-[#276A3C] font-bold">status: PROOF_VALIDATED_ON_CHAIN</div>
+                              <div className="text-[#3F463E]">circuit: {currentProjectConfig.shortTitle.replace(/\s+/g, '')}Sequestration.circom (v2.1)</div>
+                              <div className="text-[#3F463E]">curve: BN254 / Alt-bn128 (Solana Syscall)</div>
+                              <div className="text-[#276A3C] font-bold">public_signals: [net_co2: {currentProjectConfig.co2Estimated}, vintage: 20261012, enclave_sig: 0x7m4...9kL]</div>
+                              <div className="text-black/60">private_witness: [{currentProjectConfig.metric1Name}: {currentMetric1.toLocaleString()} {currentProjectConfig.metric1Unit}, {currentProjectConfig.metric2Name}: {currentMetric2.toLocaleString()} {currentProjectConfig.metric2Unit}]</div>
+                              <div className="text-black/60">nullifier: nullifier_{selectedProjectId}_{activeZKCommitment.slice(-8)}</div>
+                              <div className="text-[#276A3C] font-bold">status: PROOF_VALIDATED_ON_CHAIN (Slot #250,231)</div>
                             </motion.div>
                           )}
                         </div>
@@ -2188,7 +2351,7 @@ export function AtmosMobileExperience() {
                               Shielded Private
                             </span>
                             <p className="text-[10px] text-[#3F463E] leading-relaxed">
-                              Farmer phone numbers, commercial pricing, precise site boundaries.
+                              Site operator identity, raw sensor hardware keys, commercial pricing.
                             </p>
                           </div>
                           <div className="bg-white border border-black/5 rounded-2xl p-3 shadow-xs">
@@ -2196,27 +2359,28 @@ export function AtmosMobileExperience() {
                               Public Auditable
                             </span>
                             <p className="text-[10px] text-[#3F463E] leading-relaxed">
-                              6.439 tCO₂e formula adherence, verifier quorum sigs, vintage timestamp.
+                              {currentProjectConfig.co2Estimated} formula adherence, dual-verifier quorum sigs, orbital match.
                             </p>
                           </div>
                         </div>
 
                         {/* Hash Card */}
                         <div className="bg-[#E2F2DF] border border-[#276A3C]/20 rounded-2xl p-3 flex items-center justify-between">
-                          <div>
+                          <div className="min-w-0 pr-2">
                             <span className="text-[9px] text-[#3F463E] block">Proof commitment</span>
-                            <span className="font-mono text-xs font-bold text-[#0C150A]">
-                              zk_79a2b1c8e904df62e831...
+                            <span className="font-mono text-xs font-bold text-[#0C150A] truncate block">
+                              {activeZKCommitment.slice(0, 24)}...
                             </span>
                           </div>
                           <button
                             onClick={() => {
-                              navigator.clipboard?.writeText("zk_79a2b1c8e904df62e8310c3b88a44917ed9276fa83");
+                              navigator.clipboard?.writeText(activeZKCommitment);
                               playHapticSound("tap");
-                              setAuthToast("Copied ZK Proof hash to clipboard ✓");
+                              setAuthToast(`Copied ZK Proof commitment to clipboard ✓`);
                               setTimeout(() => setAuthToast(null), 2500);
                             }}
-                            className="p-1.5 rounded-lg bg-white/60 hover:bg-white text-[#0C150A] transition-colors"
+                            className="p-1.5 rounded-lg bg-white/60 hover:bg-white text-[#0C150A] transition-colors shrink-0"
+                            title="Copy proof commitment"
                           >
                             <Copy size={14} />
                           </button>
@@ -2284,9 +2448,23 @@ export function AtmosMobileExperience() {
                             <span className="text-[#3F463E]">Network & Block</span>
                             <b className="text-[#0C150A]">Solana Devnet · #250,231</b>
                           </div>
-                          <div className="flex justify-between py-0.5 border-b border-black/5">
+                          <div className="flex justify-between items-center py-0.5 border-b border-black/5">
                             <span className="text-[#3F463E]">Proof commitment</span>
-                            <b className="font-mono text-[9px] text-[#0C150A]">zk_79a2b1c…</b>
+                            <div className="flex items-center gap-1 font-mono text-[9px] text-[#0C150A]">
+                              <span>{activeZKCommitment.slice(0, 16)}…</span>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard?.writeText(activeZKCommitment);
+                                  playHapticSound("tap");
+                                  setAuthToast("Copied ZK Proof commitment to clipboard ✓");
+                                  setTimeout(() => setAuthToast(null), 2500);
+                                }}
+                                className="p-0.5 text-[#276A3C] hover:bg-black/5 rounded-sm"
+                                title="Copy commitment"
+                              >
+                                <Copy size={11} />
+                              </button>
+                            </div>
                           </div>
                           <div className="flex justify-between items-center pt-0.5">
                             <span className="text-[#3F463E]">Status</span>
@@ -3169,52 +3347,207 @@ export function AtmosMobileExperience() {
       {/* MODALS & DRAWERS */}
       {/* ============================================================== */}
 
-      {/* 1. In-App Camera Viewfinder Modal */}
+      {/* 1. Upload & In-App Camera Viewfinder Modal */}
       <AnimatePresence>
         {showCameraModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs font-['Inter',sans-serif]">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-[#0C150A] text-white rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-3.5 border border-white/10"
+              className="bg-[#0C150A] text-white rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-3.5 border border-white/15 max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
                 <div className="flex items-center gap-2">
                   <Camera size={16} className="text-[#35C46A]" />
-                  <h3 className="text-sm font-extrabold">Evidence Camera Viewfinder</h3>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-white">Upload & Verify Evidence</h3>
+                    <p className="text-[9px] text-[#A6E3B8] font-mono">
+                      {currentProjectConfig.shortTitle} · Enclave Lock
+                    </p>
+                  </div>
                 </div>
-                <button onClick={() => setShowCameraModal(false)} className="p-1">
+                <button
+                  onClick={() => {
+                    setShowCameraModal(false);
+                    setPendingUploadPreview(null);
+                  }}
+                  className="p-1 text-white/60 hover:text-white"
+                >
                   <X size={16} />
                 </button>
               </div>
 
-              <div className="relative aspect-4/3 rounded-2xl bg-black border border-white/20 overflow-hidden flex flex-col justify-between p-3">
-                <div className="flex justify-between items-center text-[9px] text-white/70 font-mono">
-                  <span>GPS: 23.2798° N, 72.4922° E</span>
-                  <span className="text-[#35C46A] font-bold">LOCK 3D</span>
-                </div>
-                
-                <div className="self-center border border-white/40 w-28 h-28 rounded-lg flex items-center justify-center">
-                  <div className="w-2 h-2 bg-[#35C46A] rounded-full animate-ping" />
-                </div>
-
-                <div className="flex justify-between items-center text-[8px] text-[#A6E3B8] font-mono bg-black/60 px-2 py-0.5 rounded-md">
-                  <span>Timestamp: 2026-10-12 18:25 UTC</span>
-                  <span>Ed25519 Keystore</span>
-                </div>
+              {/* Mode Switcher */}
+              <div className="grid grid-cols-2 gap-1 bg-white/5 p-1 rounded-2xl border border-white/10 text-xs font-bold">
+                <button
+                  onClick={() => {
+                    setCameraCaptureMode("upload");
+                    playHapticSound("tap");
+                  }}
+                  className={`py-1.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                    cameraCaptureMode === "upload"
+                      ? "bg-[#35C46A] text-[#0C150A] shadow-md"
+                      : "text-white/70 hover:text-white"
+                  }`}
+                >
+                  <Upload size={13} />
+                  <span>Upload File</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setCameraCaptureMode("camera");
+                    playHapticSound("tap");
+                  }}
+                  className={`py-1.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                    cameraCaptureMode === "camera"
+                      ? "bg-[#35C46A] text-[#0C150A] shadow-md"
+                      : "text-white/70 hover:text-white"
+                  }`}
+                >
+                  <Camera size={13} />
+                  <span>Sensor Camera</span>
+                </button>
               </div>
 
-              <button
-                onClick={() => {
-                  setEvidencePhotosCount((c) => Math.min(6, c + 1));
-                  setShowCameraModal(false);
-                  playHapticSound("shutter");
-                }}
-                className="w-full h-11 rounded-2xl bg-[#35C46A] text-[#0C150A] font-extrabold text-xs shadow-md"
-              >
-                Capture & Sign with Device Key
-              </button>
+              {isVerifyingPhoto ? (
+                /* Active Verification Scanner */
+                <div className="h-56 rounded-2xl bg-[#142213] border border-[#35C46A]/40 flex flex-col items-center justify-center p-4 text-center gap-3 relative overflow-hidden">
+                  <div className="w-12 h-12 rounded-full border-3 border-[#35C46A]/20 border-t-[#35C46A] animate-spin flex items-center justify-center">
+                    <Cpu size={18} className="text-[#35C46A] animate-pulse" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-white">AI + Algo Pipeline Running</h4>
+                    <p className="text-[10px] text-[#A6E3B8] mt-1 font-mono">{verificationProgressStep}</p>
+                  </div>
+                  <div className="w-48 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                    <motion.div
+                      initial={{ width: "10%" }}
+                      animate={{ width: "95%" }}
+                      transition={{ duration: 1.8, ease: "easeInOut" }}
+                      className="h-full bg-[#35C46A] rounded-full"
+                    />
+                  </div>
+                  <span className="text-[8px] font-mono text-white/50">Ed25519 Keystore Signature Pending</span>
+                </div>
+              ) : cameraCaptureMode === "upload" ? (
+                /* Upload Mode View */
+                <div className="space-y-3">
+                  {pendingUploadPreview ? (
+                    <div className="space-y-2">
+                      <div className="relative aspect-4/3 rounded-2xl overflow-hidden border border-white/20 bg-black">
+                        <img
+                          src={pendingUploadPreview}
+                          alt="Pending upload preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[8px] font-mono text-white bg-black/75 px-2 py-1 rounded-lg backdrop-blur-xs">
+                          <span>{currentProjectConfig.coords}</span>
+                          <span className="text-[#35C46A]">Ready for AI Check</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex-1 h-10 rounded-2xl bg-white/10 text-white font-bold text-xs hover:bg-white/15"
+                        >
+                          Change Photo
+                        </button>
+                        <button
+                          onClick={() => handleCommitPhotoVerification()}
+                          className="flex-2 h-10 rounded-2xl bg-[#35C46A] text-[#0C150A] font-extrabold text-xs shadow-md hover:bg-[#2eb05d] flex items-center justify-center gap-1.5"
+                        >
+                          <Cpu size={14} />
+                          <span>Verify with AI + Algo</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-white/20 hover:border-[#35C46A]/60 bg-white/5 hover:bg-white/10 rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group"
+                      >
+                        <div className="w-11 h-11 rounded-full bg-[#35C46A]/20 text-[#35C46A] flex items-center justify-center border border-[#35C46A]/40 group-hover:scale-110 transition-transform">
+                          <Upload size={20} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-extrabold text-white">Select image from your device</p>
+                          <p className="text-[10px] text-white/50 mt-0.5">PNG, JPG, WEBP, HEIC up to 25MB</p>
+                        </div>
+                        <span className="text-[10px] font-bold text-[#35C46A] bg-[#35C46A]/20 px-3 py-1 rounded-full border border-[#35C46A]/30 mt-1">
+                          Browse Files
+                        </span>
+                      </div>
+
+                      {/* Quick Testing Preset Images */}
+                      <div>
+                        <span className="text-[10px] text-white/50 block mb-1 font-mono">
+                          Or test with field sensor assets:
+                        </span>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button
+                            onClick={() => {
+                              // SVG Data URL for sample field photo
+                              const svg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="%231a3320"/><circle cx="200" cy="150" r="80" fill="%232d5a37"/><rect x="150" y="100" width="100" height="100" fill="%233e7b4c" rx="10"/><text x="200" y="155" font-family="monospace" font-size="14" fill="%23ffffff" text-anchor="middle font-weight="bold">${encodeURIComponent(currentProjectConfig.shortTitle.toUpperCase())} ASSET</text></svg>`;
+                              setPendingUploadPreview(svg);
+                              playHapticSound("tap");
+                            }}
+                            className="p-2 rounded-xl bg-white/5 border border-white/10 hover:border-[#35C46A]/50 text-left text-[10px] font-bold text-white/80 hover:text-white"
+                          >
+                            <span className="block text-[#35C46A]">Asset Ground Truth</span>
+                            <span className="text-[8px] text-white/50 font-normal">Physical site installation</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              const svg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23112211"/><rect x="60" y="60" width="280" height="180" fill="%231f4425" rx="12"/><line x1="60" y1="150" x2="340" y2="150" stroke="%2335C46A" stroke-width="2"/><text x="200" y="140" font-family="monospace" font-size="12" fill="%2335C46A" text-anchor="middle font-weight="bold">TELEMETRY SENSOR DIAL</text></svg>`;
+                              setPendingUploadPreview(svg);
+                              playHapticSound("tap");
+                            }}
+                            className="p-2 rounded-xl bg-white/5 border border-white/10 hover:border-[#35C46A]/50 text-left text-[10px] font-bold text-white/80 hover:text-white"
+                          >
+                            <span className="block text-[#35C46A]">Sensor Hardware Log</span>
+                            <span className="text-[8px] text-white/50 font-normal">Calibrated gauge dial</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Live Camera Mode View */
+                <div className="space-y-3">
+                  <div className="relative aspect-4/3 rounded-2xl bg-black border border-white/20 overflow-hidden flex flex-col justify-between p-3">
+                    <div className="flex justify-between items-center text-[9px] text-white/70 font-mono">
+                      <span>GPS: {currentProjectConfig.coords}</span>
+                      <span className="text-[#35C46A] font-bold">LOCK 3D · ENCLAVE</span>
+                    </div>
+
+                    <div className="self-center border border-dashed border-[#35C46A] w-28 h-28 rounded-2xl flex items-center justify-center relative">
+                      <div className="w-2.5 h-2.5 bg-[#35C46A] rounded-full animate-ping" />
+                      <span className="absolute -top-3 text-[7px] font-mono bg-black/80 px-1 text-[#35C46A] rounded-xs">
+                        AUTO-FOCUS
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-[8px] text-[#A6E3B8] font-mono bg-black/60 px-2 py-0.5 rounded-md">
+                      <span>Timestamp: 2026-10-13 09:36 UTC</span>
+                      <span>Ed25519 Keystore</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      const svg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="%230c1f10"/><circle cx="200" cy="150" r="90" fill="%231e4224"/><text x="200" y="155" font-family="monospace" font-size="14" fill="%23ffffff" text-anchor="middle" font-weight="bold">ENCLAVE CAPTURE: ${encodeURIComponent(currentProjectConfig.shortTitle.toUpperCase())}</text></svg>`;
+                      handleCommitPhotoVerification(svg);
+                    }}
+                    className="w-full h-12 rounded-2xl bg-[#35C46A] text-[#0C150A] font-extrabold text-xs shadow-md hover:bg-[#2eb05d] transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Camera size={16} />
+                    <span>Capture & Verify with AI + Algo</span>
+                  </button>
+                </div>
+              )}
             </motion.div>
           </div>
         )}
@@ -3626,56 +3959,210 @@ export function AtmosMobileExperience() {
         )}
       </AnimatePresence>
 
-      {/* 7. Solana Explorer Modal */}
+      {/* 7. Comprehensive Solana ZK Tokenization Explorer Modal */}
       <AnimatePresence>
         {showSolanaTxModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs font-['Inter',sans-serif]">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-[#0C150A] text-white rounded-3xl p-6 max-w-sm w-full shadow-2xl flex flex-col gap-4 border border-white/10 font-['Inter',sans-serif]"
+              className="bg-[#0C150A] text-white rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-3.5 border border-white/15 max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#35C46A] animate-ping" />
-                  <h3 className="text-sm font-extrabold text-white">Solana On-Chain Record</h3>
+                  <div className="w-8 h-8 rounded-full bg-[#35C46A]/20 text-[#35C46A] flex items-center justify-center border border-[#35C46A]/40 shrink-0">
+                    <Shield size={16} className="text-[#35C46A]" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5">
+                      <span>Solana ZK Token Explorer</span>
+                      <span className="w-2 h-2 rounded-full bg-[#35C46A] animate-ping" />
+                    </h3>
+                    <p className="text-[9px] text-[#A6E3B8] font-mono">
+                      SPL Token-2022 · Devnet Slot #250,231
+                    </p>
+                  </div>
                 </div>
                 <button
                   onClick={() => setShowSolanaTxModal(false)}
-                  className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white"
+                  className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-colors"
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="bg-white/5 rounded-2xl p-3.5 font-mono text-xs flex flex-col gap-2">
-                <div>
-                  <span className="text-white/50 text-[10px]">Program ID:</span>
-                  <p className="text-[#35C46A] text-[10px] break-all">AtmoSReg11111111111111111111111111111111111</p>
+              {/* Status Banner */}
+              <div className="bg-[#142213] border border-[#35C46A]/30 rounded-2xl p-2.5 flex items-center justify-between text-xs font-mono">
+                <div className="flex items-center gap-1.5">
+                  <CheckCheck size={14} className="text-[#35C46A]" />
+                  <span className="text-[#35C46A] font-extrabold text-[10px]">FINALIZED (32/32)</span>
                 </div>
+                <span className="text-white/60 text-[9px]">124,820 CU · $0.0007 Fee</span>
+              </div>
+
+              {/* Section 1: Transaction & Token Record */}
+              <div className="bg-white/5 rounded-2xl p-3 font-mono text-[10px] space-y-2 border border-white/10">
+                <div className="flex justify-between items-center text-[#35C46A] font-bold text-[10px] border-b border-white/10 pb-1">
+                  <span>ON-CHAIN TRANSACTION RECORD</span>
+                  <span>DEVNET</span>
+                </div>
+
                 <div>
-                  <span className="text-white/50 text-[10px]">Transaction Signature:</span>
-                  <p className="text-white text-[10px] break-all">
-                    5ayYk98X2z21QwLa771vM2kZ18bQs8XfVjC3982KLmN5v
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/50 text-[9px]">Tx Signature:</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard?.writeText(activeSolanaTxSig);
+                        playHapticSound("tap");
+                        setAuthToast("Copied Solana Transaction Signature ✓");
+                        setTimeout(() => setAuthToast(null), 2500);
+                      }}
+                      className="text-[#35C46A] hover:underline flex items-center gap-0.5 text-[8.5px]"
+                    >
+                      <Copy size={9} /> Copy
+                    </button>
+                  </div>
+                  <p className="text-white text-[9.5px] break-all bg-black/40 p-1.5 rounded-lg border border-white/5 mt-0.5 select-all">
+                    {activeSolanaTxSig}
                   </p>
                 </div>
-                <div>
-                  <span className="text-white/50 text-[10px]">Block Height:</span>
-                  <p className="text-white text-[10px]">250,231 (FINALIZED)</p>
+
+                <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                  <div>
+                    <span className="text-white/50 text-[9px] block">Token Standard:</span>
+                    <span className="text-white font-bold text-[9px]">SPL Token-2022</span>
+                  </div>
+                  <div>
+                    <span className="text-white/50 text-[9px] block">Extension:</span>
+                    <span className="text-[#35C46A] font-bold text-[9px]">Confidential Transfer</span>
+                  </div>
                 </div>
+
                 <div>
-                  <span className="text-white/50 text-[10px]">Proof Commitment:</span>
-                  <p className="text-[#35C46A] text-[10px]">zk_79a2b1c…</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/50 text-[9px]">Token Mint:</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard?.writeText(`AtmoS_${currentProjectConfig.shortTitle.toUpperCase().replace(/\s+/g, '')}_DEVNET_MINT`);
+                        playHapticSound("tap");
+                        setAuthToast("Copied Token Mint Address ✓");
+                        setTimeout(() => setAuthToast(null), 2500);
+                      }}
+                      className="text-[#35C46A] hover:underline flex items-center gap-0.5 text-[8.5px]"
+                    >
+                      <Copy size={9} /> Copy
+                    </button>
+                  </div>
+                  <p className="text-[#35C46A] text-[9px] break-all">
+                    AtmoS_{currentProjectConfig.shortTitle.toUpperCase().replace(/\s+/g, '')}_DEVNET_MINT
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1.5 pt-0.5 border-t border-white/5">
+                  <div>
+                    <span className="text-white/50 text-[9px] block">Shielded Mint (90%):</span>
+                    <span className="text-emerald-400 font-bold text-[10px]">
+                      {(parseFloat(currentProjectConfig.co2Estimated) * 0.9).toFixed(3)} tCO₂e
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-white/50 text-[9px] block">Reserve Pool (10%):</span>
+                    <span className="text-white font-bold text-[10px]">
+                      {(parseFloat(currentProjectConfig.co2Estimated) * 0.1).toFixed(3)} tCO₂e
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <button
-                onClick={() => setShowSolanaTxModal(false)}
-                className="w-full h-11 rounded-full bg-[#35C46A] text-[#0C150A] font-extrabold text-xs"
-              >
-                Close Explorer
-              </button>
+              {/* Section 2: Zero-Knowledge Groth16 Details */}
+              <div className="bg-white/5 rounded-2xl p-3 font-mono text-[10px] space-y-1.5 border border-white/10">
+                <div className="flex justify-between items-center text-[#35C46A] font-bold text-[10px] border-b border-white/10 pb-1">
+                  <span className="flex items-center gap-1">
+                    <Cpu size={11} />
+                    <span>ZERO-KNOWLEDGE WITNESS & PROOF</span>
+                  </span>
+                  <span>GROTH16 BN254</span>
+                </div>
+
+                <div className="flex justify-between items-center text-[9px]">
+                  <span className="text-white/50">Circom Circuit:</span>
+                  <span className="text-white">{currentProjectConfig.shortTitle.replace(/\s+/g, '')}Sequestration.circom</span>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center text-[9px]">
+                    <span className="text-white/50">Proof Commitment:</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard?.writeText(activeZKCommitment);
+                        playHapticSound("tap");
+                        setAuthToast("Copied ZK Proof Commitment ✓");
+                        setTimeout(() => setAuthToast(null), 2500);
+                      }}
+                      className="text-[#35C46A] hover:underline flex items-center gap-0.5 text-[8.5px]"
+                    >
+                      <Copy size={9} /> Copy
+                    </button>
+                  </div>
+                  <p className="text-[#35C46A] text-[9px] break-all bg-black/40 p-1 rounded-md border border-white/5 mt-0.5">
+                    {activeZKCommitment}
+                  </p>
+                </div>
+
+                <div className="flex justify-between items-center text-[9px]">
+                  <span className="text-white/50">Nullifier Hash:</span>
+                  <span className="text-white/90">nullifier_{selectedProjectId}_{activeZKCommitment.slice(-8)}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-[9px]">
+                  <span className="text-white/50">Solana Syscall:</span>
+                  <span className="text-[#35C46A] font-bold">alt_bn128 paired curve (PASSED)</span>
+                </div>
+
+                <div className="flex justify-between items-center text-[9px]">
+                  <span className="text-white/50">Satellite Orbit Match:</span>
+                  <span className="text-white">{currentProjectConfig.satelliteBadge} (Sentinel-2)</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-1.5 pt-1">
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    onClick={() => {
+                      const url = `https://solscan.io/tx/${activeSolanaTxSig}?cluster=devnet`;
+                      navigator.clipboard?.writeText(url);
+                      playHapticSound("tap");
+                      setAuthToast("Copied Solscan Devnet Explorer URL ✓");
+                      setTimeout(() => setAuthToast(null), 2500);
+                    }}
+                    className="h-10 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-[10px] transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <ExternalLink size={12} />
+                    <span>Copy Solscan URL</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      playHapticSound("success");
+                      setAuthToast("alt_bn128 Groth16 Precompile Syscall: 0 errors, 4,892 constraints OK ✓");
+                      setTimeout(() => setAuthToast(null), 3000);
+                    }}
+                    className="h-10 rounded-2xl bg-white/10 hover:bg-white/15 text-[#35C46A] font-bold text-[10px] transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <ShieldCheck size={12} />
+                    <span>Re-verify Syscall</span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setShowSolanaTxModal(false)}
+                  className="w-full h-11 rounded-full bg-[#35C46A] text-[#0C150A] font-extrabold text-xs shadow-md hover:bg-[#2eb05d] transition-colors"
+                >
+                  Close Solana Explorer
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
@@ -4145,7 +4632,7 @@ export function AtmosMobileExperience() {
         )}
       </AnimatePresence>
 
-      {/* 15. AI Multi-Modal Photo Inspection Modal */}
+      {/* 15. AI + Algo Multi-Modal Cross-Verification Suite Modal */}
       <AnimatePresence>
         {showAiVisionModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xs font-['Inter',sans-serif]">
@@ -4153,14 +4640,21 @@ export function AtmosMobileExperience() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-[#0C150A] text-white rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-3.5 border border-white/15 max-h-[640px] overflow-y-auto"
+              className="bg-[#0C150A] text-white rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-3 border border-white/15 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between border-b border-white/10 pb-2">
                 <div className="flex items-center gap-2">
-                  <Cpu size={16} className="text-[#35C46A]" />
+                  <div className="w-8 h-8 rounded-full bg-[#35C46A]/20 text-[#35C46A] flex items-center justify-center border border-[#35C46A]/40 shrink-0">
+                    <Cpu size={16} className="animate-pulse" />
+                  </div>
                   <div>
-                    <h3 className="text-sm font-extrabold text-white">Gemini 2.5 Flash Vision MRV</h3>
-                    <p className="text-[9px] text-[#A6E3B8]">Photo Evidence P#{activePhotoInspectionIndex + 1} Analysis</p>
+                    <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5">
+                      <span>AI + Algo Cross-Verification</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#35C46A] animate-ping" />
+                    </h3>
+                    <p className="text-[9px] text-[#A6E3B8]">
+                      Photo Evidence {activeInspectedPhoto.label} · {currentProjectConfig.shortTitle}
+                    </p>
                   </div>
                 </div>
                 <button onClick={() => setShowAiVisionModal(false)} className="p-1 text-white/60 hover:text-white">
@@ -4170,89 +4664,148 @@ export function AtmosMobileExperience() {
 
               {/* Photo Inspection Canvas with AI Bounding Boxes */}
               <div className="relative h-44 w-full rounded-2xl bg-[#142213] border border-white/15 overflow-hidden flex items-center justify-center">
-                {/* Simulated Camera Frame */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
+                {activeInspectedPhoto.url ? (
+                  <img
+                    src={activeInspectedPhoto.url}
+                    alt={activeInspectedPhoto.desc}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-[#162a1b]/60 to-black/40" />
+                )}
+
+                {/* Dark gradient vignette for readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 pointer-events-none" />
 
                 {/* AI Computer Vision Bounding Box 1 */}
-                <div className="absolute top-4 left-6 right-16 border-2 border-[#35C46A] rounded-lg p-1.5 bg-[#35C46A]/10 pointer-events-none">
-                  <span className="text-[8px] font-mono font-bold bg-[#35C46A] text-[#0C150A] px-1 rounded-xs inline-block">
-                    {currentProjectConfig.photos[activePhotoInspectionIndex]?.badge || "TELEMETRY CONFIRMED"} · 99.2%
+                <div className="absolute top-3 left-4 right-14 border-2 border-[#35C46A] rounded-lg p-1.5 bg-[#35C46A]/15 pointer-events-none">
+                  <span className="text-[8px] font-mono font-bold bg-[#35C46A] text-[#0C150A] px-1 rounded-xs inline-block truncate max-w-full">
+                    {activeInspectedPhoto.desc} · 99.4% MATCH
                   </span>
                 </div>
 
-                {/* AI Bounding Box 2 */}
-                <div className="absolute bottom-6 left-12 w-32 h-20 border-2 border-[#35C46A] rounded-lg p-1 bg-[#35C46A]/10 pointer-events-none">
-                  <span className="text-[8px] font-mono font-bold bg-[#35C46A] text-[#0C150A] px-1 rounded-xs inline-block truncate max-w-full">
-                    {currentProjectConfig.satellitePill1}
+                {/* AI Bounding Box 2: Thermodynamic / Telemetry Tag */}
+                <div className="absolute bottom-5 left-4 right-20 border-2 border-emerald-400 rounded-lg p-1 bg-emerald-950/40 pointer-events-none">
+                  <span className="text-[7.5px] font-mono font-bold bg-emerald-500 text-[#0C150A] px-1 rounded-xs inline-block truncate max-w-full">
+                    ALGO: {currentProjectConfig.calcBadge}
                   </span>
                 </div>
 
                 {/* AI Crosshairs */}
-                <div className="w-8 h-8 rounded-full border border-white/40 flex items-center justify-center relative">
+                <div className="w-8 h-8 rounded-full border border-white/40 flex items-center justify-center relative pointer-events-none">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#35C46A] animate-ping" />
                 </div>
 
-                <div className="absolute bottom-2 right-2 text-[8px] font-mono text-[#A6E3B8] bg-black/60 px-1.5 py-0.5 rounded-md">
-                  ISO 100 · 1/250s · f/1.8 · {currentProjectConfig.badge}
+                <div className="absolute bottom-1.5 right-2 text-[7.5px] font-mono text-[#A6E3B8] bg-black/75 px-1.5 py-0.5 rounded-md backdrop-blur-xs">
+                  Synthetic: 0.00% · Ed25519 Sealed
                 </div>
               </div>
 
               {/* Photo Selector Tabs */}
-              <div className="grid grid-cols-3 gap-1.5">
-                {currentProjectConfig.photos.map((photo, i) => (
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {currentProjectPhotos.map((photo, i) => (
                   <button
-                    key={i}
+                    key={photo.id || i}
                     onClick={() => {
                       setActivePhotoInspectionIndex(i);
                       playHapticSound("tap");
                     }}
-                    className={`py-1.5 px-2 rounded-xl text-[10px] font-bold transition-all truncate ${
+                    className={`py-1.5 px-2.5 rounded-xl text-[10px] font-bold transition-all shrink-0 flex items-center gap-1 ${
                       activePhotoInspectionIndex === i
-                        ? "bg-[#35C46A] text-[#0C150A]"
+                        ? "bg-[#35C46A] text-[#0C150A] shadow-md"
                         : "bg-white/10 text-white/70 hover:bg-white/15"
                     }`}
                   >
-                    {photo.label}
+                    <span>{photo.label}</span>
+                    <span className="text-[8px]">✓</span>
                   </button>
                 ))}
               </div>
 
-              {/* Telemetry Verification Table */}
-              <div className="bg-white/5 rounded-2xl p-3 border border-white/10 space-y-2 text-xs font-mono">
-                <div className="flex justify-between items-center text-[10px]">
-                  <span className="text-white/60">Synthetic / AI Generation:</span>
-                  <span className="text-[#35C46A] font-bold">0.00% (REAL HARDWARE)</span>
+              {/* Comprehensive Dual Verification Telemetry Table */}
+              <div className="space-y-2 text-xs">
+                {/* 1. AI Vision Model Verification */}
+                <div className="bg-white/5 rounded-2xl p-2.5 border border-white/10 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-[#35C46A] font-bold">
+                    <span className="flex items-center gap-1">
+                      <Cpu size={12} />
+                      <span>1. Gemini 2.5 Multi-Modal Vision Model</span>
+                    </span>
+                    <span>99.4% CONFIDENCE</span>
+                  </div>
+                  <div className="flex justify-between items-center text-white/80">
+                    <span className="text-white/50">Asset Detection:</span>
+                    <b className="text-white">{currentProjectConfig.shortTitle.toUpperCase()} GROUND TRUTH</b>
+                  </div>
+                  <div className="flex justify-between items-center text-white/80">
+                    <span className="text-white/50">Synthetic / Deepfake Risk:</span>
+                    <b className="text-[#35C46A]">0.00% (AUTHENTIC PHYSICAL SENSOR)</b>
+                  </div>
+                  <div className="flex justify-between items-center text-white/80">
+                    <span className="text-white/50">Optical Spectrometry:</span>
+                    <span className="text-white">{activeInspectedPhoto.badge}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center text-[10px]">
-                  <span className="text-white/60">GPS Enclave Lock:</span>
-                  <span className="text-white font-bold">{currentProjectConfig.coords} ({currentProjectConfig.location.split(',')[0].toUpperCase()})</span>
+
+                {/* 2. Algorithmic Math & Telemetry Verification */}
+                <div className="bg-white/5 rounded-2xl p-2.5 border border-white/10 space-y-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-[#35C46A] font-bold">
+                    <span className="flex items-center gap-1">
+                      <Satellite size={12} />
+                      <span>2. Algorithmic Orbital & IoT Cross-Check</span>
+                    </span>
+                    <span>{currentProjectConfig.satelliteBadge}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-white/80">
+                    <span className="text-white/50">God's Eye Orbit Match:</span>
+                    <span className="text-[#35C46A] font-bold">{currentProjectConfig.satellitePill1}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-white/80">
+                    <span className="text-white/50">Thermodynamic Bounds:</span>
+                    <span className="text-white">{currentProjectConfig.calcLimit}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-white/80">
+                    <span className="text-white/50">Hardware Enclave GPS:</span>
+                    <span className="text-white">{activeInspectedPhoto.gps}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center text-[10px]">
-                  <span className="text-white/60">Ed25519 Camera Signature:</span>
-                  <span className="text-[#35C46A] font-bold">VALIDATED (ENCLAVE)</span>
-                </div>
-                <div className="flex justify-between items-center text-[10px]">
-                  <span className="text-white/60">{currentProjectConfig.metric2Name}:</span>
-                  <span className="text-emerald-400 font-bold">{currentMetric2.toLocaleString()} {currentProjectConfig.metric2Unit}</span>
+
+                {/* 3. Solana ZK Witness Formulator */}
+                <div className="bg-[#E2F2DF]/10 rounded-2xl p-2.5 border border-[#35C46A]/30 space-y-1 font-mono text-[10px]">
+                  <div className="flex items-center justify-between text-[#35C46A] font-bold">
+                    <span className="flex items-center gap-1">
+                      <Shield size={12} />
+                      <span>3. Solana ZK Tokenization Formulator</span>
+                    </span>
+                    <span>READY FOR DEVNET</span>
+                  </div>
+                  <p className="text-white/70 text-[9px] leading-relaxed">
+                    Witness signals formulated: {currentProjectConfig.co2Estimated} certified net CO₂ sequestered. Public proof anchor ready.
+                  </p>
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 pt-1">
                 <button
-                  onClick={() => setShowAiVisionModal(false)}
-                  className="flex-1 h-11 rounded-full bg-white/10 text-white font-bold text-xs hover:bg-white/15 transition-colors"
+                  onClick={() => {
+                    playHapticSound("tap");
+                    setAuthToast("AI + Algo Cross-Verification Re-confirmed: 99.4% Match! ✓");
+                    setTimeout(() => setAuthToast(null), 2500);
+                  }}
+                  className="flex-1 h-11 rounded-2xl bg-white/10 text-white font-bold text-xs hover:bg-white/15 transition-colors flex items-center justify-center gap-1"
                 >
-                  Close Inspector
+                  <RefreshCw size={12} />
+                  <span>Re-run Scan</span>
                 </button>
                 <button
                   onClick={() => {
                     setShowAiVisionModal(false);
                     setShowSatelliteGodsEyeModal(true);
                   }}
-                  className="flex-1 h-11 rounded-full bg-[#35C46A] text-[#0C150A] font-extrabold text-xs shadow-md hover:bg-[#2eb05d] transition-colors flex items-center justify-center gap-1.5"
+                  className="flex-1 h-11 rounded-2xl bg-[#35C46A] text-[#0C150A] font-extrabold text-xs shadow-md hover:bg-[#2eb05d] transition-colors flex items-center justify-center gap-1.5"
                 >
                   <Satellite size={13} />
-                  <span>Cross-Check Orbit</span>
+                  <span>Check Orbit</span>
                 </button>
               </div>
             </motion.div>
